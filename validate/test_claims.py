@@ -35,7 +35,11 @@ def by_kind(nodes, kind):
 
 # ---- completeness: every class x bill component has a path ending at a setter ----
 # (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
-KNOWN_GAPS = {}
+THIN_SLICE = "thin slice: only the residential class is wired so far"
+KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
+              for mid, arch in [("ercot", "competitive_area"), ("pjm", "restructured_choice"),
+                                ("caiso", "iou_bundled"), ("gb", "domestic_default_capped")]
+              for cls in ("small_commercial", "large_ci", "large_load")}
 
 
 def _bill_cases():
@@ -103,14 +107,12 @@ def test_gb_market_excludes_northern_ireland():
 
 
 # ---- ERCOT ----
-@M2
 def test_ercot_has_no_capacity_market():
     for arch, nodes, edges in all_graphs("ercot"):
         assert not [e for e in edges if e.get("rate_component") == "capacity"], arch
         assert not by_kind(nodes, "market") or all("capacity" not in n["id"] for n in by_kind(nodes, "market"))
 
 
-@M2
 def test_ercot_ferc_does_not_regulate_rates_or_market_rules():
     """ERCOT is intrastate: FERC has no rate/market-rule jurisdiction, but reliability runs FERC -> NERC -> Texas RE."""
     nodes, edges = g("ercot", "competitive_area")
@@ -120,7 +122,6 @@ def test_ercot_ferc_does_not_regulate_rates_or_market_rules():
     assert {("ferc", "nerc"), ("nerc", "texas_re"), ("texas_re", "ercot")} <= rel
 
 
-@M2
 def test_puct_oversees_ercot():
     _, edges = g("ercot", "competitive_area")
     assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "ercot" for e in edges)
@@ -134,7 +135,8 @@ def test_ercot_noie_transmission_rate_still_set_by_puct():
 
 
 # ---- PJM ----
-@M3
+@pytest.mark.xfail(reason="schema v2: an operates edge requires an asset class, so PJM -> RPM can't be drawn; "
+                          "needs a decision on allowing operates -> market nodes", strict=True)
 def test_pjm_has_capacity_auction():
     nodes, edges = g("pjm", "restructured_choice")
     assert "rpm" in nodes and nodes["rpm"]["kind"] == "market"
@@ -142,7 +144,6 @@ def test_pjm_has_capacity_auction():
 
 
 # ---- CAISO ----
-@M3
 def test_caiso_has_no_central_capacity_auction():
     for arch, nodes, edges in all_graphs("caiso"):
         assert all("capacity" not in n["id"] for n in by_kind(nodes, "market")), arch
@@ -166,7 +167,6 @@ def test_smud_is_not_a_balancing_authority():
 
 
 # ---- GB ----
-@MGB
 def test_neso_is_public_and_owns_nothing():
     nodes, _ = g("gb", "domestic_default_capped")
     assert nodes["neso"]["kind"] == "system_operator"
@@ -174,7 +174,6 @@ def test_neso_is_public_and_owns_nothing():
     assert not nodes["neso"].get("holds_assets")
 
 
-@MGB
 def test_gb_has_no_iso_and_no_central_dispatch():
     for arch, nodes, edges in all_graphs("gb"):
         assert not by_kind(nodes, "iso"), arch
@@ -199,7 +198,6 @@ def test_gb_transmission_connected_has_no_dno():
     assert not by_kind(nodes, "wires_utility")
 
 
-@MGB
 def test_gb_elexon_settles_and_bsuos_is_demand_only():
     nodes, edges = g("gb", "domestic_default_capped")
     assert any(e["type"] == "settles" and e["from"] == "elexon" for e in edges)
@@ -207,7 +205,6 @@ def test_gb_elexon_settles_and_bsuos_is_demand_only():
                 and nodes[e["from"]]["kind"] == "generator"]
 
 
-@MGB
 def test_gb_levies_and_taxes_reach_residential():
     _, edges = g("gb", "domestic_default_capped")
     for comp in ("policy_levy", "tax"):

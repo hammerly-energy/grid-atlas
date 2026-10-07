@@ -3,6 +3,75 @@ country: US
 market: caiso
 name: CAISO
 coverage_note: Not all of California is in CAISO's balancing area. LADWP, BANC (incl. SMUD), IID and TID run their own BAs but trade in CAISO's real-time market (WEIM).
-base: {nodes: [], edges: []}
-archetypes: {}     # milestone 3: iou_bundled, iou_cca, iou_direct_access, muni_in_caiso, muni_own_ba
-utilities: {}
+# No central capacity market: resource adequacy (RA) is an obligation on each LSE, and its cost sits inside
+# the IOU generation rate. Ancillary costs do too. exit_fee (PCIA) joins when iou_cca is entered.
+bill_components: [generation, transmission, distribution, riders_public_purpose]
+
+# Thin slice: iou_bundled, residential only.
+base:
+  nodes:
+    - id: ferc
+      name: FERC
+      lane: regulators
+      kind: regulator
+      jurisdiction: national
+      description: Regulates CAISO's wholesale markets and the transmission rates of transmission owners under CAISO control.
+    - id: cpuc
+      name: CPUC
+      lane: regulators
+      kind: regulator
+      jurisdiction: subnational
+      description: California Public Utilities Commission; sets investor-owned utility retail rates and resource adequacy obligations.
+    - id: caiso
+      name: CAISO
+      lane: market_operator
+      kind: iso
+      jurisdiction: subnational
+      description: Operates the grid and the energy and ancillary service markets for most of California. No central capacity market. Owns no wires.
+    - id: generators
+      name: Generators
+      lane: wholesale
+      kind: generator
+      jurisdiction: private
+      description: Sell energy and ancillary services into CAISO's markets; sell RA capacity to LSEs bilaterally.
+
+archetypes:
+  iou_bundled:
+    nodes:
+      - id: iou
+        name: IOU
+        slot: iou
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Investor-owned utility providing bundled service (generation procurement, wires and billing).
+        holds_assets: [generation, transmission, distribution]
+        source: &tca {title: CAISO Transmission Control Agreement, url: "https://www.caiso.com/library/transmission-control-agreement", accessed: "2026-10-07"}
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer on the IOU's bundled service.
+    edges:
+      # regulation and planning
+      - {id: ferc_caiso, from: ferc, to: caiso, type: regulates, domain: market_rules, label: approves CAISO's tariff and market rules, status: needs_verification,
+         source: &caisomkt {title: CAISO market operations, url: "https://www.caiso.com/market-operations", accessed: "2026-10-07"}}
+      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates retail rates and procurement, status: needs_verification,
+         source: &ra {title: CPUC resource adequacy, url: "https://www.cpuc.ca.gov/RA", accessed: "2026-10-07"}}
+      - {id: cpuc_ra, from: cpuc, to: iou, type: plans_procures, label: sets resource adequacy obligation, status: needs_verification, source: *ra}
+      # operations
+      - {id: caiso_dispatch, from: caiso, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *caisomkt}
+      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: needs_verification, source: *tca}
+      # bill
+      - {id: cpuc_iou_gen, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *ra}
+      - {id: iou_res_gen, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *ra}
+      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *tca}
+      - {id: iou_res_tx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
+      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: needs_verification, source: *ra}
+      - {id: iou_res_dx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ra}
+      - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ra}
+      - {id: iou_res_rider, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose charges, status: needs_verification, source: *ra}
+
+utilities:
+  PG&E: {area: CA, archetypes: [iou_bundled], fills: {iou: {name: PG&E}}}

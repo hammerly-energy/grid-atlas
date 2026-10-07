@@ -4,6 +4,103 @@ market: ercot
 name: ERCOT
 coverage_note: Not all of Texas is in ERCOT; parts are in SPP, MISO and WECC (e.g. El Paso Electric, SPS, Entergy Texas).
 bill_components: [generation, transmission, distribution, ancillary_uplift, riders_public_purpose]   # energy-only: no capacity
-base: {nodes: [], edges: []}
-archetypes: {}     # milestone 2: competitive_area, noie, coop
-utilities: {}
+
+# Thin slice: competitive_area, residential class only (other classes are KNOWN_GAPS in test_claims.py).
+base:
+  nodes:
+    - id: ferc
+      name: FERC
+      lane: regulators
+      kind: regulator
+      jurisdiction: national
+      description: Approves NERC reliability standards. No rate or market-rule jurisdiction over ERCOT, which is not synchronously interconnected with the rest of the US.
+    - id: nerc
+      name: NERC
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: national
+      description: Sets reliability standards approved by FERC; enforces them through regional entities.
+    - id: texas_re
+      name: Texas RE
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: subnational
+      description: Texas Reliability Entity; NERC's regional entity for the ERCOT region.
+    - id: puct
+      name: PUCT
+      lane: regulators
+      kind: regulator
+      jurisdiction: subnational
+      description: Public Utility Commission of Texas; oversees ERCOT, sets transmission and distribution rates, licenses retail electric providers.
+    - id: ercot
+      name: ERCOT
+      lane: market_operator
+      kind: iso
+      jurisdiction: subnational
+      description: Operates the grid and the energy and ancillary service markets for about 90% of Texas load. Energy-only market; no capacity market. Owns no wires.
+    - id: generators
+      name: Generators
+      lane: wholesale
+      kind: generator
+      jurisdiction: private
+      description: Sell energy into ERCOT's day-ahead and real-time markets.
+
+archetypes:
+  competitive_area:
+    nodes:
+      - id: tdsp
+        name: TDSP
+        slot: tdsp
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Wires-only utility. Owns and operates the local wires; may not sell electricity to retail customers.
+        holds_assets: [transmission, distribution]
+        source: &puct {title: Public Utility Commission of Texas, url: "https://www.puc.texas.gov", accessed: "2026-10-07"}
+      - id: rep
+        name: Retail electric provider
+        lane: retail
+        kind: retail_provider
+        jurisdiction: private
+        description: Customer-chosen retailer. Buys wholesale power, pays TDSP charges, bills the customer.
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer in a competitive area (e.g. Oncor, CenterPoint).
+    edges:
+      # regulation
+      - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
+         source: &fercercot {title: FERC — ERCOT, url: "https://www.ferc.gov/industries-data/electric/electric-power-markets/ercot", accessed: "2026-10-07"}}
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification,
+         source: &nerc {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}}
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: oversees ERCOT and approves its protocols, status: needs_verification,
+         source: &pura39 {title: PURA chapter 39, url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.39.htm", accessed: "2026-10-07"}}
+      - {id: puct_rep_lic, from: puct, to: rep, type: regulates, domain: licensing, label: certifies retail electric providers, status: needs_verification, source: *pura39}
+      # operations
+      - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification,
+         source: &ercotops {title: ERCOT Retail 101, url: "https://www.ercot.com/files/docs/2026/03/06/2026_07-Retail-101.pdf", accessed: "2026-10-07"}}
+      - {id: ercot_operates_tx, from: ercot, to: tdsp, type: operates, asset: transmission, label: directs operation of the transmission grid, status: needs_verification, source: *ercotops}
+      # bill: generation
+      - {id: rep_res_gen, from: rep, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail offer, status: needs_verification, source: *ercotops}
+      # bill: transmission
+      - {id: puct_tdsp_tx, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: transmission, label: sets transmission rates, status: needs_verification,
+         source: &tcos {title: 16 TAC 25.192 transmission rates, url: "https://ftp.puc.texas.gov/public/puct-info/agency/rulesnlaws/subrules/electric/25.192/21080pub.pdf", accessed: "2026-10-07"}}
+      - {id: tdsp_rep_tx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges to the REP, status: needs_verification, source: *puct}
+      - {id: rep_res_tx, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: passes TDSP transmission charges to the customer, status: needs_verification, source: *ercotops}
+      # bill: distribution
+      - {id: puct_tdsp_dx, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *puct}
+      - {id: tdsp_rep_dx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges to the REP, status: needs_verification, source: *puct}
+      - {id: rep_res_dx, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: passes TDSP delivery charges to the customer, status: needs_verification, source: *ercotops}
+      # bill: ancillary services
+      - {id: ercot_rep_as, from: ercot, to: rep, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
+      - {id: rep_res_as, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in the retail price, status: needs_verification, source: *ercotops}
+      # bill: riders
+      - {id: puct_tdsp_rider, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency cost recovery), status: needs_verification, source: *puct}
+      - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: needs_verification, source: *puct}
+      - {id: rep_res_rider, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
+
+utilities:
+  Oncor: {area: TX, archetypes: [competitive_area], fills: {tdsp: {name: Oncor}}}

@@ -3,6 +3,93 @@ country: US
 market: pjm
 name: PJM
 coverage_note: PJM covers all or parts of 13 states plus DC. Only ComEd's zone of Illinois (Ameren Illinois is in MISO) and only part of Kentucky (not LG&E/KU).
-base: {nodes: [], edges: []}
-archetypes: {}     # milestone 3: restructured_choice, municipal_aggregation, vertically_integrated, limited_choice, muni_coop
-utilities: {}
+
+# Thin slice: restructured_choice for a default-service customer in Pennsylvania, residential only.
+# A customer who picks a competitive supplier gets a different generation path; modelled in milestone 3.
+base:
+  nodes:
+    - id: ferc
+      name: FERC
+      lane: regulators
+      kind: regulator
+      jurisdiction: national
+      description: Regulates PJM's wholesale markets and interstate transmission rates.
+    - id: pjm
+      name: PJM
+      lane: market_operator
+      kind: iso
+      jurisdiction: national
+      description: Regional transmission organization for all or parts of 13 states and DC. Runs the energy, capacity (RPM) and ancillary service markets. Owns no wires.
+    - id: rpm
+      name: Capacity market (RPM)
+      lane: market_operator
+      kind: market
+      jurisdiction: national
+      description: Reliability Pricing Model; PJM's annual capacity auction, about three years ahead of delivery.
+    - id: generators
+      name: Generators
+      lane: wholesale
+      kind: generator
+      jurisdiction: private
+      description: Sell energy and capacity into PJM's markets.
+
+archetypes:
+  restructured_choice:
+    nodes:
+      - id: state_puc
+        name: State PUC
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State utility commission (e.g. PA PUC). Sets distribution rates and approves the default service plan.
+      - id: default_supplier
+        name: Default service suppliers
+        lane: wholesale
+        kind: lse
+        jurisdiction: private
+        description: Wholesale suppliers that win the utility's default service auction and deliver full-requirements supply.
+      - id: edc
+        name: EDC
+        slot: edc
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Electric distribution company. Owns the local wires and bills default service customers.
+        holds_assets: [transmission, distribution]
+        source: &pjmmembers {title: PJM member list, url: "https://www.pjm.com/about-pjm/member-services/member-list", accessed: "2026-10-07"}
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer on default service (has not picked a competitive supplier).
+    edges:
+      # regulation
+      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification,
+         source: &oatt {title: PJM Open Access Transmission Tariff, url: "https://www.pjm.com/directory/merged-tariffs/oatt.pdf", accessed: "2026-10-07"}}
+      - {id: puc_edc, from: state_puc, to: edc, type: regulates, domain: rates, label: regulates distribution service and default service, status: needs_verification,
+         source: &papuc {title: Pennsylvania PUC, url: "https://www.puc.pa.gov", accessed: "2026-10-07"}}
+      # operations
+      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
+      - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
+      - {id: puc_auction, from: state_puc, to: default_supplier, type: plans_procures, label: approves the default service auction, status: needs_verification, source: *papuc}
+      # bill: generation, capacity, ancillary (inside the full-requirements default service price)
+      - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, label: energy price set by auction bids, status: needs_verification, source: *papuc}
+      - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: needs_verification,
+         source: &rpm {title: PJM capacity market (RPM), url: "https://www.pjm.com/markets-and-operations/rpm", accessed: "2026-10-07"}}
+      - {id: sup_edc_cap, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: capacity, label: capacity cost priced into auction bids, status: needs_verification, source: *rpm}
+      - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: ancillary cost priced into auction bids, status: needs_verification, source: *oatt}
+      - {id: edc_res_gen, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the default service price, status: needs_verification, source: *papuc}
+      - {id: edc_res_cap, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within the default service price, status: needs_verification, source: *papuc}
+      - {id: edc_res_as, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the default service price, status: needs_verification, source: *papuc}
+      # bill: transmission
+      - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: edc_res_tx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *papuc}
+      # bill: distribution and riders
+      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *papuc}
+      - {id: edc_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *papuc}
+      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *papuc}
+      - {id: edc_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *papuc}
+
+utilities:
+  PECO: {area: PA, archetypes: [restructured_choice], fills: {edc: {name: PECO}}}
