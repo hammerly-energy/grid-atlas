@@ -194,8 +194,11 @@
         "transmission",
         "distribution",
         "interconnector",
-        "metering"
-      ]
+        "metering",
+        "substation",
+        "distributed_resource"
+      ],
+      "description": "Physical asset classes. substation: step-up/step-down and switching substations (who owns them differs from the wires owner for generator and large-load connections). distributed_resource: behind-the-meter rooftop solar, home and business batteries, EV chargers."
     },
     "owner_type": {
       "enum": [

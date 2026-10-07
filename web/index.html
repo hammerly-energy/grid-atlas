@@ -284,7 +284,7 @@ function renderCol(i) {
     if (kindsElsewhere && !kindsElsewhere.has(n.kind)) el("text", { x: NODE_W, y: NODE_H + 11, class: "u", "text-anchor": "end" }, g).textContent = "only here";
     if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
       el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
-      el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.join(", ");
+      el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ");
     }
     if (S.lens === "owner" && n.owner) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + n.owner.name.replace(/^Secretary of State for /, "SoS ");
     g.onclick = () => { col.sel = { node: n.id }; render(); };
@@ -342,7 +342,7 @@ function panel(col, C, byId, edges, ans) {
       <dt>Role</dt><dd>${esc(label(C.kind_labels, n.kind))} · ${esc(label(C.jurisdiction_labels, n.jurisdiction))}</dd>
       <dt>What it does</dt><dd>${esc(n.description)}</dd>
       ${g ? `<dt>Term</dt><dd>${esc(g)}</dd>` : ""}
-      <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.join(", ")) : "no grid assets entered"}</dd>
+      <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
       ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
       ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}</dl>`;
     return p;

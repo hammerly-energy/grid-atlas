@@ -114,7 +114,9 @@ Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL 
 
 ### Ownership
 
-- `holds_assets: [generation | storage | transmission | distribution | interconnector | metering]` — physical grid assets this entity owns. Empty = owns none (ISOs, NESO).
+- `holds_assets: [generation | storage | transmission | distribution | interconnector | metering | substation | distributed_resource]` — physical grid assets this entity owns. Empty = owns none (ISOs, NESO).
+  - `substation`: record it separately where the owner differs from the wires owner (generator step-up, large-load or customer-owned substations).
+  - `distributed_resource`: behind-the-meter rooftop solar, batteries and EV chargers; usually held by consumer nodes or third-party owners, not the utility.
 - `owner: {name, type, parent, node, as_of, source}` — who owns the entity's equity. `type` ∈ public · state_owned · investor_owned · municipal · cooperative · mutual · private_equity · infrastructure_fund · sovereign_wealth · consortium · nonprofit · member_owned. **`source` required**: ownership changes hands and goes stale first. `owner.node` makes build emit an `owns` edge from a `holding_group`.
 - Operator ≠ owner: NESO/ISOs `operates` transmission that TOs own.
 
