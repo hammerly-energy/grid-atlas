@@ -77,6 +77,7 @@ archetypes:
       - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, label: energy price set by auction bids, status: needs_verification, source: *papuc}
       - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: needs_verification,
          source: &rpm {title: PJM capacity market (RPM), url: "https://www.pjm.com/markets-and-operations/rpm", accessed: "2026-10-07"}}
+      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
       - {id: sup_edc_cap, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: capacity, label: capacity cost priced into auction bids, status: needs_verification, source: *rpm}
       - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: ancillary cost priced into auction bids, status: needs_verification, source: *oatt}
       - {id: edc_res_gen, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the default service price, status: needs_verification, source: *papuc}

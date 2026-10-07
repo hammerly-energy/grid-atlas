@@ -128,7 +128,7 @@ Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL 
 | `mode` | `sets_rate`/`pays` only: `sets` (default) · `approves` (revenue/formula, e.g. Ofgem RIIO, FERC) · `caps` (ceiling; may omit component = whole bill) · `levies` (policy levies, taxes) · `passes_through` (supplier, EDC billing someone else's charge) · `market` (price formed by trading) |
 | `domain` | `regulates` only: rates · market_rules · reliability · licensing · governance · policy_standard |
 | `mechanism` | `dispatches` only: central_sced (US ISOs) · balancing_redispatch · ancillary_contract (GB: generators self-dispatch) |
-| `asset` | `owns`/`operates` only (required) |
+| `asset` | `owns` (required) and `operates` (required, except when the target is a `market` node, e.g. PJM → RPM) |
 | `applies_to` | consumer classes, if class-specific |
 | `rate_component` | `generation` · `transmission` · `distribution` · `capacity` · `ancillary_uplift` · `riders_public_purpose` · `exit_fee` · `balancing` · `policy_levy` · `tax` · `supplier_margin` · `metering`. Line items in `subcomponent` (TNUoS, DUoS, CfD, RO, PCIA). Never add a synonym (e.g. no `wholesale_energy`; GB relabels `generation`) |
 | `valid_from` / `valid_to` | time-bounded facts (e.g. GB 0% domestic VAT to 2027-03-31) |

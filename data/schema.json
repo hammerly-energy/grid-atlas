@@ -400,7 +400,7 @@
         },
         "asset": {
           "$ref": "#/$defs/asset_class",
-          "description": "For owns/operates: which asset class."
+          "description": "For owns (required) and operates (required unless the target is a market node): which asset class."
         },
         "source": {
           "$ref": "#/$defs/source"
@@ -500,10 +500,7 @@
           "if": {
             "properties": {
               "type": {
-                "enum": [
-                  "owns",
-                  "operates"
-                ]
+                "const": "owns"
               }
             }
           },
@@ -511,7 +508,8 @@
             "required": [
               "asset"
             ]
-          }
+          },
+          "$comment": "operates may omit asset only when it targets a market node (PJM -> RPM); test_mode_and_ownership_rules enforces that, because JSON Schema can't see the target's kind."
         },
         {
           "if": {

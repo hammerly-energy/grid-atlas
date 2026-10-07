@@ -68,6 +68,11 @@ def test_mode_and_ownership_rules(cc, mid, arch, nodes, edges):
             assert src["kind"] in {"regulator", "policy_maker", "legislature", "scheme_administrator"}, e["id"]
         if e.get("mode") == "passes_through":
             assert src["lane"] == "retail", f"{e['id']}: pass-through is a retail-billing act"
+        if e["type"] == "operates":
+            if dst["kind"] == "market":
+                assert "asset" not in e, f"{e['id']}: a market is not an asset"
+            else:
+                assert e.get("asset"), f"{e['id']}: operates needs an asset unless it targets a market"
         if e["type"] == "owns":
             assert dst.get("holds_assets"), f"{e['id']}: owns must target an asset-holding node"
             assert e["asset"] in dst["holds_assets"], e["id"]
@@ -135,8 +140,6 @@ def test_ercot_noie_transmission_rate_still_set_by_puct():
 
 
 # ---- PJM ----
-@pytest.mark.xfail(reason="schema v2: an operates edge requires an asset class, so PJM -> RPM can't be drawn; "
-                          "needs a decision on allowing operates -> market nodes", strict=True)
 def test_pjm_has_capacity_auction():
     nodes, edges = g("pjm", "restructured_choice")
     assert "rpm" in nodes and nodes["rpm"]["kind"] == "market"
