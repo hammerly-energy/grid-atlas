@@ -366,9 +366,14 @@ function renderCol(i) {
 /* ---------- domain map: where a body's authority applies ---------- */
 let mapSeq = 0;
 function domainMap(da, cc) {
-  const M = D.maps && D.maps[cc]; if (!M) return "";
+  const M = D.maps && Object.values(D.maps).find(m => cc in m.countries); if (!M) return "";
   const expand = ids => (ids || []).flatMap(id => (M.groups || {})[id] || [id]);
   const full = new Set(expand(da.full)), part = new Set(expand(da.partial));
+  // frame: the country's home area plus the body's own areas, padded
+  const b = [...expand([M.countries[cc]]), ...full, ...part].map(a => M.bbox[a]).filter(Boolean)
+    .reduce((u, q) => [Math.min(u[0], q[0]), Math.min(u[1], q[1]), Math.max(u[2], q[2]), Math.max(u[3], q[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+  const pad = 0.04 * Math.max(b[2] - b[0], b[3] - b[1]);
+  const vb = [b[0] - pad, b[1] - pad, b[2] - b[0] + 2 * pad, b[3] - b[1] + 2 * pad].map(v => +v.toFixed(1));
   const hid = `hatch${mapSeq++}`;
   const hatch = `<pattern id="${hid}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
     <rect width="4" height="4" fill="var(--bg)"/><line class="hatch-line" x1="0" y1="0" x2="0" y2="4"/></pattern>`;
@@ -380,7 +385,7 @@ function domainMap(da, cc) {
   }
   const key = da.partial && da.partial.length
     ? `<br><span class="sw" style="background:var(--accent)"></span>full role <span class="sw" style="background:repeating-linear-gradient(45deg,var(--accent) 0 1.5px,var(--bg) 1.5px 4px)"></span>${esc(da.partial_label)}` : "";
-  return `<figure class="dfig"><svg class="dmap" viewBox="${M.viewBox.join(" ")}" role="img" aria-label="${esc(da.note)}"><defs>${hatch}</defs>${paths}</svg>
+  return `<figure class="dfig"><svg class="dmap" viewBox="${vb.join(" ")}" role="img" aria-label="${esc(da.note)}"><defs>${hatch}</defs>${paths}</svg>
     <figcaption>${esc(da.note)}${key}</figcaption></figure>`;
 }
 

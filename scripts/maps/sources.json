@@ -1,0 +1,29 @@
+{
+  "census_states": {
+    "npm": "us-atlas/states-10m.json",
+    "sha256": "d76b391ccfa8bff601d51e3e3da5d43a89fa46cd5caca72ce731b383be5596d0",
+    "title": "US Census Bureau cartographic boundary files, 2017 (via us-atlas 3.0.1)",
+    "url": "https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html",
+    "accessed": "2026-10-07",
+    "credit": "US Census Bureau",
+    "licence": "Public domain (US government work)"
+  },
+  "natural_earth_50m": {
+    "npm": "world-atlas/countries-50m.json",
+    "sha256": "04342cdc1e3016bcd7db1630de95684d67b79fe3c8c460321e87aef469502394",
+    "title": "Natural Earth 1:50m admin 0 countries (via world-atlas 2.0.2)",
+    "url": "https://www.naturalearthdata.com/downloads/50m-cultural-vectors/",
+    "accessed": "2026-10-07",
+    "credit": "Natural Earth",
+    "licence": "Public domain"
+  },
+  "natural_earth_10m": {
+    "npm": "world-atlas/countries-10m.json",
+    "sha256": "3bc6f1d367a9bcec479841bae0e76092f512838411d0cef124e92eec4db45f79",
+    "title": "Natural Earth 1:10m admin 0 countries (via world-atlas 2.0.2)",
+    "url": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/",
+    "accessed": "2026-10-07",
+    "credit": "Natural Earth",
+    "licence": "Public domain"
+  }
+}

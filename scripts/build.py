@@ -35,8 +35,15 @@ def load(root=ROOT):
 
 
 def load_maps(root=ROOT):
-    """-> {cc: map}; data/maps/<cc>.json is built by scripts/maps/make_maps.mjs."""
-    return {f.stem.upper(): json.loads(f.read_text()) for f in sorted((root / "data/maps").glob("*.json"))}
+    """-> {map_id: map}; data/maps/<map>.json is built by scripts/maps/make_maps.mjs. One map per region."""
+    return {f.stem: json.loads(f.read_text()) for f in sorted((root / "data/maps").glob("*.json"))}
+
+
+def map_for(maps, cc):
+    """The region map that serves country `cc`."""
+    found = [m for m in maps.values() if cc in m["countries"]]
+    assert len(found) == 1, f"{cc}: {len(found)} maps serve this country"
+    return found[0]
 
 
 def map_area_ids(m):

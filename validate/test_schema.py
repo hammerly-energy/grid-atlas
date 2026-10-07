@@ -80,32 +80,36 @@ def test_glossary_meanings_are_short():
 MAPS = build.load_maps()
 
 
-def test_every_country_has_a_map():
-    assert set(MAPS) == set(DATA)
+def test_every_country_has_one_map():
+    for cc in DATA:
+        m = build.map_for(MAPS, cc)
+        assert m["countries"][cc] in build.map_area_ids(m), f"{cc}: home area missing"
 
 
 def test_map_layers_have_source_and_licence():
-    for cc, m in MAPS.items():
+    for mid, m in MAPS.items():
         for l in m["layers"]:
-            assert l.get("credit") and l.get("licence") and l["source"]["url"].startswith("http"), f"{cc}/{l['id']}"
-            assert l["areas"], f"{cc}/{l['id']}: no shapes"
+            assert l.get("credit") and l.get("licence") and l["source"]["url"].startswith("http"), f"{mid}/{l['id']}"
+            assert l["areas"], f"{mid}/{l['id']}: no shapes"
 
 
 def test_map_groups_name_drawn_areas():
-    for cc, m in MAPS.items():
+    for mid, m in MAPS.items():
         drawn = {a for l in m["layers"] for a in l["areas"]}
+        assert drawn == set(m["bbox"]), f"{mid}: bbox out of step with areas"
         for gid, members in m.get("groups", {}).items():
-            assert set(members) <= drawn, f"{cc}/{gid}: {set(members) - drawn}"
+            assert set(members) <= drawn, f"{mid}/{gid}: {set(members) - drawn}"
 
 
 def test_maps_fit_size_budget():
-    total = sum((build.ROOT / f"data/maps/{cc.lower()}.json").stat().st_size for cc in MAPS)
-    assert total < 150 * 1024, f"maps are {total / 1024:.0f} KB"
+    for mid in MAPS:
+        size = (build.ROOT / f"data/maps/{mid}.json").stat().st_size
+        assert size < 100 * 1024, f"{mid} is {size / 1024:.0f} KB"
 
 
 @pytest.mark.parametrize("cc,mid,arch,nodes,edges", GRAPHS, ids=IDS)
 def test_domain_area_ids_exist_in_map(cc, mid, arch, nodes, edges):
-    ids = build.map_area_ids(MAPS[cc])
+    ids = build.map_area_ids(build.map_for(MAPS, cc))
     for n in nodes.values():
         da = n.get("domain_area")
         if da:

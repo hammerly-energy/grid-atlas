@@ -225,7 +225,7 @@ def test_gb_has_14_dno_areas():
 # ---- domain maps: where each body's authority applies ----
 def domain(mid, node_id):
     """-> (full, partial) area ids, groups expanded; fails if the node has no domain_area."""
-    m = build.load_maps()[MARKETS[mid][0]]
+    m = build.map_for(build.load_maps(), MARKETS[mid][0])
     n = next(n for n in MARKETS[mid][1]["base"]["nodes"] if n["id"] == node_id)
     assert "domain_area" in n, f"{mid}:{node_id} has no domain_area"
     grow = lambda ids: {a for i in ids for a in m.get("groups", {}).get(i, [i])}

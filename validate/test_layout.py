@@ -83,7 +83,7 @@ def domain_views():
                 for n in nodes.values():
                     if n.get("domain_area") and n["id"] not in seen:
                         seen.add(n["id"])
-                        groups = maps[cc].get("groups", {})
+                        groups = build.map_for(maps, cc).get("groups", {})
                         full = {a for i in n["domain_area"]["full"] for a in groups.get(i, [i])}
                         yield f"lens=roles&a={mid}/{arch}&b=/", n["id"], len(full)
 
