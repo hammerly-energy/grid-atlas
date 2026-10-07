@@ -22,6 +22,11 @@ base:
       kind: regulator
       jurisdiction: subnational
       description: California Public Utilities Commission; sets investor-owned utility retail rates and resource adequacy obligations.
+      domain_area:
+        full: [ca]
+        note: California; investor-owned utilities, not city-owned utilities
+        source: {title: About the CPUC, url: "https://www.cpuc.ca.gov/about-cpuc", accessed: "2026-10-07"}
+        status: needs_verification
     - id: caiso
       name: CAISO
       lane: market_operator

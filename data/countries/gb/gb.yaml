@@ -19,6 +19,11 @@ base:
       kind: policy_maker
       jurisdiction: national
       description: Sets VAT and Climate Change Levy rates through tax legislation.
+      domain_area:
+        full: [uk]
+        note: United Kingdom; VAT and Climate Change Levy apply UK-wide
+        source: {title: Value Added Tax Act 1994, url: "https://www.legislation.gov.uk/ukpga/1994/23/contents", accessed: "2026-10-07"}
+        status: needs_verification
     - id: ofgem
       name: Ofgem
       lane: regulators

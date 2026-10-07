@@ -1,6 +1,7 @@
 import re
 import pytest
 from conftest import DATA, graphs
+import build
 
 GRAPHS = list(graphs())
 IDS = [f"{g[1]}:{g[2]}" for g in GRAPHS]
@@ -73,3 +74,40 @@ def test_ui_abbreviations_are_defined():
 def test_glossary_meanings_are_short():
     long = [f"{cc}:{k}" for cc, c in DATA.items() for k, v in c["profile"]["glossary"].items() if len(v["meaning"]) > 200]
     assert not long, long
+
+
+# ---- domain maps: data/maps/<cc>.json, built by scripts/maps/make_maps.mjs ----
+MAPS = build.load_maps()
+
+
+def test_every_country_has_a_map():
+    assert set(MAPS) == set(DATA)
+
+
+def test_map_layers_have_source_and_licence():
+    for cc, m in MAPS.items():
+        for l in m["layers"]:
+            assert l.get("credit") and l.get("licence") and l["source"]["url"].startswith("http"), f"{cc}/{l['id']}"
+            assert l["areas"], f"{cc}/{l['id']}: no shapes"
+
+
+def test_map_groups_name_drawn_areas():
+    for cc, m in MAPS.items():
+        drawn = {a for l in m["layers"] for a in l["areas"]}
+        for gid, members in m.get("groups", {}).items():
+            assert set(members) <= drawn, f"{cc}/{gid}: {set(members) - drawn}"
+
+
+def test_maps_fit_size_budget():
+    total = sum((build.ROOT / f"data/maps/{cc.lower()}.json").stat().st_size for cc in MAPS)
+    assert total < 150 * 1024, f"maps are {total / 1024:.0f} KB"
+
+
+@pytest.mark.parametrize("cc,mid,arch,nodes,edges", GRAPHS, ids=IDS)
+def test_domain_area_ids_exist_in_map(cc, mid, arch, nodes, edges):
+    ids = build.map_area_ids(MAPS[cc])
+    for n in nodes.values():
+        da = n.get("domain_area")
+        if da:
+            missing = (set(da["full"]) | set(da.get("partial", []))) - ids
+            assert not missing, f"{mid}:{n['id']} names unknown areas {missing}"

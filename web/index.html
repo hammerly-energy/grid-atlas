@@ -62,6 +62,17 @@
   .panel dt { color:var(--muted); }
   .panel dd { margin:0; }
   .panel a { color:inherit; }
+  .dwrap { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:flex-start; }
+  .dwrap dl { flex:1 1 240px; }
+  .dfig { margin:0; flex:0 0 auto; max-width:220px; }
+  .dmap { width:auto; max-width:220px; max-height:150px; }
+  .dmap path { stroke:var(--bg); stroke-width:.6; vector-effect:non-scaling-stroke; }
+  .dmap .ctx { fill:var(--line); }
+  .dmap .base { fill:var(--node-line); }
+  .dmap .full { fill:var(--accent); }
+  .dmap .hatch-line { stroke:var(--accent); stroke-width:1.2; }
+  .dfig figcaption { color:var(--muted); font-size:12px; margin-top:4px; }
+  .dfig .sw { display:inline-block; width:10px; height:10px; vertical-align:-1px; margin:0 4px 0 0; }
   .muted { color:var(--muted); }
   .legend { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--muted); font-size:12px; margin-top:12px; }
   .legend svg { width:34px; height:10px; display:inline-block; vertical-align:middle; margin-right:4px; }
@@ -352,6 +363,27 @@ function renderCol(i) {
   box.appendChild(panel(col, C, byId, edges, ans));
 }
 
+/* ---------- domain map: where a body's authority applies ---------- */
+let mapSeq = 0;
+function domainMap(da, cc) {
+  const M = D.maps && D.maps[cc]; if (!M) return "";
+  const expand = ids => (ids || []).flatMap(id => (M.groups || {})[id] || [id]);
+  const full = new Set(expand(da.full)), part = new Set(expand(da.partial));
+  const hid = `hatch${mapSeq++}`;
+  const hatch = `<pattern id="${hid}" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="4" height="4" fill="var(--bg)"/><line class="hatch-line" x1="0" y1="0" x2="0" y2="4"/></pattern>`;
+  let paths = "";
+  for (const l of M.layers) for (const [id, d] of Object.entries(l.areas)) {
+    const c = full.has(id) ? "full" : part.has(id) ? "part" : l.id === "context" ? "ctx" : "base";
+    if (l.overlay && c !== "full" && c !== "part") continue;     // overlay layers draw only the areas in play
+    paths += `<path class="${c}" data-area="${id}" d="${d}"${c === "part" ? ` fill="url(#${hid})"` : ""}/>`;
+  }
+  const key = da.partial && da.partial.length
+    ? `<br><span class="sw" style="background:var(--accent)"></span>full role <span class="sw" style="background:repeating-linear-gradient(45deg,var(--accent) 0 1.5px,var(--bg) 1.5px 4px)"></span>${esc(da.partial_label)}` : "";
+  return `<figure class="dfig"><svg class="dmap" viewBox="${M.viewBox.join(" ")}" role="img" aria-label="${esc(da.note)}"><defs>${hatch}</defs>${paths}</svg>
+    <figcaption>${esc(da.note)}${key}</figcaption></figure>`;
+}
+
 /* ---------- detail panel: facts and sources only ---------- */
 function srcLink(s) { return s ? `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.title)}</a> <span class="muted">(${s.accessed})</span>` : "—"; }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -389,13 +421,15 @@ function panel(col, C, byId, edges, ans) {
   }
   if (col.sel && col.sel.node && byId[col.sel.node]) {
     const n = byId[col.sel.node], g = gloss(C, n.name);
-    p.innerHTML = `<h3>${nm(n.id)}</h3><dl>
+    const dm = n.domain_area ? domainMap(n.domain_area, D.markets[col.mid].country) : "";
+    p.innerHTML = `<h3>${nm(n.id)}</h3><div class="dwrap"><dl>
       <dt>Role</dt><dd>${esc(label(C.kind_labels, n.kind))} · ${esc(label(C.jurisdiction_labels, n.jurisdiction))}</dd>
       <dt>What it does</dt><dd>${esc(n.description)}</dd>
       ${g ? `<dt>Term</dt><dd>${esc(g)}</dd>` : ""}
       <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
       ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
-      ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}</dl>`;
+      ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}
+      ${n.domain_area ? `<dt>Domain source</dt><dd>${srcLink(n.domain_area.source)}</dd>` : ""}</dl>${dm}</div>`;
     return p;
   }
   p.innerHTML = `<p class="muted">Select a box or line for details.</p>`;
@@ -435,7 +469,8 @@ function renderLegend() {
   items.push([swatch("var(--muted)", "arrow", true), "needs verification"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
   const n = Object.values(D.markets).flatMap(m => [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])]);
-  $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`;
+  $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`
+    + (D.maps ? " Map shapes: " + [...new Set(Object.values(D.maps).flatMap(m => m.layers.map(l => `${l.credit} (${l.licence.toLowerCase()})`)))].join(", ") + "." : "");
 }
 
 function render() {

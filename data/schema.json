@@ -333,6 +333,9 @@
             "verified",
             "needs_verification"
           ]
+        },
+        "domain_area": {
+          "$ref": "#/$defs/domain_area"
         }
       },
       "allOf": [
@@ -762,6 +765,61 @@
           },
           "description": "Classes drawn for this country; completeness test iterates these."
         }
+      }
+    },
+    "domain_area": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full",
+        "note",
+        "source"
+      ],
+      "description": "Where this body's authority applies, drawn as a locator map. Area ids come from data/maps/<cc>.json (areas or groups).",
+      "properties": {
+        "full": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "description": "Areas where the body's full role applies."
+        },
+        "partial": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "description": "Areas where only part of the role applies (drawn hatched)."
+        },
+        "partial_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "What the partial role is, e.g. 'reliability only'."
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "One-line factual caption shown under the map."
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "needs_verification"
+          ]
+        }
+      },
+      "dependentRequired": {
+        "partial": [
+          "partial_label"
+        ]
       }
     }
   }

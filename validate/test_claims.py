@@ -14,6 +14,7 @@ MARKETS = {mid: (cc, m) for cc, c in DATA.items() for mid, m in c["markets"].ite
 M2 = pytest.mark.xfail(reason="milestone 2: ERCOT data not entered", strict=True)
 M3 = pytest.mark.xfail(reason="milestone 3: PJM/CAISO data not entered", strict=True)
 MGB = pytest.mark.xfail(reason="GB milestone: gb.yaml not entered", strict=True)
+MAPS_PENDING = pytest.mark.xfail(reason="domain map: EIA ISO/NERC region and ONS/NESO shapes not added yet", strict=True)
 
 
 def g(mid, arch):
@@ -219,3 +220,43 @@ def test_gb_levies_and_taxes_reach_residential():
 def test_gb_has_14_dno_areas():
     areas = [u for u in MARKETS["gb"][1]["utilities"].values() if "dno" in u.get("fills", {})]
     assert len(areas) == 14
+
+
+# ---- domain maps: where each body's authority applies ----
+def domain(mid, node_id):
+    """-> (full, partial) area ids, groups expanded; fails if the node has no domain_area."""
+    m = build.load_maps()[MARKETS[mid][0]]
+    n = next(n for n in MARKETS[mid][1]["base"]["nodes"] if n["id"] == node_id)
+    assert "domain_area" in n, f"{mid}:{node_id} has no domain_area"
+    grow = lambda ids: {a for i in ids for a in m.get("groups", {}).get(i, [i])}
+    return grow(n["domain_area"]["full"]), grow(n["domain_area"].get("partial", []))
+
+
+def test_nerc_covers_contiguous_us_and_canada():
+    full, _ = domain("ercot", "nerc")
+    assert {"tx", "ca", "pa", "canada"} <= full and "mexico" not in full
+
+
+def test_puct_domain_is_texas_only():
+    assert domain("ercot", "puct")[0] == {"tx"}
+
+
+def test_cpuc_domain_is_california_only():
+    assert domain("caiso", "cpuc")[0] == {"ca"}
+
+
+@MAPS_PENDING
+def test_texas_re_domain_is_the_ercot_region():
+    assert domain("ercot", "texas_re")[0] == {"ercot"}
+
+
+@MAPS_PENDING
+def test_ferc_covers_ercot_for_reliability_only():
+    full, partial = domain("ercot", "ferc")
+    assert "ercot" in partial and "ercot" not in full
+
+
+@MAPS_PENDING
+def test_neso_domain_excludes_northern_ireland():
+    full, partial = domain("gb", "neso")
+    assert "ni" not in full | partial and {"england", "scotland", "wales"} <= full

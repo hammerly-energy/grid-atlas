@@ -20,6 +20,11 @@ base:
       kind: reliability_body
       jurisdiction: national
       description: Sets reliability standards approved by FERC; enforces them through regional entities.
+      domain_area:
+        full: [lower48, canada]
+        note: Contiguous US, most of Canada and northern Baja California (Mexico)
+        source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}
+        status: needs_verification
     - id: texas_re
       name: Texas RE
       lane: regulators
@@ -32,6 +37,11 @@ base:
       kind: regulator
       jurisdiction: subnational
       description: Public Utility Commission of Texas; oversees ERCOT, sets transmission and distribution rates, licenses retail electric providers.
+      domain_area:
+        full: [tx]
+        note: All of Texas, including areas outside ERCOT; city-owned utilities and co-ops set their own retail rates
+        source: {title: PURA chapter 32, url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.32.htm", accessed: "2026-10-07"}
+        status: needs_verification
     - id: ercot
       name: ERCOT
       lane: market_operator

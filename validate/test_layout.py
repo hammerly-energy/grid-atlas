@@ -71,3 +71,27 @@ def test_every_line_is_clickable(page, view):
     assert page.locator("#col0 svg").count() == 1, f"{view}: no diagram rendered"
     problems = page.evaluate(CHECK, MIN_CLICKABLE)
     assert not problems, f"{view}: " + "; ".join(problems)
+
+
+def domain_views():
+    maps = build.load_maps()
+    for cc, c in DATA.items():
+        for mid, m in c["markets"].items():
+            seen = set()   # base nodes repeat in every archetype; check each once
+            for arch in m["archetypes"]:
+                nodes, _ = build.resolve(m, arch)
+                for n in nodes.values():
+                    if n.get("domain_area") and n["id"] not in seen:
+                        seen.add(n["id"])
+                        groups = maps[cc].get("groups", {})
+                        full = {a for i in n["domain_area"]["full"] for a in groups.get(i, [i])}
+                        yield f"lens=roles&a={mid}/{arch}&b=/", n["id"], len(full)
+
+
+@pytest.mark.parametrize("view,node,n_full", list(domain_views()))
+def test_domain_map_fills_the_selected_body(page, view, node, n_full):
+    page.goto(f"{PAGE}#{view}")
+    page.reload()
+    page.click(f'#col0 g.node[data-id="{node}"]')
+    assert page.locator("#col0 .dmap").count() == 1, f"{node}: no map"
+    assert page.locator("#col0 .dmap path.full").count() == n_full, f"{node}: wrong areas filled"

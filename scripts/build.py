@@ -34,6 +34,16 @@ def load(root=ROOT):
     return out
 
 
+def load_maps(root=ROOT):
+    """-> {cc: map}; data/maps/<cc>.json is built by scripts/maps/make_maps.mjs."""
+    return {f.stem.upper(): json.loads(f.read_text()) for f in sorted((root / "data/maps").glob("*.json"))}
+
+
+def map_area_ids(m):
+    """Every id a domain_area may name: drawn areas plus groups of them."""
+    return {a for l in m["layers"] for a in l["areas"]} | set(m.get("groups", {}))
+
+
 def resolve(market, archetype):
     """base + archetype - removes, plus owns edges derived from owner.node. -> (nodes_by_id, edges)."""
     arch = market["archetypes"][archetype]
@@ -79,8 +89,8 @@ def who_sets(edges, cls, comp):
     return None                              # cycle
 
 
-def compile_all(data):
-    out = {"schema_version": 2, "countries": {}, "markets": {}, "answers": {}}
+def compile_all(data, maps=None):
+    out = {"schema_version": 2, "countries": {}, "markets": {}, "answers": {}, "maps": maps or {}}
     for cc, c in data.items():
         p = c["profile"]
         out["countries"][cc] = {k: p[k] for k in ("name", "currency", "lanes", "chain", "glossary", "bill_components", "consumer_classes")} | \
@@ -98,7 +108,7 @@ def compile_all(data):
 
 
 def main():
-    compiled = compile_all(load())
+    compiled = compile_all(load(), load_maps())
     js = json.dumps(compiled, separators=(",", ":"), ensure_ascii=False, sort_keys=True)
     (ROOT / "web/data.json").write_text(js)
     (ROOT / "web/data.js").write_text("window.GRID_ATLAS=" + js + ";\n")

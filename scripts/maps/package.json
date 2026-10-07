@@ -1,0 +1,12 @@
+{
+  "name": "grid-atlas-maps",
+  "private": true,
+  "description": "Builds data/maps/<cc>.json from public boundary files. Only needed when shapes change.",
+  "type": "module",
+  "scripts": { "build": "node make_maps.mjs" },
+  "devDependencies": {
+    "mapshaper": "0.7.80",
+    "us-atlas": "3.0.1",
+    "world-atlas": "2.0.2"
+  }
+}
