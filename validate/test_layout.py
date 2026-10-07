@@ -1,5 +1,6 @@
 """Layout check: in every view, every relationship line can be clicked on its own,
-and no line runs through a box it doesn't connect.
+no line runs through a box it doesn't connect, and each line meets its boxes square
+(so the arrowhead lines up with the line).
 
 Runs the real page in headless Chromium. Needs Playwright:
     python3 -m pip install playwright && python3 -m playwright install chromium
@@ -41,6 +42,12 @@ CHECK = """(minClickable) => {
             && p.x > b.r.left + 2 && p.x < b.r.right - 2 && p.y > b.r.top + 2 && p.y < b.r.bottom - 2) through.add(b.id);
     }
     if (clickable < minClickable) problems.push(`${hit.dataset.edge}: hidden under other lines`);
+    // the last stretch into the arrowhead (and the first out of the box) must be straight and square to the box
+    for (const [a, b] of [[len - 1, len - 10], [1, 10]]) {
+      const p = hit.getPointAtLength(a), q = hit.getPointAtLength(b);
+      const vertical = Math.abs(p.x - q.x) < 0.5, horizontal = Math.abs(p.y - q.y) < 0.5;
+      if (!vertical && !horizontal) problems.push(`${hit.dataset.edge}: line bends where it meets a box`);
+    }
     for (const id of through) problems.push(`${hit.dataset.edge}: runs through ${id}`);
   }
   return problems;

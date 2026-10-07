@@ -154,6 +154,7 @@ function el(tag, attrs = {}, parent) {
   return e;
 }
 /* ---------- routing: one port per line on each box, detours through gaps ---------- */
+const LEAD = 12;   // straight run out of and into each box, so the arrowhead lines up with the line
 const rowTop = li => TOP + li * LANE_H + 40, rowBottom = li => rowTop(li) + NODE_H;
 function freeGaps(pos, li) {
   const boxes = Object.values(pos).filter(p => p.lane === li).map(p => [p.x - 12, p.x + NODE_W + 12]).sort((a, b) => a[0] - b[0]);
@@ -202,14 +203,14 @@ function route(shown, pos) {
     const y1 = r.sa === "bottom" ? r.a.y + NODE_H : r.a.y, y2 = r.sb === "bottom" ? r.b.y + NODE_H : r.b.y;
     if (!r.dir) {   // same lane: arc under the row, deeper for longer spans
       const dep = 16 + Math.abs(r.bx - r.ax) * 0.08;
-      d[r.e.id] = `M${r.ax},${y1} C${r.ax},${y1 + dep} ${r.bx},${y2 + dep} ${r.bx},${y2}`; continue;
+      d[r.e.id] = `M${r.ax},${y1} L${r.ax},${y1 + LEAD} C${r.ax},${y1 + dep} ${r.bx},${y2 + dep} ${r.bx},${y2 + LEAD} L${r.bx},${y2}`; continue;
     }
-    const pts = [[r.ax, y1]];
+    const pts = [[r.ax, y1], [r.ax, y1 + LEAD * r.dir]];
     for (const v of r.via) {
       const [ya, yb] = r.dir > 0 ? [rowTop(v.li) - 6, rowBottom(v.li) + 6] : [rowBottom(v.li) + 6, rowTop(v.li) - 6];
       pts.push([v.x, ya], [v.x, yb]);
     }
-    pts.push([r.bx, y2]);
+    pts.push([r.bx, y2 - LEAD * r.dir], [r.bx, y2]);
     let s = `M${pts[0][0]},${pts[0][1]}`;
     for (let i = 1; i < pts.length; i++) {
       const [x0, y0] = pts[i - 1], [x, y] = pts[i];
