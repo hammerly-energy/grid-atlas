@@ -33,7 +33,6 @@
   .cols { display:flex; flex-wrap:wrap; gap:16px; }
   .col { flex:1 1 420px; min-width:0; }
   .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
-  .note { color:var(--muted); font-size:12.5px; margin:0 0 6px; }
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
   svg { width:100%; height:auto; display:block; }
@@ -278,7 +277,6 @@ function renderCol(i) {
   uSel.onchange = () => { col.util = uSel.value; render(); };
   chain.appendChild(uSel);
 
-  const note = document.createElement("p"); note.className = "note"; note.textContent = m.coverage_note; box.appendChild(note);
   if (!col.arch) return;
 
   const { nodes, edges, byId } = resolve(col.mid, col.arch);

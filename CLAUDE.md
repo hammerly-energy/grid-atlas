@@ -174,7 +174,7 @@ Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has n
 
 Variants, not archetypes: Scotland vs England & Wales (different TO, ROS, AAHEDC), prepayment, Supplier of Last Resort, EII/BICS exemptions. Deferred: private wire / licence-exempt supply.
 
-Coverage notes to surface in the UI: not all of Texas is in ERCOT (parts are in SPP, MISO, WECC); not all of California is in CAISO; GB excludes Northern Ireland.
+Coverage (what each market excludes, e.g. parts of Texas outside ERCOT, Northern Ireland outside GB) is shown by the domain map, not as a text line. `coverage_note` stays in the data for tests and the map caption.
 
 ## Claims as tests
 
