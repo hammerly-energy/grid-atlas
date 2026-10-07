@@ -58,7 +58,7 @@ archetypes:
         holds_assets: [transmission, distribution]
         source: &puct {title: Public Utility Commission of Texas, url: "https://www.puc.texas.gov", accessed: "2026-10-07"}
       - id: rep
-        name: Retail electric provider
+        name: REP
         lane: retail
         kind: retail_provider
         jurisdiction: private

@@ -12,4 +12,4 @@ open web/index.html           # works from file://
 Data: `data/countries/<cc>/_country.yaml` (vocabulary, glossary) and `<market>.yaml` (nodes, edges, archetypes, utilities), validated by `data/schema.json`.
 Design and sources: `docs/countries-proposal.md`, `docs/research/`.
 
-Status: milestone 1 (scaffold on schema v2). Market data is entered from milestone 2.
+Status: thin slice. One setup per market (ERCOT, PJM, CAISO, GB) for the residential class, drawn in five lanes with Roles, Bill and Ownership lenses. Full data entry starts with milestone 2.

@@ -21,7 +21,7 @@ base:
       jurisdiction: national
       description: Regional transmission organization for all or parts of 13 states and DC. Runs the energy, capacity (RPM) and ancillary service markets. Owns no wires.
     - id: rpm
-      name: Capacity market (RPM)
+      name: RPM capacity auction
       lane: market_operator
       kind: market
       jurisdiction: national
@@ -43,7 +43,7 @@ archetypes:
         jurisdiction: subnational
         description: State utility commission (e.g. PA PUC). Sets distribution rates and approves the default service plan.
       - id: default_supplier
-        name: Default service suppliers
+        name: Wholesale suppliers
         lane: wholesale
         kind: lse
         jurisdiction: private
