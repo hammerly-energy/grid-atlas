@@ -34,6 +34,8 @@ base:
       kind: generator
       jurisdiction: private
       description: Sell energy and ancillary services into CAISO's markets; sell RA capacity to LSEs bilaterally.
+      holds_assets: [generation]
+      source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
 archetypes:
   iou_bundled:

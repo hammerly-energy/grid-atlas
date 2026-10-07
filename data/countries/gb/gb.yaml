@@ -55,6 +55,8 @@ base:
       kind: generator
       jurisdiction: private
       description: Self-dispatch against contracts traded bilaterally and on exchanges; no central pool. Pay no BSUoS since Apr 2023.
+      holds_assets: [generation]
+      source: {title: NESO TNUoS (generator charges), url: "https://www.neso.energy/tnuos-10-minutes-0", accessed: "2026-10-07"}
 
 archetypes:
   domestic_default_capped:

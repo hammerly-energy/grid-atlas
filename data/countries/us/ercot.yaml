@@ -44,6 +44,8 @@ base:
       kind: generator
       jurisdiction: private
       description: Sell energy into ERCOT's day-ahead and real-time markets.
+      holds_assets: [generation]
+      source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
 archetypes:
   competitive_area:

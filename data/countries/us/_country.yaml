@@ -12,7 +12,7 @@ lanes:
 jurisdiction_labels: {national: Federal, subnational: State, local: Local, private: Private}
 kind_labels:
   iso: ISO / RTO
-  wires_utility: Wires utility (TDSP / EDC)
+  wires_utility: Utility (wires)
   retail_provider: Retail provider (REP / ESP)
   reliability_body: NERC / regional entity
 component_labels:
