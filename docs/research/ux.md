@@ -85,7 +85,7 @@ Within one country, matching nodes by `id`/`kind` works. Across countries it fai
 | `≈ differs` | Role in both columns, but `role_notes` say the scope differs | PJM ISO vs NESO: both `system_operator`, but only PJM runs the energy and capacity markets |
 | (none) | Same role, same scope | generators, consumers |
 
-- When the columns are from different countries, a thin banner shows: *"Comparing across countries. Names differ, so nodes are matched by role. Open Crosswalk ↗."*
+- When the columns are from different countries, a thin banner shows: *"Nodes matched by role across countries. Crosswalk ↗"*
 
 ---
 

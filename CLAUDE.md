@@ -227,6 +227,14 @@ The glossary lives in each `_country.yaml` (with `equivalent:` cross-country lin
 
 Define a term in the UI tooltip the first time it appears in a market column.
 
+## UI copy (all on-screen text)
+
+- Facts only: who, what, which mechanism, which source. No narrative or scene-setting lines (e.g. "Where the electricity goes..."), no marketing tone, no rhetorical questions in body text.
+- Every abbreviation shown in a label has a glossary entry in that country's `_country.yaml`. `test_ui_abbreviations_are_defined` enforces this.
+- Spell out a term rather than abbreviate it when it appears only once (e.g. "large commercial & industrial", not "large C&I").
+- Glossary meanings: at most 200 characters, starting with the expansion. `test_glossary_meanings_are_short` enforces this.
+- Use labels, not sentences: "Diagram not built yet", not "The diagram will arrive soon".
+
 ## Milestones (~49 hours to GB)
 
 1. **Scaffold + schema v2 + validator (~4.5 h).** Done when: `pytest` passes on empty market files and `scripts/build.py` writes `web/data.json` + `web/data.js`. **Done 2026-10-07.**

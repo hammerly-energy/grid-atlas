@@ -1,3 +1,4 @@
+import re
 import pytest
 from conftest import DATA, graphs
 
@@ -44,3 +45,31 @@ def test_every_ownership_claim_has_a_source():
                     if isinstance(f, dict) and "owner" in f and not f["owner"]["source"].get("url"):
                         missing.append(f"{mid}/{name}:{slot}")
     assert not missing, missing
+
+
+# ---- UI copy: abbreviations on screen are defined; glossary stays short ----
+ALLOWED = {"GB", "US", "UK", "HM"}
+
+def _tokens(s):
+    return re.findall(r"[A-Za-z&]+", s)
+
+def _is_abbr(t):
+    return sum(ch.isupper() for ch in t) >= 2
+
+def test_ui_abbreviations_are_defined():
+    missing = []
+    for cc, c in DATA.items():
+        p = c["profile"]
+        known = {t for k, v in p["glossary"].items() for t in _tokens(k + " " + v["term"])} | ALLOWED
+        shown = [l["subtitle"] for l in p["lanes"].values()] + list(p["chain"])
+        shown += [v for key in ("kind_labels", "component_labels", "jurisdiction_labels") for v in p[key].values()]
+        for s in shown:
+            for t in _tokens(s):
+                base = t[:-1] if t.endswith("s") and t[:-1].isupper() else t
+                if _is_abbr(base) and base not in known:
+                    missing.append(f"{cc}: {base} (in '{s}')")
+    assert not missing, missing
+
+def test_glossary_meanings_are_short():
+    long = [f"{cc}:{k}" for cc, c in DATA.items() for k, v in c["profile"]["glossary"].items() if len(v["meaning"]) > 200]
+    assert not long, long

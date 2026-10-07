@@ -8,7 +8,7 @@ lanes:
   market_operator: {title: SYSTEM & MARKET OPERATION, subtitle: "NESO (balancing, planning) · Elexon (settlement) · LCCC / ESC (levies)"}
   wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · interconnectors · NGET / SPT / SHET · OFTOs}
   retail:          {title: DISTRIBUTION & RETAIL,     subtitle: DNO (licence area) · IDNO · supplier}
-  consumers:       {title: CONSUMERS,                 subtitle: domestic · small business · large I&C · transmission-connected}
+  consumers:       {title: CONSUMERS,                 subtitle: domestic · small business · large industrial & commercial · transmission-connected}
 jurisdiction_labels: {national: GB-wide, subnational: Devolved (Scotland / Wales), local: Local, private: Private}
 kind_labels:
   system_operator: System operator (NESO)
@@ -24,7 +24,7 @@ component_labels:
   capacity: Capacity Market
   policy_levy: Policy costs (CfD, RO, FiT, WHD, Nuclear RAB)
   tax: VAT / Climate Change Levy
-  supplier_margin: Operating costs + EBIT
+  supplier_margin: Supplier operating costs and margin
   metering: Smart metering / industry charges
 bill_components: [generation, transmission, distribution, balancing, capacity, policy_levy, tax, supplier_margin]
 chain: [Nation, Distribution area, Tariff type]
@@ -42,4 +42,14 @@ glossary:
   CfD: {term: CfD, meaning: "Contracts for Difference; low-carbon support scheme with LCCC as counterparty, funded by a levy on suppliers."}
   RO: {term: RO, meaning: Renewables Obligation; legacy support scheme. From Apr 2026 the Exchequer pays 75% of the domestic cost.}
   Price cap: {term: Default tariff cap, meaning: Ofgem's quarterly ceiling on domestic default tariffs; the supplier sets the actual price at or below it., equivalent: {US: none (closest is PUC-set default service)}}
+  NGET: {term: NGET, meaning: "National Grid Electricity Transmission; transmission owner in England and Wales."}
+  SPT: {term: SPT, meaning: "SP Transmission (ScottishPower); transmission owner in southern Scotland."}
+  SHET: {term: SHET, meaning: "Scottish Hydro Electric Transmission (SSEN Transmission); transmission owner in northern Scotland."}
+  OFTO: {term: OFTO, meaning: "Offshore transmission owner; owns the cable from an offshore wind farm to the onshore grid. Licensed by Ofgem through competitive tender."}
+  LCCC: {term: LCCC, meaning: "Low Carbon Contracts Company; government-owned counterparty to CfDs. Collects the CfD levy from suppliers."}
+  ESC: {term: ESC, meaning: "Electricity Settlements Company; government-owned. Settles Capacity Market payments and collects the supplier charge that funds them."}
+  FiT: {term: FiT, meaning: "Feed-in Tariffs; support scheme for small-scale generation, closed to new applicants since Apr 2019. Cost recovered from suppliers."}
+  WHD: {term: WHD, meaning: "Warm Home Discount; annual bill rebate for eligible low-income households. Cost spread across supplier bills."}
+  RAB: {term: Nuclear RAB, meaning: "Regulated asset base model; funds Sizewell C construction through a levy on suppliers."}
+  VAT: {term: VAT, meaning: "Value added tax; 5% on domestic energy bills."}
   RIIO: {term: RIIO, meaning: "Ofgem's network price-control framework (Revenue = Incentives + Innovation + Outputs); RIIO-3 for transmission from Apr 2026."}

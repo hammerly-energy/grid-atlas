@@ -8,7 +8,7 @@ lanes:
   market_operator: {title: SYSTEM & MARKET OPERATION, subtitle: "ISO/RTO (energy, capacity, ancillary, planning)"}
   wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · transmission owners · LSEs}
   retail:          {title: DISTRIBUTION & RETAIL,     subtitle: wires utility · retail provider / CCA / muni / co-op}
-  consumers:       {title: CONSUMERS,                 subtitle: residential · small commercial · large C&I · large load}
+  consumers:       {title: CONSUMERS,                 subtitle: residential · small commercial · large commercial & industrial · large load}
 jurisdiction_labels: {national: Federal, subnational: State, local: Local, private: Private}
 kind_labels:
   iso: ISO / RTO
