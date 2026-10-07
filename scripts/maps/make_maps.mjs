@@ -42,6 +42,16 @@ function rtoCounties() {
   return t;
 }
 
+// Wires utility territories: counties listed in derived/county_utility.csv (from EIA-861 by eia861_counties.py)
+function utilityCounties() {
+  const rows = read('county_utility').toString().trim().split('\n').slice(1).map(l => l.split(','));
+  const t = structuredClone(input('census_counties'));
+  const geoms = t.objects.counties.geometries;
+  t.objects = { counties: { type: 'GeometryCollection', geometries: rows.map(([fips, u]) =>
+    ({ ...geoms.find(g => g.id === fips), properties: { aid: u } })).filter(g => g.type) } };
+  return t;
+}
+
 // GB: the 14 DNO licence areas (NESO, British National Grid) reprojected to lon/lat
 async function dnoAreas() {
   const out = await mapshaper.applyCommands(
@@ -58,6 +68,21 @@ async function northernIreland(dno) {
     `-i uk.json dno.json combine-files -erase dno target=uk -explode target=uk -each 'a=this.area' target=uk -filter 'a > 1e9' target=uk -filter-fields aid target=uk -o format=geojson target=uk ni.json`,
     { 'uk.json': uk, 'dno.json': dno });
   return JSON.parse(out['ni.json']);
+}
+
+// Merge each area's features into one shape, area by area. A single -dissolve drops a feature whose geometry another
+// area already used (a border county in two ISOs), so each area is dissolved on its own and the results combined.
+async function dissolveEach(topo) {
+  const obj = Object.keys(topo.objects)[0];
+  const aids = [...new Set(topo.objects[obj].geometries.map(g => g.properties.aid))];
+  const features = [];
+  for (const aid of aids) {
+    const t = structuredClone(topo);
+    t.objects[obj].geometries = t.objects[obj].geometries.filter(g => g.properties.aid === aid);
+    const out = await mapshaper.applyCommands(`-i in.json -dissolve aid -o format=geojson out.json`, { 'in.json': t });
+    features.push(...JSON.parse(out['out.json']).features);
+  }
+  return { type: 'FeatureCollection', features };
 }
 
 // TopoJSON object -> topology with only the features that get an area id (properties.aid)
@@ -92,7 +117,8 @@ const MAPS = {
         topo: pick(input('natural_earth_50m'), 'countries', g => ({ 124: 'canada', 484: 'mexico' })[g.id]) },
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
-      { id: 'iso', src: 'eia861', overlay: true, dissolve: true, approximate: 'county-level approximation from EIA-861', topo: rtoCounties() },
+      { id: 'iso', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties()) },
+      { id: 'utility', src: 'county_utility', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(utilityCounties()) },
     ],
     groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()) },
   },
@@ -133,7 +159,6 @@ async function build(id, spec) {
   const ids = layers.map(l => l.id).join(',');
   const cmd = [                                            // one dataset per layer, so each simplifies on its own
     ...layers.map(l => `-i ${l.id}.json name=${l.id}`),
-    ...layers.filter(l => l.dissolve).map(l => `-dissolve aid target=${l.id}`),
     ...(spec.bbox ? layers.map(l => `-clip bbox=${spec.bbox} target=${l.id}`) : []),
     ...layers.map(l => `-proj ${spec.proj} target=${l.id}`),
     ...layers.map(l => `-simplify dp interval=${l.interval || spec.interval} keep-shapes target=${l.id}`),

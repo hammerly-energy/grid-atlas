@@ -61,5 +61,14 @@
     "accessed": "2026-10-07",
     "credit": "NESO",
     "licence": "NESO Open Data Licence"
+  },
+  "county_utility": {
+    "file": "derived/county_utility.csv",
+    "sha256": "af045e60064fd742fad0df88833d6cdab0fa880fd964c0ade2b8b4b053aad286",
+    "title": "County to wires utility table (PG&E, SCE, SDG&E) derived from EIA-861 2025 service territories by eia861_counties.py",
+    "url": "https://www.eia.gov/electricity/data/eia861/",
+    "accessed": "2026-10-07",
+    "credit": "US EIA",
+    "licence": "Public domain (US government work)"
   }
 }

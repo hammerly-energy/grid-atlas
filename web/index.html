@@ -370,12 +370,12 @@ function renderCol(i) {
 
 /* ---------- domain map: where a body's authority applies ---------- */
 let mapSeq = 0;
-function domainMap(da, cc) {
+function domainMap(da, cc, home) {
   const M = D.maps && Object.values(D.maps).find(m => cc in m.countries); if (!M) return "";
   const expand = ids => (ids || []).flatMap(id => (M.groups || {})[id] || [id]);
   const full = new Set(expand(da.full)), part = new Set(expand(da.partial));
-  // frame: the country's home area plus the body's own areas, padded
-  const b = [...expand([M.countries[cc]]), ...full, ...part].map(a => M.bbox[a]).filter(Boolean)
+  // frame: the home area (the country, or a utility's state when it is a map area) plus the body's own areas, padded
+  const b = [...expand([home in M.bbox ? home : M.countries[cc]]), ...full, ...part].map(a => M.bbox[a]).filter(Boolean)
     .reduce((u, q) => [Math.min(u[0], q[0]), Math.min(u[1], q[1]), Math.max(u[2], q[2]), Math.max(u[3], q[3])], [Infinity, Infinity, -Infinity, -Infinity]);
   const pad = 0.04 * Math.max(b[2] - b[0], b[3] - b[1]);
   const vb = [b[0] - pad, b[1] - pad, b[2] - b[0] + 2 * pad, b[3] - b[1] + 2 * pad].map(v => +v.toFixed(1));
@@ -431,7 +431,8 @@ function panel(col, C, byId, edges, ans) {
   }
   if (col.sel && col.sel.node && byId[col.sel.node]) {
     const n = byId[col.sel.node], g = gloss(C, n.name);
-    const da = domainOf(col, n), dm = da ? domainMap(da, D.markets[col.mid].country) : "";
+    const da = domainOf(col, n), ua = col.util && D.markets[col.mid].utilities[col.util].area;
+    const dm = da ? domainMap(da, D.markets[col.mid].country, da !== n.domain_area && ua ? ua.toLowerCase() : null) : "";
     p.innerHTML = `<h3>${nm(n.id)}</h3><div class="dwrap"><dl>
       <dt>Role</dt><dd>${esc(label(C.kind_labels, n.kind))} · ${esc(label(C.jurisdiction_labels, n.jurisdiction))}</dd>
       <dt>What it does</dt><dd>${esc(n.description)}</dd>

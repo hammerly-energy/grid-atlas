@@ -8,6 +8,7 @@ Skipped when Playwright isn't installed; CI always runs it.
 """
 import os
 from pathlib import Path
+from urllib.parse import quote
 import pytest
 import build
 from conftest import DATA
@@ -96,7 +97,7 @@ def fill_views():
             for name, u in m["utilities"].items():
                 for slot, f in u.get("fills", {}).items():
                     if isinstance(f, dict) and f.get("domain_area"):
-                        yield f"lens=roles&a={mid}/{u['archetypes'][0]}/{name}&b=/", nodes[slot], len(f["domain_area"]["full"])
+                        yield f"lens=roles&a={quote(mid + '/' + u['archetypes'][0] + '/' + name, safe='/')}&b=/", nodes[slot], len(f["domain_area"]["full"])
 
 
 @pytest.mark.parametrize("view,node,n_full", list(domain_views()) + list(fill_views()))
