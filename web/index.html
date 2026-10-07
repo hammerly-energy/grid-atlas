@@ -123,10 +123,10 @@ try {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
-  ["a", "b"].forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); } });
+  ["a", "b"].forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
 function saveHash() {
-  const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: `${S.cols[0].mid}/${S.cols[0].arch}`, b: `${S.cols[1].mid}/${S.cols[1].arch}` });
+  const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: [S.cols[0].mid, S.cols[0].arch, S.cols[0].util].filter(Boolean).join("/"), b: `${S.cols[1].mid}/${S.cols[1].arch}${S.cols[1].util ? "/" + S.cols[1].util : ""}` });
   history.replaceState(null, "", "#" + p);
 }
 
@@ -143,6 +143,11 @@ function displayName(col, n) {
   const u = col.util && D.markets[col.mid].utilities[col.util];
   const f = u && u.fills && n.slot && u.fills[n.slot];
   return f ? (typeof f === "string" ? f : f.name) : n.name;
+}
+function domainOf(col, n) {     // a utility's fill can carry its own territory (a DNO area, a wires utility)
+  const u = col.util && D.markets[col.mid].utilities[col.util];
+  const f = u && u.fills && n.slot && u.fills[n.slot];
+  return (f && typeof f === "object" && f.domain_area) || n.domain_area;
 }
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
@@ -426,7 +431,7 @@ function panel(col, C, byId, edges, ans) {
   }
   if (col.sel && col.sel.node && byId[col.sel.node]) {
     const n = byId[col.sel.node], g = gloss(C, n.name);
-    const dm = n.domain_area ? domainMap(n.domain_area, D.markets[col.mid].country) : "";
+    const da = domainOf(col, n), dm = da ? domainMap(da, D.markets[col.mid].country) : "";
     p.innerHTML = `<h3>${nm(n.id)}</h3><div class="dwrap"><dl>
       <dt>Role</dt><dd>${esc(label(C.kind_labels, n.kind))} · ${esc(label(C.jurisdiction_labels, n.jurisdiction))}</dd>
       <dt>What it does</dt><dd>${esc(n.description)}</dd>
@@ -434,7 +439,7 @@ function panel(col, C, byId, edges, ans) {
       <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
       ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
       ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}
-      ${n.domain_area ? `<dt>Domain source</dt><dd>${srcLink(n.domain_area.source)}</dd>` : ""}</dl>${dm}</div>`;
+      ${da ? `<dt>Domain source</dt><dd>${srcLink(da.source)}</dd>` : ""}</dl>${dm}</div>`;
     return p;
   }
   p.innerHTML = `<p class="muted">Select a box or line for details.</p>`;

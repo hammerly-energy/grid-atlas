@@ -88,7 +88,18 @@ def domain_views():
                         yield f"lens=roles&a={mid}/{arch}&b=/", n["id"], len(full)
 
 
-@pytest.mark.parametrize("view,node,n_full", list(domain_views()))
+def fill_views():
+    """Utilities whose fill carries its own territory: select the utility, then its slot node."""
+    for cc, c in DATA.items():
+        for mid, m in c["markets"].items():
+            nodes = {n.get("slot"): n["id"] for l in [m["base"], *m["archetypes"].values()] for n in l.get("nodes", []) if n.get("slot")}
+            for name, u in m["utilities"].items():
+                for slot, f in u.get("fills", {}).items():
+                    if isinstance(f, dict) and f.get("domain_area"):
+                        yield f"lens=roles&a={mid}/{u['archetypes'][0]}/{name}&b=/", nodes[slot], len(f["domain_area"]["full"])
+
+
+@pytest.mark.parametrize("view,node,n_full", list(domain_views()) + list(fill_views()))
 def test_domain_map_fills_the_selected_body(page, view, node, n_full):
     page.goto(f"{PAGE}#{view}")
     page.reload()

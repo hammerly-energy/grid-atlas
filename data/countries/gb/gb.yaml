@@ -149,4 +149,14 @@ archetypes:
       - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin within the cap, status: needs_verification, source: *cap}
 
 utilities:
-  UK Power Networks (London): {area: London, archetypes: [domestic_default_capped], fills: {dno: {name: UK Power Networks (London)}}}
+  UK Power Networks (London):
+    area: London
+    archetypes: [domestic_default_capped]
+    fills:
+      dno:
+        name: UK Power Networks (London)
+        domain_area:
+          full: [dno_c]
+          note: London licence area, one of 14 GB distribution licence areas
+          source: {title: NESO GB DNO licence areas 20240503, url: "https://www.neso.energy/data-portal/gis-boundaries-gb-dno-license-areas", accessed: "2026-10-07"}
+          status: verified

@@ -115,3 +115,15 @@ def test_domain_area_ids_exist_in_map(cc, mid, arch, nodes, edges):
         if da:
             missing = (set(da["full"]) | set(da.get("partial", []))) - ids
             assert not missing, f"{mid}:{n['id']} names unknown areas {missing}"
+
+
+def test_utility_fill_domains_exist_in_map():
+    for cc, c in DATA.items():
+        ids = build.map_area_ids(build.map_for(MAPS, cc))
+        for mid, m in c["markets"].items():
+            for name, u in m["utilities"].items():
+                for slot, f in u.get("fills", {}).items():
+                    da = f.get("domain_area") if isinstance(f, dict) else None
+                    if da:
+                        missing = (set(da["full"]) | set(da.get("partial", []))) - ids
+                        assert not missing, f"{mid}/{name}:{slot} names unknown areas {missing}"

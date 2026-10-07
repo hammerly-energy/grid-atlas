@@ -282,3 +282,11 @@ def test_hm_treasury_covers_the_uk_and_desnz_only_gb():
     full, _ = domain("gb", "hm_treasury")
     assert "ni" in full
     assert "ni" not in domain("gb", "desnz")[0]
+
+
+def test_each_gb_dno_fill_is_one_licence_area():
+    for name, u in MARKETS["gb"][1]["utilities"].items():
+        f = u.get("fills", {}).get("dno")
+        if isinstance(f, dict) and "domain_area" in f:
+            full = f["domain_area"]["full"]
+            assert len(full) == 1 and full[0].startswith("dno_"), name

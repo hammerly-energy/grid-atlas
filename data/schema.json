@@ -596,7 +596,7 @@
         },
         "fills": {
           "type": "object",
-          "description": "slot id -> {name, owner?} or a node id to bind (e.g. transmission_owner: shet).",
+          "description": "slot id -> {name, owner?, domain_area?} or a node id to bind (e.g. transmission_owner: shet).",
           "propertyNames": {
             "$ref": "#/$defs/id"
           },
@@ -617,6 +617,10 @@
                   },
                   "owner": {
                     "$ref": "#/$defs/owner"
+                  },
+                  "domain_area": {
+                    "$ref": "#/$defs/domain_area",
+                    "description": "This utility's own territory, shown on the slot node's map (e.g. UKPN London -> dno_c)."
                   }
                 }
               }

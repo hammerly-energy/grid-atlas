@@ -100,7 +100,7 @@ Principle: **global enums for meaning, per-country profile for words.** UI, test
 
 1. **`base`** — nodes/edges shared by every variant in the market.
 2. **`archetypes`** — structures that change the *shape* of the diagram. Each archetype adds nodes and edges on top of `base` (and may `removes` base ids).
-3. **`utilities`** — named labels (PECO, SCE, Oncor, UKPN London) mapped to an `area` (US state; GB DNO licence area) and to the archetypes available there. `fills` binds a `slot` node to a name and owner (one DNO node relabelled per area; the right one of GB's 3 TOs).
+3. **`utilities`** — named labels (PECO, SCE, Oncor, UKPN London) mapped to an `area` (US state; GB DNO licence area) and to the archetypes available there. `fills` binds a `slot` node to a name, owner and optional `domain_area` (one DNO node relabelled per area, its map showing that licence area; the right one of GB's 3 TOs). Added 2026-10-07 with Christian's approval.
 
 Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL draw the same picture with different names. Adding a utility should take minutes; adding an archetype is research. In the US the archetype mostly follows *where you live*; in GB it follows *tariff type and connection point*.
 
