@@ -153,18 +153,72 @@ function el(tag, attrs = {}, parent) {
   if (parent) parent.appendChild(e);
   return e;
 }
-function edgePath(a, b, k) {
-  // a, b: node boxes; k: index among parallel edges, spreads them apart
-  const off = k * 10;
-  if (a.lane === b.lane) {
-    const y = a.y + NODE_H, x1 = a.x + NODE_W / 2 + off, x2 = b.x + NODE_W / 2 + off;
-    return `M${x1},${y} C${x1},${y + 30} ${x2},${y + 30} ${x2},${y}`;
+/* ---------- routing: one port per line on each box, detours through gaps ---------- */
+const rowTop = li => TOP + li * LANE_H + 40, rowBottom = li => rowTop(li) + NODE_H;
+function freeGaps(pos, li) {
+  const boxes = Object.values(pos).filter(p => p.lane === li).map(p => [p.x - 12, p.x + NODE_W + 12]).sort((a, b) => a[0] - b[0]);
+  const gaps = []; let x = 8;
+  for (const [a, b] of boxes) { if (a > x) gaps.push([x, a]); x = Math.max(x, b); }
+  if (x < W - 8) gaps.push([x, W - 8]);
+  return gaps;
+}
+function route(shown, pos) {
+  const plan = shown.filter(e => pos[e.from] && pos[e.to]).map(e => {
+    const a = pos[e.from], b = pos[e.to], dir = Math.sign(b.lane - a.lane);
+    return { e, a, b, dir, sa: dir < 0 ? "top" : "bottom", sb: dir > 0 ? "top" : "bottom" };
+  });
+  // ports: spread every line's end along the box side, ordered by where the line is heading
+  const ends = {};
+  for (const r of plan) {
+    (ends[`${r.e.from}|${r.sa}`] ||= []).push({ r, end: "ax", toward: r.b.x });
+    (ends[`${r.e.to}|${r.sb}`] ||= []).push({ r, end: "bx", toward: r.a.x });
   }
-  const down = b.y > a.y;
-  const x1 = a.x + NODE_W / 2 + off, y1 = down ? a.y + NODE_H : a.y;
-  const x2 = b.x + NODE_W / 2 + off, y2 = down ? b.y : b.y + NODE_H;
-  const my = (y1 + y2) / 2;
-  return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+  for (const [key, list] of Object.entries(ends)) {
+    const p = pos[key.split("|")[0]];
+    list.sort((u, v) => u.toward - v.toward || u.r.e.id.localeCompare(v.r.e.id));
+    list.forEach((u, i) => { u.r[u.end] = p.x + NODE_W * (i + 1) / (list.length + 1); });
+  }
+  // lines that skip a lane pass through a gap between that lane's boxes; lines sharing a gap are spaced apart
+  const inGap = {};
+  for (const r of plan) {
+    r.via = [];
+    for (let li = r.a.lane + r.dir; r.dir && li !== r.b.lane; li += r.dir) {
+      const want = r.ax + (r.bx - r.ax) * (li - r.a.lane) / (r.b.lane - r.a.lane);
+      let best = null, bd = Infinity;
+      for (const g of freeGaps(pos, li)) { const d = want < g[0] ? g[0] - want : want > g[1] ? want - g[1] : 0; if (d < bd) { bd = d; best = g; } }
+      const v = { li, want, gap: best }; r.via.push(v);
+      (inGap[`${li}|${best[0]}`] ||= []).push(v);
+    }
+  }
+  for (const list of Object.values(inGap)) {
+    const [g0, g1] = list[0].gap;
+    list.sort((u, v) => u.want - v.want);
+    list.forEach((v, i) => { v.x = Math.min(Math.max(v.want, g0 + 8), g1 - 8); if (i) v.x = Math.max(v.x, list[i - 1].x + 12); });
+    const over = list[list.length - 1].x - (g1 - 8);
+    if (over > 0) list.forEach(v => { v.x = Math.max(g0 + 4, v.x - over); });
+  }
+  const d = {};
+  for (const r of plan) {
+    const y1 = r.sa === "bottom" ? r.a.y + NODE_H : r.a.y, y2 = r.sb === "bottom" ? r.b.y + NODE_H : r.b.y;
+    if (!r.dir) {   // same lane: arc under the row, deeper for longer spans
+      const dep = 16 + Math.abs(r.bx - r.ax) * 0.08;
+      d[r.e.id] = `M${r.ax},${y1} C${r.ax},${y1 + dep} ${r.bx},${y2 + dep} ${r.bx},${y2}`; continue;
+    }
+    const pts = [[r.ax, y1]];
+    for (const v of r.via) {
+      const [ya, yb] = r.dir > 0 ? [rowTop(v.li) - 6, rowBottom(v.li) + 6] : [rowBottom(v.li) + 6, rowTop(v.li) - 6];
+      pts.push([v.x, ya], [v.x, yb]);
+    }
+    pts.push([r.bx, y2]);
+    let s = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x, y] = pts[i];
+      if (x0 === x) s += ` L${x},${y}`;
+      else { const m = (y0 + y) / 2; s += ` C${x0},${m} ${x},${m} ${x},${y}`; }
+    }
+    d[r.e.id] = s;
+  }
+  return d;
 }
 
 /* ---------- markers: arrowhead shape encodes mode ---------- */
@@ -254,18 +308,16 @@ function renderCol(i) {
   }
 
   // edges
-  const pairCount = {};
+  const paths = route(shown, pos);
   for (const e of shown) {
-    const a = pos[e.from], b = pos[e.to];
-    if (!a || !b) continue;
-    const key = [e.from, e.to].sort().join(">"), k = (pairCount[key] = (pairCount[key] ?? -1) + 1);
-    const d = edgePath(a, b, k);
+    const d = paths[e.id];
+    if (!d) continue;
     const color = S.lens === "bill" ? "var(--t-sets_rate)" : `var(--t-${e.type})`;
     const on = path.has(e.id), off = S.lens === "bill" && ans && !on;
     const shape = S.lens === "bill" ? (MODE_SHAPE[e.mode || "sets"] || "arrow") : "arrow";
     const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on ? " on" : ""}${off ? " off" : ""}`, stroke: color,
       "marker-end": marker(defs, shape, on ? "var(--accent)" : color, on ? "on" : e.type) }, svg);
-    const hit = el("path", { d, class: "edge-hit" }, svg);
+    const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
     const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}`;
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
     p.onclick = hit.onclick;
@@ -277,7 +329,7 @@ function renderCol(i) {
     const p = pos[n.id], name = displayName(col, n);
     const sel = col.sel && col.sel.node === n.id;
     const g = el("g", { class: `node${sel ? " sel" : ""}${active.has(n.id) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
-      transform: `translate(${p.x},${p.y})`, tabindex: 0, role: "button", "aria-label": name }, svg);
+      transform: `translate(${p.x},${p.y})`, "data-id": n.id, tabindex: 0, role: "button", "aria-label": name }, svg);
     el("rect", { width: NODE_W, height: NODE_H, rx: 5 }, g);
     el("text", { x: 8, y: 16 }, g).textContent = name.length > 22 ? name.slice(0, 21) + "…" : name;
     el("text", { x: 8, y: 30, class: "k" }, g).textContent = label(C.kind_labels, n.kind);

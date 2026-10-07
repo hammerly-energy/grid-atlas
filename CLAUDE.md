@@ -255,7 +255,7 @@ Define a term in the UI tooltip the first time it appears in a market column.
 - Quote YAML flow-map values that contain commas; `additionalProperties: false` will catch it, but only if you run the build.
 - `web/data.json` and `web/data.js` are generated; edit YAML, then run `python3 scripts/build.py`.
 - Keep the front end a single dependency-free file.
-- Run `pytest` before every commit.
+- Run `pytest` before every commit. `validate/test_layout.py` opens the page in headless Chromium and fails if any relationship line in any view is hidden under other lines or runs through a box it doesn't connect. It is skipped without Playwright (`pip install -r requirements-dev.txt && python3 -m playwright install chromium`); GitHub CI (`.github/workflows/test.yml`) always runs it.
 - Commit per milestone step with a message stating what now works and how to check it.
 
 ## Working with Christian
