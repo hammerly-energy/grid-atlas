@@ -25,5 +25,41 @@
     "accessed": "2026-10-07",
     "credit": "Natural Earth",
     "licence": "Public domain"
+  },
+  "census_counties": {
+    "npm": "us-atlas/counties-10m.json",
+    "sha256": "145aaf5d1433352a6a1d8e86b5f149c7c653f9171baf14aaf75ee66575def1b0",
+    "title": "US Census Bureau cartographic boundary files, 2017 counties (via us-atlas 3.0.1)",
+    "url": "https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html",
+    "accessed": "2026-10-07",
+    "credit": "US Census Bureau",
+    "licence": "Public domain (US government work)"
+  },
+  "eia861": {
+    "file": "raw/f8612025.zip",
+    "sha256": "f59f6c732bf685fe0a1591b32227f5ce572dc0dfd26bb5caaeed128ac4e3a396",
+    "title": "EIA-861 annual electric power industry report, 2025 data (service territories, RTO participation, customers)",
+    "url": "https://www.eia.gov/electricity/data/eia861/",
+    "accessed": "2026-10-07",
+    "credit": "US EIA",
+    "licence": "Public domain (US government work)"
+  },
+  "county_rto": {
+    "file": "derived/county_rto.csv",
+    "sha256": "f0796a493d361a3222aa669106b8a7cf1a992280597fe2d4597c765a7174aeb8",
+    "title": "County to ISO/RTO table derived from EIA-861 2025 balancing-authority codes by eia861_counties.py",
+    "url": "https://www.eia.gov/electricity/data/eia861/",
+    "accessed": "2026-10-07",
+    "credit": "US EIA",
+    "licence": "Public domain (US government work)"
+  },
+  "neso_dno": {
+    "file": "raw/gb-dno-license-areas-20240503-as-geojson.geojson",
+    "sha256": "871d0b42c05fef95e2f3d4db2393be969489fbca45079bf83d96d160643ca5c2",
+    "title": "NESO GB DNO licence areas 20240503",
+    "url": "https://www.neso.energy/data-portal/gis-boundaries-gb-dno-license-areas",
+    "accessed": "2026-10-07",
+    "credit": "NESO",
+    "licence": "NESO Open Data Licence"
   }
 }

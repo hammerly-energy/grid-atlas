@@ -9,7 +9,7 @@ lanes:
   wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · interconnectors · NGET / SPT / SHET · OFTOs}
   retail:          {title: DISTRIBUTION & RETAIL,     subtitle: DNO (licence area) · IDNO · supplier}
   consumers:       {title: CONSUMERS,                 subtitle: domestic · small business · large industrial & commercial · transmission-connected}
-jurisdiction_labels: {national: GB-wide, subnational: Devolved (Scotland / Wales), local: Local, private: Private}
+jurisdiction_labels: {national: UK-wide or GB-wide, subnational: Devolved (Scotland / Wales), local: Local, private: Private}
 kind_labels:
   system_operator: System operator (NESO)
   settlement_body: Settlement body

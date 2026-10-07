@@ -21,14 +21,43 @@ const OUT = path.resolve(HERE, '../../data/maps');
 const SOURCES = JSON.parse(fs.readFileSync(path.join(HERE, 'sources.json'), 'utf8'));
 const WIDTH = 300;
 
-function input(key) {
+function read(key) {
   const s = SOURCES[key];
-  const file = s.npm ? require.resolve(s.npm) : path.join(HERE, 'raw', s.file);
+  const file = s.npm ? require.resolve(s.npm) : path.join(HERE, s.file);
   if (!fs.existsSync(file)) throw new Error(`${key}: ${file} missing; download it from ${s.url}`);
   const buf = fs.readFileSync(file);
   const sha = crypto.createHash('sha256').update(buf).digest('hex');
   if (sha !== s.sha256) throw new Error(`${key}: sha256 ${sha} does not match sources.json; check the file, then update the manifest`);
-  return JSON.parse(buf);
+  return buf;
+}
+const input = key => JSON.parse(read(key));
+
+// ISO/RTO footprints: counties listed in derived/county_rto.csv (from EIA-861 by eia861_counties.py), one copy per RTO
+function rtoCounties() {
+  const rows = read('county_rto').toString().trim().split('\n').slice(1).map(l => l.split(','));
+  const t = structuredClone(input('census_counties'));
+  const geoms = t.objects.counties.geometries;
+  t.objects = { counties: { type: 'GeometryCollection', geometries: rows.map(([fips, rto]) =>
+    ({ ...geoms.find(g => g.id === fips), properties: { aid: rto } })).filter(g => g.type) } };
+  return t;
+}
+
+// GB: the 14 DNO licence areas (NESO, British National Grid) reprojected to lon/lat
+async function dnoAreas() {
+  const out = await mapshaper.applyCommands(
+    `-i dno.geojson -proj init=EPSG:27700 wgs84 -each 'aid="dno_"+Name.replace("_","").toLowerCase()' -filter-fields aid -o format=geojson dno.json`,
+    { 'dno.geojson': read('neso_dno').toString() });
+  return JSON.parse(out['dno.json']);
+}
+
+// Northern Ireland: the UK outline minus the DNO areas (GB); only NI (about 14,000 km²) is over 1,000 km², the rest is coastline slivers
+async function northernIreland(dno) {
+  const uk = pick(input('natural_earth_10m'), 'countries', g => ({ 826: 'ni' })[g.id]);
+  uk.objects = { uk: uk.objects.countries };
+  const out = await mapshaper.applyCommands(
+    `-i uk.json dno.json combine-files -erase dno target=uk -explode target=uk -each 'a=this.area' target=uk -filter 'a > 1e9' target=uk -filter-fields aid target=uk -o format=geojson target=uk ni.json`,
+    { 'uk.json': uk, 'dno.json': dno });
+  return JSON.parse(out['ni.json']);
 }
 
 // TopoJSON object -> topology with only the features that get an area id (properties.aid)
@@ -57,12 +86,13 @@ const MAPS = {
     countries: { US: 'lower48' },                 // country -> home area or group
     proj: '+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +datum=NAD83',
     frame: { source: 'states', offset: '4%' },    // context is cut to this frame
-    simplify: '6%',
-    layers: () => [
+    interval: 8000,                               // metres; about half a pixel at 300 px wide
+    layers: async () => [
       { id: 'context', src: 'natural_earth_50m',
         topo: pick(input('natural_earth_50m'), 'countries', g => ({ 124: 'canada', 484: 'mexico' })[g.id]) },
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
+      { id: 'iso', src: 'eia861', overlay: true, dissolve: true, approximate: 'county-level approximation from EIA-861', topo: rtoCounties() },
     ],
     groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()) },
   },
@@ -70,12 +100,16 @@ const MAPS = {
     countries: { GB: 'uk' },
     proj: '+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80',   // ETRS89-LAEA (EPSG:3035)
     bbox: '-25,34,45,72',                         // lon/lat cut before projecting (drops overseas territories)
-    simplify: '3%',
-    layers: () => [
-      { id: 'context', src: 'natural_earth_10m', topo: pick(input('natural_earth_10m'), 'countries', g => EUROPE[g.id]) },
-      { id: 'uk', src: 'natural_earth_10m', topo: pick(input('natural_earth_10m'), 'countries', g => ({ 826: 'uk' })[g.id]) },
-    ],
-    groups: {},
+    interval: 8000,
+    layers: async () => {
+      const dno = await dnoAreas();
+      return [
+        { id: 'context', src: 'natural_earth_10m', topo: pick(input('natural_earth_10m'), 'countries', g => EUROPE[g.id]) },
+        { id: 'gb_dno', src: 'neso_dno', topo: dno, interval: 1500 },    // GB is drawn zoomed in
+        { id: 'ni', src: 'natural_earth_10m', topo: await northernIreland(dno), interval: 1500 },
+      ];
+    },
+    groups: (() => { const gb = 'abcdefghjklmnp'.split('').map(c => `dno_${c}`); return { gb, uk: [...gb, 'ni'] }; })(),
   },
 };
 
@@ -88,19 +122,22 @@ function bbox(d) {
 }
 
 async function build(id, spec) {
-  const layers = spec.layers(), inputs = {};
+  const layers = await spec.layers(), inputs = {};
   for (const l of layers) {
-    const obj = Object.keys(l.topo.objects)[0];
-    l.topo.objects = { [l.id]: l.topo.objects[obj] };      // layer name = layer id
-    inputs[`${l.id}.json`] = l.topo;
+    if (l.topo.objects) {                                  // TopoJSON: layer name = layer id
+      const obj = Object.keys(l.topo.objects)[0];
+      l.topo.objects = { [l.id]: l.topo.objects[obj] };
+    }
+    inputs[`${l.id}.json`] = l.topo;                       // GeoJSON layers are named after the file
   }
   const ids = layers.map(l => l.id).join(',');
-  const cmd = [
-    `-i ${Object.keys(inputs).join(' ')} combine-files`,
-    spec.bbox && `-clip bbox=${spec.bbox} target=${ids}`,
-    `-proj ${spec.proj} target=${ids}`,
-    `-simplify ${spec.simplify} keep-shapes target=${ids}`,
-    spec.frame && `-rectangle source=${spec.frame.source} offset=${spec.frame.offset} name=frame +`,
+  const cmd = [                                            // one dataset per layer, so each simplifies on its own
+    ...layers.map(l => `-i ${l.id}.json name=${l.id}`),
+    ...layers.filter(l => l.dissolve).map(l => `-dissolve aid target=${l.id}`),
+    ...(spec.bbox ? layers.map(l => `-clip bbox=${spec.bbox} target=${l.id}`) : []),
+    ...layers.map(l => `-proj ${spec.proj} target=${l.id}`),
+    ...layers.map(l => `-simplify dp interval=${l.interval || spec.interval} keep-shapes target=${l.id}`),
+    spec.frame && `-rectangle source=${spec.frame.source} offset=${spec.frame.offset} name=frame`,
     spec.frame && `-clip frame target=context remove-slivers`,
     `-o format=svg width=${WIDTH} margin=0 id-field=aid precision=0.1 target=${ids} map.svg`,
   ].filter(Boolean).join(' ');
@@ -114,7 +151,8 @@ async function build(id, spec) {
       areas[m[2]] = (areas[m[2]] ? areas[m[2]] + ' ' : '') + m[1].replace(/ (?=[A-Z])/g, '');
     for (const [a, d] of Object.entries(areas)) out.bbox[a] = bbox(d);
     const s = SOURCES[l.src];
-    out.layers.push({ id: l.id, credit: s.credit, licence: s.licence, source: { title: s.title, url: s.url, accessed: s.accessed }, areas });
+    out.layers.push({ id: l.id, credit: s.credit, licence: s.licence, source: { title: s.title, url: s.url, accessed: s.accessed },
+      ...(l.overlay ? { overlay: true } : {}), ...(l.approximate ? { approximate: l.approximate } : {}), areas });
   }
   fs.writeFileSync(path.join(OUT, `${id}.json`), JSON.stringify(out) + '\n');
   console.log(`${id}: ${out.layers.map(l => `${l.id} ${Object.keys(l.areas).length}`).join(', ')}; ${(JSON.stringify(out).length / 1024).toFixed(1)} KB`);

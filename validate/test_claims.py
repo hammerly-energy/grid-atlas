@@ -14,7 +14,6 @@ MARKETS = {mid: (cc, m) for cc, c in DATA.items() for mid, m in c["markets"].ite
 M2 = pytest.mark.xfail(reason="milestone 2: ERCOT data not entered", strict=True)
 M3 = pytest.mark.xfail(reason="milestone 3: PJM/CAISO data not entered", strict=True)
 MGB = pytest.mark.xfail(reason="GB milestone: gb.yaml not entered", strict=True)
-MAPS_PENDING = pytest.mark.xfail(reason="domain map: EIA ISO/NERC region and ONS/NESO shapes not added yet", strict=True)
 
 
 def g(mid, arch):
@@ -245,18 +244,41 @@ def test_cpuc_domain_is_california_only():
     assert domain("caiso", "cpuc")[0] == {"ca"}
 
 
-@MAPS_PENDING
 def test_texas_re_domain_is_the_ercot_region():
     assert domain("ercot", "texas_re")[0] == {"ercot"}
 
 
-@MAPS_PENDING
 def test_ferc_covers_ercot_for_reliability_only():
     full, partial = domain("ercot", "ferc")
     assert "ercot" in partial and "ercot" not in full
 
 
-@MAPS_PENDING
 def test_neso_domain_excludes_northern_ireland():
     full, partial = domain("gb", "neso")
-    assert "ni" not in full | partial and {"england", "scotland", "wales"} <= full
+    assert "ni" not in full | partial and len(full) == 14 and all(a.startswith("dno_") for a in full)
+
+
+def county_rto():
+    """FIPS -> set of ISO/RTO area ids, from scripts/maps/derived/county_rto.csv (EIA-861)."""
+    out = {}
+    for line in (build.ROOT / "scripts/maps/derived/county_rto.csv").read_text().splitlines()[1:]:
+        fips, rto, _ = line.split(",")
+        out.setdefault(fips, set()).add(rto)
+    return out
+
+
+def test_iso_footprints_match_known_counties():
+    c = county_rto()
+    assert "ercot" in c["48201"] and "ercot" in c["48453"]          # Harris (Houston), Travis (Austin)
+    assert "ercot" not in c.get("48141", set())                     # El Paso: El Paso Electric, WECC
+    assert "ercot" not in c.get("48375", set())                     # Potter (Amarillo): SPS, SPP
+    assert "pjm" in c["42101"] and "pjm" in c["17031"]              # Philadelphia, Cook (ComEd)
+    assert "pjm" not in c.get("21111", set())                       # Jefferson KY (Louisville): LG&E, outside PJM
+    assert "pjm" not in c.get("17119", set())                       # Madison IL: Ameren Illinois, MISO
+    assert "caiso" in c["06073"] and "caiso" in c["06075"]           # San Diego (SDG&E), San Francisco (PG&E)
+
+
+def test_hm_treasury_covers_the_uk_and_desnz_only_gb():
+    full, _ = domain("gb", "hm_treasury")
+    assert "ni" in full
+    assert "ni" not in domain("gb", "desnz")[0]

@@ -14,6 +14,13 @@ base:
       kind: regulator
       jurisdiction: national
       description: Approves NERC reliability standards. No rate or market-rule jurisdiction over ERCOT, which is not synchronously interconnected with the rest of the US.
+      domain_area:
+        full: [lower48]
+        partial: [ercot]
+        partial_label: reliability only
+        note: Contiguous US; inside ERCOT only reliability standards apply, not wholesale rates or market rules
+        source: {title: FERC — ERCOT, url: "https://www.ferc.gov/industries-data/electric/electric-power-markets/ercot", accessed: "2026-10-07"}
+        status: needs_verification
     - id: nerc
       name: NERC
       lane: regulators
@@ -31,6 +38,11 @@ base:
       kind: reliability_body
       jurisdiction: subnational
       description: Texas Reliability Entity; NERC's regional entity for the ERCOT region.
+      domain_area:
+        full: [ercot]
+        note: The ERCOT region (county-level approximation from EIA-861)
+        source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}
+        status: needs_verification
     - id: puct
       name: PUCT
       lane: regulators
@@ -48,6 +60,11 @@ base:
       kind: iso
       jurisdiction: subnational
       description: Operates the grid and the energy and ancillary service markets for about 90% of Texas load. Energy-only market; no capacity market. Owns no wires.
+      domain_area:
+        full: [ercot]
+        note: Most of Texas; El Paso, the Panhandle and East Texas are outside (county-level approximation from EIA-861)
+        source: {title: EIA-861 2025 service territories and balancing authorities, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-07"}
+        status: needs_verification
     - id: generators
       name: Generators
       lane: wholesale

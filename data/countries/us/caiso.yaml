@@ -16,6 +16,13 @@ base:
       kind: regulator
       jurisdiction: national
       description: Regulates CAISO's wholesale markets and the transmission rates of transmission owners under CAISO control.
+      domain_area:
+        full: [lower48]
+        partial: [ercot]
+        partial_label: reliability only
+        note: Contiguous US; inside ERCOT only reliability standards apply, not wholesale rates or market rules
+        source: {title: FERC — ERCOT, url: "https://www.ferc.gov/industries-data/electric/electric-power-markets/ercot", accessed: "2026-10-07"}
+        status: needs_verification
     - id: cpuc
       name: CPUC
       lane: regulators
@@ -33,6 +40,11 @@ base:
       kind: iso
       jurisdiction: subnational
       description: Operates the grid and the energy and ancillary service markets for most of California. No central capacity market. Owns no wires.
+      domain_area:
+        full: [caiso]
+        note: Most of California; LADWP, BANC, IID and TID run their own balancing areas (county-level approximation)
+        source: {title: EIA-861 2025 service territories and balancing authorities, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-07"}
+        status: needs_verification
     - id: generators
       name: Generators
       lane: wholesale

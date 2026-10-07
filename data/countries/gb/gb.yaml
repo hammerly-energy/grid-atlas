@@ -13,6 +13,11 @@ base:
       kind: policy_maker
       jurisdiction: national
       description: Department for Energy Security and Net Zero. Sets energy policy and the CfD, Capacity Market and other levy-funded schemes. NESO's shareholder.
+      domain_area:
+        full: [gb]
+        note: Great Britain for electricity markets; energy policy in Northern Ireland is devolved
+        source: {title: Department for Energy Security and Net Zero, url: "https://www.gov.uk/government/organisations/department-for-energy-security-and-net-zero", accessed: "2026-10-07"}
+        status: needs_verification
     - id: hm_treasury
       name: HM Treasury
       lane: regulators
@@ -30,6 +35,11 @@ base:
       kind: regulator
       jurisdiction: national
       description: GB energy regulator. Licenses network companies and suppliers, sets network price controls (RIIO), sets the default tariff cap.
+      domain_area:
+        full: [gb]
+        note: Great Britain; Northern Ireland has its own regulator (Utility Regulator)
+        source: {title: Ofgem — who we are, url: "https://www.ofgem.gov.uk/about-us", accessed: "2026-10-07"}
+        status: needs_verification
     - id: neso
       name: NESO
       lane: market_operator
@@ -42,18 +52,33 @@ base:
         as_of: "2024-10-01"
         source: &nesodesig {title: Designation of NESO, url: "https://www.gov.uk/government/publications/designation-of-the-national-energy-system-operator-neso", accessed: "2026-10-07"}
       status: verified
+      domain_area:
+        full: [gb]
+        note: Great Britain; Northern Ireland is run by SONI in the all-island market
+        source: *nesodesig
+        status: needs_verification
     - id: elexon
       name: Elexon
       lane: market_operator
       kind: settlement_body
       jurisdiction: national
       description: Administers the Balancing and Settlement Code; settles the difference between what each party contracted and what it metered.
+      domain_area:
+        full: [gb]
+        note: Great Britain (Balancing and Settlement Code)
+        source: {title: Elexon BSC, url: "https://www.elexon.co.uk/bsc/", accessed: "2026-10-07"}
+        status: needs_verification
     - id: esc
       name: ESC
       lane: market_operator
       kind: scheme_administrator
       jurisdiction: national
       description: Electricity Settlements Company; government-owned. Settles Capacity Market payments and levies the supplier charge that funds them.
+      domain_area:
+        full: [gb]
+        note: Great Britain (Capacity Market)
+        source: {title: Capacity Market collection, url: "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market", accessed: "2026-10-07"}
+        status: needs_verification
     - id: generators
       name: Generators
       lane: wholesale

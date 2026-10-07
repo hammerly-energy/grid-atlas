@@ -14,12 +14,24 @@ base:
       kind: regulator
       jurisdiction: national
       description: Regulates PJM's wholesale markets and interstate transmission rates.
+      domain_area:
+        full: [lower48]
+        partial: [ercot]
+        partial_label: reliability only
+        note: Contiguous US; inside ERCOT only reliability standards apply, not wholesale rates or market rules
+        source: {title: FERC — ERCOT, url: "https://www.ferc.gov/industries-data/electric/electric-power-markets/ercot", accessed: "2026-10-07"}
+        status: needs_verification
     - id: pjm
       name: PJM
       lane: market_operator
       kind: iso
       jurisdiction: national
       description: Regional transmission organization for all or parts of 13 states and DC. Runs the energy, capacity (RPM) and ancillary service markets. Owns no wires.
+      domain_area:
+        full: [pjm]
+        note: All or parts of 13 states and DC (county-level approximation from EIA-861)
+        source: {title: EIA-861 2025 service territories and balancing authorities, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-07"}
+        status: needs_verification
     - id: rpm
       name: RPM capacity auction
       lane: market_operator

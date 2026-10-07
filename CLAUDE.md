@@ -54,6 +54,7 @@ grid-atlas/
 ├── scripts/build.py
 ├── scripts/maps/make_maps.mjs      # node + mapshaper; only rerun when shapes change
 ├── scripts/maps/sources.json       # every shape input: URL, sha256, credit, licence
+├── scripts/maps/eia861_counties.py # EIA-861 → derived/county_rto.csv (ISO footprints as counties)
 ├── validate/
 │   ├── conftest.py
 │   ├── test_schema.py      # cross-file integrity: ids resolve, slots, ownership sources
@@ -111,7 +112,7 @@ Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL 
 
 `id`, `name`, `lane`, `kind`, `description` (1–2 sentences), `jurisdiction` (supranational | national | subnational | local | private; the profile labels them, e.g. US Federal/State, GB GB-wide/Devolved), optional `slot`, `holds_assets`, `owner`, `source`, `status`, `domain_area`.
 
-`domain_area: {full, partial, partial_label, note, source, status}` is where the body's authority applies, drawn as a locator map. `full`/`partial` are area or group ids from the region map that lists the country (`data/maps/<region>.json`; one map per region so cross-border bodies such as NERC, ENTSO-E or a two-country TSO share a frame) (`test_domain_area_ids_exist_in_map`); `partial` is drawn hatched and needs `partial_label` (e.g. FERC over ERCOT: reliability only); `note` is the one-line caption (≤120 chars). Shapes come from public sources only (Census, EIA Energy Atlas, Natural Earth, ONS, NESO), each layer with `credit`, `source` and `licence`; every input is pinned by sha256 in `scripts/maps/sources.json`; each map stays under 100 KB. The page frames each map on the country's home area plus the body's areas.
+`domain_area: {full, partial, partial_label, note, source, status}` is where the body's authority applies, drawn as a locator map. `full`/`partial` are area or group ids from the region map that lists the country (`data/maps/<region>.json`; one map per region so cross-border bodies such as NERC, ENTSO-E or a two-country TSO share a frame) (`test_domain_area_ids_exist_in_map`); `partial` is drawn hatched and needs `partial_label` (e.g. FERC over ERCOT: reliability only); `note` is the one-line caption (≤120 chars). Shapes come from public sources only (Census, EIA Energy Atlas, Natural Earth, ONS, NESO), each layer with `credit`, `source` and `licence`; every input is pinned by sha256 in `scripts/maps/sources.json`; each map stays under 100 KB. The page frames each map on the country's home area plus the body's areas. ISO/RTO footprints are county-level approximations from EIA-861 (a county joins an ISO when that ISO's utilities hold ≥30% of its estimated customers); GB is the 14 NESO DNO areas and Northern Ireland is the UK outline minus them. Raw inputs are git-ignored in `scripts/maps/raw/`; copies live in `/mnt/project-files/grid-atlas/map-inputs/`.
 
 `kind`: regulator · policy_maker · legislature · reliability_body · iso · system_operator · settlement_body · scheme_administrator · market · generator · storage · transmission_owner · interconnector · lse · wires_utility · retail_provider · cca · muni · coop · holding_group · consumer.
 - `iso` = operator that also runs the energy market (ERCOT, PJM, CAISO). `system_operator` = operates and balances but runs no energy market (NESO). Never tag NESO `iso`.
