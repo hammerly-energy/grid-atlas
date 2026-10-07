@@ -1,0 +1,8 @@
+schema_version: 2
+country: US
+market: pjm
+name: PJM
+coverage_note: PJM covers all or parts of 13 states plus DC. Only ComEd's zone of Illinois (Ameren Illinois is in MISO) and only part of Kentucky (not LG&E/KU).
+base: {nodes: [], edges: []}
+archetypes: {}     # milestone 3: restructured_choice, municipal_aggregation, vertically_integrated, limited_choice, muni_coop
+utilities: {}

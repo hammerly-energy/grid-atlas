@@ -1,0 +1,767 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hammerly-energy/grid-atlas/data/schema.json",
+  "title": "grid-atlas market file (schema v2)",
+  "description": "Root validates one market file: data/countries/<cc>/<market>.yaml. The per-country profile (data/countries/<cc>/_country.yaml) validates against #/$defs/country_profile. Cross-file rules (ids resolve, lanes/components exist in the country profile, path completeness) live in validate/*.py, not here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "country",
+    "market",
+    "name",
+    "base",
+    "archetypes",
+    "utilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "country": {
+      "$ref": "#/$defs/country_code"
+    },
+    "market": {
+      "$ref": "#/$defs/id",
+      "description": "Market id, unique across the repo: ercot, pjm, caiso, gb."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "coverage_note": {
+      "type": "string"
+    },
+    "base": {
+      "$ref": "#/$defs/layer"
+    },
+    "archetypes": {
+      "type": "object",
+      "minProperties": 0,
+      "propertyNames": {
+        "$ref": "#/$defs/id"
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/layer"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "removes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/id"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "description": "May be empty while a market is scaffolded; validate/test_claims.py reports empty markets."
+    },
+    "utilities": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/utility"
+      }
+    },
+    "bill_components": {
+      "description": "Optional per-market override of the country profile's bill_components (e.g. ERCOT has no capacity component).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/rate_component"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "country_code": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2. Note GB is ISO's code for the whole UK incl. Northern Ireland; the market id 'gb' covers Great Britain only (NI is in the all-island SEM, a separate future market)."
+    },
+    "lane": {
+      "enum": [
+        "regulators",
+        "market_operator",
+        "wholesale",
+        "retail",
+        "consumers"
+      ]
+    },
+    "kind": {
+      "description": "Global enum: the UI colours/icons and cross-country compare key off this. Country display names come from country_profile.kind_labels.",
+      "enum": [
+        "regulator",
+        "policy_maker",
+        "legislature",
+        "iso",
+        "system_operator",
+        "settlement_body",
+        "scheme_administrator",
+        "generator",
+        "storage",
+        "transmission_owner",
+        "interconnector",
+        "lse",
+        "wires_utility",
+        "retail_provider",
+        "cca",
+        "muni",
+        "coop",
+        "holding_group",
+        "consumer",
+        "reliability_body",
+        "market"
+      ]
+    },
+    "jurisdiction": {
+      "description": "Country-neutral levels. US labels national=Federal, subnational=State; GB labels subnational=Devolved. Replaces v1 federal|state.",
+      "enum": [
+        "supranational",
+        "national",
+        "subnational",
+        "local",
+        "private"
+      ]
+    },
+    "consumer_class": {
+      "enum": [
+        "residential",
+        "small_commercial",
+        "large_ci",
+        "large_load"
+      ]
+    },
+    "rate_component": {
+      "description": "v1 values unchanged (so US data stays valid); v2 adds balancing, policy_levy, tax, supplier_margin, metering. Each country profile lists which components apply to its bills.",
+      "enum": [
+        "generation",
+        "transmission",
+        "distribution",
+        "capacity",
+        "ancillary_uplift",
+        "riders_public_purpose",
+        "exit_fee",
+        "balancing",
+        "policy_levy",
+        "tax",
+        "supplier_margin",
+        "metering"
+      ]
+    },
+    "edge_type": {
+      "enum": [
+        "regulates",
+        "pays",
+        "sets_rate",
+        "dispatches",
+        "plans_procures",
+        "delivers",
+        "owns",
+        "operates",
+        "settles"
+      ]
+    },
+    "rate_mode": {
+      "description": "How a sets_rate edge acts on the price. sets = fixes the rate; approves = signs off a rate someone else files (US PUC rate case, Ofgem price control); caps = ceiling, seller may price below (Ofgem default tariff cap); levies = imposes a charge by statute/scheme (CfD, RO, CCL, VAT); passes_through = forwards a charge set upstream without discretion.",
+      "enum": [
+        "sets",
+        "approves",
+        "caps",
+        "levies",
+        "passes_through",
+        "market"
+      ]
+    },
+    "asset_class": {
+      "enum": [
+        "generation",
+        "storage",
+        "transmission",
+        "distribution",
+        "interconnector",
+        "metering"
+      ]
+    },
+    "owner_type": {
+      "enum": [
+        "public",
+        "state_owned",
+        "investor_owned",
+        "municipal",
+        "cooperative",
+        "mutual",
+        "private_equity",
+        "infrastructure_fund",
+        "sovereign_wealth",
+        "consortium",
+        "nonprofit",
+        "member_owned"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "url",
+        "accessed"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https?://"
+        },
+        "accessed": {
+          "type": "string",
+          "format": "date"
+        },
+        "primary": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "owner": {
+      "description": "Who owns the ENTITY (equity), not which assets it holds. Source required: ownership changes hands and is the claim most likely to go stale.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "$ref": "#/$defs/owner_type"
+        },
+        "parent": {
+          "type": "string",
+          "description": "Ultimate parent if different from name (e.g. CK Infrastructure consortium)."
+        },
+        "node": {
+          "$ref": "#/$defs/id",
+          "description": "If the owner is drawn as a holding_group node, its id; build emits an owns edge."
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "lane",
+        "kind",
+        "description",
+        "jurisdiction"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lane": {
+          "$ref": "#/$defs/lane"
+        },
+        "kind": {
+          "$ref": "#/$defs/kind"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "jurisdiction": {
+          "$ref": "#/$defs/jurisdiction"
+        },
+        "slot": {
+          "$ref": "#/$defs/id",
+          "description": "Placeholder filled per utility/area (e.g. wires_utility, transmission_owner). One node drawn, many names."
+        },
+        "holds_assets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/asset_class"
+          },
+          "description": "Physical grid assets this entity owns. Empty/absent = owns none (e.g. NESO, ISOs)."
+        },
+        "owner": {
+          "$ref": "#/$defs/owner"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "needs_verification"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "holds_assets"
+            ],
+            "properties": {
+              "holds_assets": {
+                "minItems": 1
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "source"
+            ]
+          }
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "from",
+        "to",
+        "type",
+        "label",
+        "source",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "from": {
+          "$ref": "#/$defs/id"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "#/$defs/edge_type"
+        },
+        "mode": {
+          "$ref": "#/$defs/rate_mode"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "applies_to": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/consumer_class"
+          }
+        },
+        "rate_component": {
+          "$ref": "#/$defs/rate_component"
+        },
+        "subcomponent": {
+          "type": "string",
+          "description": "Country-specific line item, key into country_profile.glossary (e.g. CfD, RO, TNUoS, DUoS, PCIA)."
+        },
+        "asset": {
+          "$ref": "#/$defs/asset_class",
+          "description": "For owns/operates: which asset class."
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "needs_verification"
+          ]
+        },
+        "domain": {
+          "enum": [
+            "rates",
+            "market_rules",
+            "reliability",
+            "licensing",
+            "governance",
+            "policy_standard"
+          ],
+          "description": "regulates edges only: what is regulated."
+        },
+        "mechanism": {
+          "enum": [
+            "central_sced",
+            "balancing_redispatch",
+            "ancillary_contract"
+          ],
+          "description": "dispatches edges only: US central dispatch vs GB balancing redispatch."
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date"
+        },
+        "valid_to": {
+          "type": "string",
+          "format": "date",
+          "description": "Time-bounded facts, e.g. GB 0% domestic VAT to 2027-03-31."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "sets_rate"
+              }
+            },
+            "not": {
+              "properties": {
+                "mode": {
+                  "const": "caps"
+                }
+              },
+              "required": [
+                "mode"
+              ]
+            }
+          },
+          "then": {
+            "required": [
+              "rate_component"
+            ]
+          },
+          "$comment": "sets_rate needs a component, except a caps edge with no component = cap on the whole bill (GB default tariff cap)."
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "enum": [
+                    "sets_rate",
+                    "pays"
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "rate_component"
+                  ]
+                },
+                {
+                  "required": [
+                    "mode"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "owns",
+                  "operates"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "asset"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "const": "regulates"
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "domain"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "not": {
+                  "const": "dispatches"
+                }
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "mechanism"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "layer": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          },
+          "default": []
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          },
+          "default": []
+        }
+      }
+    },
+    "utility": {
+      "description": "A named label (PECO, Oncor, UKPN London) mapped to an area and the archetypes available there. 'area' replaces v1 'state' (US: state code; GB: DNO licence area / GSP group).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "area",
+        "archetypes"
+      ],
+      "properties": {
+        "area": {
+          "type": "string",
+          "minLength": 1
+        },
+        "archetypes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "fills": {
+          "type": "object",
+          "description": "slot id -> {name, owner?} or a node id to bind (e.g. transmission_owner: shet).",
+          "propertyNames": {
+            "$ref": "#/$defs/id"
+          },
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "$ref": "#/$defs/owner"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "country_profile": {
+      "description": "data/countries/<cc>/_country.yaml: vocabulary, glossary, which components apply. Display only; no graph data.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "country",
+        "name",
+        "currency",
+        "lanes",
+        "bill_components",
+        "chain",
+        "glossary",
+        "consumer_classes"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "country": {
+          "$ref": "#/$defs/country_code"
+        },
+        "name": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "lanes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "regulators",
+            "market_operator",
+            "wholesale",
+            "retail",
+            "consumers"
+          ],
+          "patternProperties": {
+            "^(regulators|market_operator|wholesale|retail|consumers)$": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "title"
+              ],
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "subtitle": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "jurisdiction_labels": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/jurisdiction"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "kind_labels": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/kind"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "component_labels": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/rate_component"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "bill_components": {
+          "description": "Components every consumer class must have a complete path for (completeness test). May be overridden per class.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/rate_component"
+          }
+        },
+        "chain": {
+          "description": "Dropdown chain labels, e.g. US [State, Wires utility, Supply option]; GB [Region, Supply option].",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "glossary": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "term",
+              "meaning"
+            ],
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "meaning": {
+                "type": "string"
+              },
+              "equivalent": {
+                "type": "object",
+                "description": "cc -> nearest term elsewhere, e.g. {US: TDSP/EDC} for DNO.",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "consumer_classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/consumer_class"
+          },
+          "description": "Classes drawn for this country; completeness test iterates these."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+schema_version: 2
+country: US
+name: United States
+currency: USD
+consumer_classes: [residential, small_commercial, large_ci, large_load]
+lanes:
+  regulators:      {title: POLICY & REGULATION,       subtitle: FERC · NERC / regional entity · state PUC · legislature}
+  market_operator: {title: SYSTEM & MARKET OPERATION, subtitle: "ISO/RTO (energy, capacity, ancillary, planning)"}
+  wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · transmission owners · LSEs}
+  retail:          {title: DISTRIBUTION & RETAIL,     subtitle: wires utility · retail provider / CCA / muni / co-op}
+  consumers:       {title: CONSUMERS,                 subtitle: residential · small commercial · large C&I · large load}
+jurisdiction_labels: {national: Federal, subnational: State, local: Local, private: Private}
+kind_labels:
+  iso: ISO / RTO
+  wires_utility: Wires utility (TDSP / EDC)
+  retail_provider: Retail provider (REP / ESP)
+  reliability_body: NERC / regional entity
+component_labels:
+  generation: Generation
+  transmission: Transmission
+  distribution: Distribution
+  capacity: Capacity
+  ancillary_uplift: Ancillary / uplift
+  riders_public_purpose: Riders / public purpose
+  exit_fee: Exit fee (PCIA)
+# Default for US markets; a market file may override (ERCOT drops capacity).
+bill_components: [generation, transmission, distribution, capacity, ancillary_uplift, riders_public_purpose]
+chain: [State, Wires utility, Supply option]
+glossary:
+  ISO/RTO: {term: ISO / RTO, meaning: Independent System Operator / Regional Transmission Organization; operates the grid and wholesale markets and owns no wires., equivalent: {GB: NESO (system operation only; no energy market)}}
+  BA: {term: BA, meaning: Balancing authority; balances load and generation within its area.}
+  FERC: {term: FERC, meaning: Federal Energy Regulatory Commission; regulates wholesale markets and interstate transmission., equivalent: {GB: Ofgem (wholesale and network side)}}
+  NERC: {term: NERC, meaning: North American Electric Reliability Corporation; sets reliability standards approved by FERC and enforced through regional entities.}
+  PUC: {term: PUC / PUCT / CPUC, meaning: State utility commission (generic / Texas / California)., equivalent: {GB: Ofgem (retail and distribution side)}}
+  IOU: {term: IOU, meaning: Investor-owned utility.}
+  Muni / co-op: {term: Muni / co-op, meaning: City-owned / member-owned utility.}
+  LSE: {term: LSE, meaning: Load-serving entity; buys wholesale power for end customers., equivalent: {GB: Supplier (as a BSC party)}}
+  REP: {term: REP, meaning: Retail electric provider (ERCOT term)., equivalent: {GB: Supplier}}
+  TDSP / EDC: {term: TDSP / EDC, meaning: Wires-only utility (ERCOT term / PA term)., equivalent: {GB: DNO}}
+  NOIE: {term: NOIE, meaning: Non-opt-in entity; an ERCOT municipal utility or co-op that has not opted in to retail competition.}
+  CCA: {term: CCA, meaning: Community Choice Aggregation; a city or county buys power for residents by default while the IOU keeps wires and billing.}
+  PCIA: {term: PCIA, meaning: Power Charge Indifference Adjustment; California exit fee paid by CCA and Direct Access customers.}
+  DA / ESP: {term: DA / ESP, meaning: Direct Access / Electric Service Provider (California).}
+  RA: {term: RA, meaning: "Resource adequacy; California's capacity obligation on LSEs, set by the CPUC and munis (no central auction)."}
+  Default service: {term: Default service, meaning: Supply for customers who don't pick a retailer in restructured states., equivalent: {GB: Default tariff (price-capped)}}

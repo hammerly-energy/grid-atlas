@@ -1,0 +1,9 @@
+schema_version: 2
+country: US
+market: ercot
+name: ERCOT
+coverage_note: Not all of Texas is in ERCOT; parts are in SPP, MISO and WECC (e.g. El Paso Electric, SPS, Entergy Texas).
+bill_components: [generation, transmission, distribution, ancillary_uplift, riders_public_purpose]   # energy-only: no capacity
+base: {nodes: [], edges: []}
+archetypes: {}     # milestone 2: competitive_area, noie, coop
+utilities: {}

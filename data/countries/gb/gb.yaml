@@ -1,0 +1,8 @@
+schema_version: 2
+country: GB
+market: gb
+name: Great Britain (England, Scotland, Wales)
+coverage_note: Northern Ireland is in the all-island Single Electricity Market with Ireland, not this market.
+base: {nodes: [], edges: []}
+archetypes: {}     # GB milestone: domestic_default_capped, supplier_contract, transmission_connected, idno_network
+utilities: {}      # GB milestone: 14 DNO licence areas (+ IDNO)

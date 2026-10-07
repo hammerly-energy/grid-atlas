@@ -1,0 +1,45 @@
+schema_version: 2
+country: GB   # ISO 3166 GB covers the whole UK; the gb market below is Great Britain only (NI is in the all-island SEM)
+name: Great Britain
+currency: GBP
+consumer_classes: [residential, small_commercial, large_ci, large_load]
+lanes:
+  regulators:      {title: POLICY & REGULATION,       subtitle: DESNZ · Ofgem · HM Treasury · Parliament}
+  market_operator: {title: SYSTEM & MARKET OPERATION, subtitle: "NESO (balancing, planning) · Elexon (settlement) · LCCC / ESC (levies)"}
+  wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · interconnectors · NGET / SPT / SHET · OFTOs}
+  retail:          {title: DISTRIBUTION & RETAIL,     subtitle: DNO (licence area) · IDNO · supplier}
+  consumers:       {title: CONSUMERS,                 subtitle: domestic · small business · large I&C · transmission-connected}
+jurisdiction_labels: {national: GB-wide, subnational: Devolved (Scotland / Wales), local: Local, private: Private}
+kind_labels:
+  system_operator: System operator (NESO)
+  settlement_body: Settlement body
+  scheme_administrator: Levy counterparty
+  wires_utility: DNO / IDNO
+  retail_provider: Supplier
+component_labels:
+  generation: Wholesale energy
+  transmission: TNUoS
+  distribution: DUoS
+  balancing: BSUoS
+  capacity: Capacity Market
+  policy_levy: Policy costs (CfD, RO, FiT, WHD, Nuclear RAB)
+  tax: VAT / Climate Change Levy
+  supplier_margin: Operating costs + EBIT
+  metering: Smart metering / industry charges
+bill_components: [generation, transmission, distribution, balancing, capacity, policy_levy, tax, supplier_margin]
+chain: [Nation, Distribution area, Tariff type]
+glossary:
+  NESO: {term: NESO, meaning: "National Energy System Operator; publicly owned since Oct 2024, balances GB in real time, sets TNUoS/BSUoS, plans the network, owns no network assets.", equivalent: {US: ISO/RTO (system operation only; runs no energy market)}}
+  Ofgem: {term: Ofgem / GEMA, meaning: "GB energy regulator; licenses, sets network price controls (RIIO) and the default tariff cap.", equivalent: {US: FERC + state PUC}}
+  DESNZ: {term: DESNZ, meaning: Department for Energy Security and Net Zero; sets energy policy and the CfD and Capacity Market schemes.}
+  Elexon: {term: Elexon, meaning: Administers the Balancing and Settlement Code and settles imbalances; owned by the largest BSC parties since Oct 2024.}
+  DNO: {term: DNO, meaning: Distribution Network Operator; owns and runs the local wires in one of 14 licence areas., equivalent: {US: TDSP / EDC}}
+  IDNO: {term: IDNO, meaning: Independent distribution network operator; runs embedded networks (often new-build estates) inside a DNO area.}
+  Supplier: {term: Supplier, meaning: "Licensed retailer; buys wholesale energy, pays network charges and levies, bills the customer.", equivalent: {US: REP / LSE}}
+  TNUoS: {term: TNUoS, meaning: Transmission Network Use of System charge; set by NESO within Ofgem-approved revenue and passed to the TOs.}
+  BSUoS: {term: BSUoS, meaning: "Balancing Services Use of System charge; NESO's balancing costs, charged to demand only since Apr 2023."}
+  DUoS: {term: DUoS, meaning: Distribution Use of System charge; set by the DNO within Ofgem-approved revenue.}
+  CfD: {term: CfD, meaning: "Contracts for Difference; low-carbon support scheme with LCCC as counterparty, funded by a levy on suppliers."}
+  RO: {term: RO, meaning: Renewables Obligation; legacy support scheme. From Apr 2026 the Exchequer pays 75% of the domestic cost.}
+  Price cap: {term: Default tariff cap, meaning: Ofgem's quarterly ceiling on domestic default tariffs; the supplier sets the actual price at or below it., equivalent: {US: none (closest is PUC-set default service)}}
+  RIIO: {term: RIIO, meaning: "Ofgem's network price-control framework (Revenue = Incentives + Innovation + Outputs); RIIO-3 for transmission from Apr 2026."}

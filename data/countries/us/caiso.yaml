@@ -1,0 +1,8 @@
+schema_version: 2
+country: US
+market: caiso
+name: CAISO
+coverage_note: Not all of California is in CAISO's balancing area. LADWP, BANC (incl. SMUD), IID and TID run their own BAs but trade in CAISO's real-time market (WEIM).
+base: {nodes: [], edges: []}
+archetypes: {}     # milestone 3: iou_bundled, iou_cca, iou_direct_access, muni_in_caiso, muni_own_ba
+utilities: {}
