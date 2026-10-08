@@ -92,12 +92,39 @@ archetypes:
         kind: retail_provider
         jurisdiction: private
         description: Customer-chosen retailer. Buys wholesale power, pays TDSP charges, bills the customer.
+      - id: polr
+        name: POLR provider
+        lane: retail
+        kind: retail_provider
+        jurisdiction: private
+        description: REP designated by the PUCT to serve customers whose REP defaults or leaves the market; ERCOT transfers those customers in a mass transition.
+        source: &polr {title: "16 TAC § 25.43 Provider of Last Resort (POLR)", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-43", accessed: "2026-10-08"}
+        status: needs_verification
       - id: residential
         name: Residential
         lane: consumers
         kind: consumer
         jurisdiction: private
         description: Household customer in a competitive area (e.g. Oncor, CenterPoint).
+      - id: small_commercial
+        name: Small commercial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Small business in a competitive area; picks a REP and pays the TDSP's small non-residential delivery rates.
+      - id: large_ci
+        name: Large commercial & industrial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Large commercial or industrial site in a competitive area; demand-metered, usually on a negotiated REP contract.
+      - id: large_load
+        name: Large load
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Site of 75 MW or more, such as a data center, usually served at transmission voltage. SB 6 (2025) sets its interconnection terms and emergency curtailment.
+        source: &sb6 {title: "Texas SB 6 (89th Legislature, 2025), enrolled text", url: "https://capitol.texas.gov/tlodocs/89R/billtext/html/SB00006F.htm", accessed: "2026-10-08"}
     edges:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
@@ -108,6 +135,8 @@ archetypes:
       - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: oversees ERCOT and approves its protocols, status: needs_verification,
          source: &pura39 {title: PURA chapter 39, url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.39.htm", accessed: "2026-10-07"}}
       - {id: puct_rep_lic, from: puct, to: rep, type: regulates, domain: licensing, label: certifies retail electric providers, status: needs_verification, source: *pura39}
+      - {id: puct_polr_lic, from: puct, to: polr, type: regulates, domain: licensing, label: designates POLR providers for each customer class, status: needs_verification, source: *polr}
+      - {id: puct_polr_cap, from: puct, to: polr, type: sets_rate, mode: caps, label: sets the maximum POLR rate (prior-month real-time price plus a fixed markup), status: needs_verification, source: *polr}
       # operations
       - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification,
          source: &ercotops {title: ERCOT Retail 101, url: "https://www.ercot.com/files/docs/2026/03/06/2026_07-Retail-101.pdf", accessed: "2026-10-07"}}
@@ -130,6 +159,25 @@ archetypes:
       - {id: puct_tdsp_rider, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency cost recovery), status: needs_verification, source: *puct}
       - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: needs_verification, source: *puct}
       - {id: rep_res_rider, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
+      # bill: small commercial, large commercial & industrial, large load (same setters as residential; last hop per class)
+      - {id: rep_sc_gen, from: rep, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail contract, status: needs_verification, source: *ercotops}
+      - {id: rep_sc_tx, from: rep, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: passes TDSP transmission charges to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_sc_dx, from: rep, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: passes TDSP delivery charges to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_sc_as, from: rep, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in the retail price, status: needs_verification, source: *ercotops}
+      - {id: rep_sc_rider, from: rep, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_lci_gen, from: rep, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail contract, status: needs_verification, source: *ercotops}
+      - {id: rep_lci_tx, from: rep, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: passes TDSP transmission charges to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_lci_dx, from: rep, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: passes TDSP delivery charges to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_lci_as, from: rep, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in the retail price, status: needs_verification, source: *ercotops}
+      - {id: rep_lci_rider, from: rep, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
+      - {id: rep_ll_gen, from: rep, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail contract, status: needs_verification, source: *ercotops}
+      - {id: rep_ll_tx, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: "passes transmission charges, billed on its demand at the four summer system peaks", status: needs_verification, source: *sb6}
+      - {id: rep_ll_dx, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: passes the TDSP's delivery charges for its voltage level (transmission or primary), status: needs_verification, source: *ercotops}
+      - {id: rep_ll_as, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in the retail price, status: needs_verification, source: *ercotops}
+      - {id: rep_ll_rider, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
+      # large loads (75 MW or more): SB 6 (2025)
+      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: policy_standard, label: sets interconnection standards for loads of 75 MW or more (SB 6), status: needs_verification, source: *sb6}
+      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: can direct curtailment or backup generation in an energy emergency (SB 6), status: needs_verification, source: *sb6}
 
 
   # Non-opt-in entity: a city-owned utility (or co-op) that has not opted in to retail competition. Its own governing
@@ -161,6 +209,25 @@ archetypes:
         kind: consumer
         jurisdiction: private
         description: Household customer of a non-opt-in city-owned utility. It has no choice of retailer.
+      - id: small_commercial
+        name: Small commercial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Small business served by a non-opt-in city-owned utility. It has no choice of retailer.
+      - id: large_ci
+        name: Large commercial & industrial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Large commercial or industrial customer of a non-opt-in city-owned utility, on a demand-metered rate class.
+      - id: large_load
+        name: Large load
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Site of 75 MW or more, such as a data center, served by a non-opt-in city-owned utility. SB 6 (2025) also applies to municipally owned utilities.
+        source: *sb6
     edges:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
@@ -184,6 +251,25 @@ archetypes:
       - {id: noie_res_tx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
       - {id: ercot_noie_as, from: ercot, to: noie, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
       - {id: noie_res_as, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      # bill: small commercial, large commercial & industrial, large load (same setters as residential; last hop per class)
+      - {id: noie_sc_gen, from: noie, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *cpsrates}
+      - {id: noie_sc_tx, from: noie, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
+      - {id: noie_sc_dx, from: noie, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *cpsrates}
+      - {id: noie_sc_as, from: noie, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: noie_sc_rider, from: noie, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
+      - {id: noie_lci_gen, from: noie, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *cpsrates}
+      - {id: noie_lci_tx, from: noie, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
+      - {id: noie_lci_dx, from: noie, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *cpsrates}
+      - {id: noie_lci_as, from: noie, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: noie_lci_rider, from: noie, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
+      - {id: noie_ll_gen, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *cpsrates}
+      - {id: noie_ll_tx, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: "passes transmission charges, billed on its demand at the four summer system peaks", status: needs_verification, source: *sb6}
+      - {id: noie_ll_dx, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges for its voltage level (transmission or primary), status: needs_verification, source: *cpsrates}
+      - {id: noie_ll_as, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: noie_ll_rider, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
+      # large loads (75 MW or more): SB 6 (2025)
+      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: policy_standard, label: sets interconnection standards for loads of 75 MW or more (SB 6), status: needs_verification, source: *sb6}
+      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: can direct curtailment or backup generation in an energy emergency (SB 6), status: needs_verification, source: *sb6}
 
   # Electric cooperative outside retail competition (almost all ERCOT co-ops; Nueces EC opted in). Owned by its members,
   # who elect the board; the board sets retail rates. The PUCT's jurisdiction over a co-op is limited to wholesale
@@ -215,6 +301,25 @@ archetypes:
         kind: consumer
         jurisdiction: private
         description: Household member of a co-op that has not opted in to retail competition. It has no choice of retailer.
+      - id: small_commercial
+        name: Small commercial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Small business member of a co-op that has not opted in to retail competition.
+      - id: large_ci
+        name: Large commercial & industrial
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Large commercial or industrial member of a co-op, on a demand-metered rate class.
+      - id: large_load
+        name: Large load
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Site of 75 MW or more, such as a data center, served by a co-op. SB 6 (2025) also applies to electric cooperatives.
+        source: *sb6
     edges:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
@@ -237,6 +342,25 @@ archetypes:
       - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
       - {id: ercot_coop_as, from: ercot, to: coop, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
       - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      # bill: small commercial, large commercial & industrial, large load (same setters as residential; last hop per class)
+      - {id: coop_sc_gen, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *pecrates}
+      - {id: coop_sc_tx, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
+      - {id: coop_sc_dx, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges, status: needs_verification, source: *pecrates}
+      - {id: coop_sc_as, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: coop_sc_rider, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
+      - {id: coop_lci_gen, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *pecrates}
+      - {id: coop_lci_tx, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
+      - {id: coop_lci_dx, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges, status: needs_verification, source: *pecrates}
+      - {id: coop_lci_as, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: coop_lci_rider, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
+      - {id: coop_ll_gen, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *pecrates}
+      - {id: coop_ll_tx, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: "passes transmission charges, billed on its demand at the four summer system peaks", status: needs_verification, source: *sb6}
+      - {id: coop_ll_dx, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges for its voltage level (transmission or primary), status: needs_verification, source: *pecrates}
+      - {id: coop_ll_as, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+      - {id: coop_ll_rider, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
+      # large loads (75 MW or more): SB 6 (2025)
+      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: policy_standard, label: sets interconnection standards for loads of 75 MW or more (SB 6), status: needs_verification, source: *sb6}
+      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: can direct curtailment or backup generation in an energy emergency (SB 6), status: needs_verification, source: *sb6}
 
 utilities:
   Oncor:

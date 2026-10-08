@@ -37,8 +37,8 @@ def by_kind(nodes, kind):
 # (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
 THIN_SLICE = "thin slice: only the residential class is wired so far"
 KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
-              for mid, arch in [("ercot", "competitive_area"), ("pjm", "restructured_choice"),
-                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("ercot", "noie"), ("pjm", "limited_choice"), ("ercot", "coop"), ("pjm", "coop"),
+              for mid, arch in [("pjm", "restructured_choice"),
+                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("pjm", "limited_choice"), ("pjm", "coop"),
                                 ("gb", "domestic_default_capped")]
               for cls in ("small_commercial", "large_ci", "large_load")}
 

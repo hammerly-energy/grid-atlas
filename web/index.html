@@ -103,6 +103,7 @@ const LANES = ["regulators", "market_operator", "wholesale", "retail", "consumer
 const KIND_ORDER = ["legislature", "policy_maker", "regulator", "reliability_body", "iso", "system_operator", "market",
   "settlement_body", "scheme_administrator", "generator", "storage", "transmission_owner", "interconnector", "lse",
   "holding_group", "wires_utility", "retail_provider", "cca", "muni", "coop", "consumer"];
+const CLASS_ORDER = ["residential", "small_commercial", "large_ci", "large_load"];
 const ROLE_TYPES = ["regulates", "dispatches", "operates", "settles", "plans_procures"];
 const OWNER_TYPES = ["owns", "operates"];
 const MODE_TEXT = { sets: "sets", approves: "approves", caps: "caps", levies: "levies", passes_through: "passes through", market: "market price" };
@@ -128,7 +129,8 @@ try {
 } catch (e) {}
 function saveHash() {
   const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: [S.cols[0].mid, S.cols[0].arch, S.cols[0].util].filter(Boolean).join("/"), b: `${S.cols[1].mid}/${S.cols[1].arch}${S.cols[1].util ? "/" + S.cols[1].util : ""}` });
-  history.replaceState(null, "", "#" + p);
+  // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
+  try { history.replaceState(null, "", "#" + p); } catch (e) { try { location.replace("#" + p); } catch (e2) {} }
 }
 
 /* ---------- data helpers ---------- */
@@ -188,7 +190,7 @@ function fit(t, text, max, min = 7.5) {
 // Uses every edge, not just the lens's, so boxes stay put when the lens changes. Deterministic: ties keep the order.
 function layout(nodes, edges = []) {
   const order = LANES.map(lane => nodes.filter(n => n.lane === lane)
-    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id)).map(n => n.id));
+    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || CLASS_ORDER.indexOf(a.id) - CLASS_ORDER.indexOf(b.id) || a.id.localeCompare(b.id)).map(n => n.id));
   const laneOf = Object.fromEntries(order.flatMap((ids, li) => ids.map(id => [id, li])));
   const es = edges.filter(e => e.from in laneOf && e.to in laneOf && e.from !== e.to);
   const slotX = (ids, i) => { const gap = (W - ids.length * NODE_W) / (ids.length + 1); return gap + i * (NODE_W + gap); };
@@ -204,7 +206,7 @@ function layout(nodes, edges = []) {
   for (let pass = 0; pass < 3; pass++) {
     let moved = false;
     order.forEach((ids, li) => {
-      if (ids.length < 2 || ids.length > 7) return;
+      if (ids.length < 2 || ids.length > 7 || LANES[li] === "consumers") return;   // consumer classes keep their order, smallest to largest
       let best = ids, bestCost = cost(xs());
       for (const p of perms(ids)) {
         order[li] = p; const c = cost(xs());
