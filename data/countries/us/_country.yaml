@@ -9,7 +9,7 @@ lanes:
   wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · transmission owners · LSEs}
   retail:          {title: DISTRIBUTION & RETAIL,     subtitle: wires utility · retail provider / CCA / muni / co-op}
   consumers:       {title: CONSUMERS,                 subtitle: residential · small commercial · large commercial & industrial · large load}
-jurisdiction_labels: {national: Federal, subnational: State, local: Local, private: Private}
+jurisdiction_labels: {supranational: Multi-state, national: Federal, subnational: State, local: Local, private: Private}
 kind_labels:
   iso: ISO / RTO
   wires_utility: Investor-owned utility (IOU)
@@ -52,7 +52,7 @@ glossary:
   POU: {term: POU, meaning: "Publicly owned utility: a city department, utility district or irrigation district. Its elected board or council sets its rates, not the state PUC."}
   WEIM: {term: WEIM, meaning: "Western Energy Imbalance Market; CAISO's real-time market that balancing authorities outside CAISO can join."}
   BANC: {term: BANC, meaning: "Balancing Authority of Northern California; a joint powers authority of SMUD and other POUs. SMUD operates it under contract."}
-  SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a POU owned by its customers, who elect a seven-member board."}
+  SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a public agency (POU) governed by a seven-member board elected by voters in its district."}
   LADWP: {term: LADWP, meaning: "Los Angeles Department of Water and Power; the City of Los Angeles' POU and its own balancing authority."}
   Co-op: {term: Co-op, meaning: "Electric cooperative: a utility owned by its customers (members), who elect its board. Texas co-op boards set their own rates; Virginia's SCC still approves co-op rates."}
   NOVEC: {term: NOVEC, meaning: "Northern Virginia Electric Cooperative; a member-owned distribution co-op in the PJM region."}
@@ -60,3 +60,5 @@ glossary:
   PEC: {term: PEC, meaning: "Pedernales Electric Cooperative; the largest US distribution co-op by customers (EIA-861), in the Texas Hill Country (ERCOT)."}
   REC: {term: REC, meaning: "Rappahannock Electric Cooperative; a member-owned distribution co-op in central and northern Virginia (PJM)."}
   SCC: {term: SCC, meaning: "Virginia State Corporation Commission; sets the bundled retail rates of Virginia's investor-owned utilities."}
+  POLR: {term: POLR, meaning: "Provider of last resort; a REP the PUCT designates to take customers whose REP defaults or exits. The PUCT caps the large-service providers' rate (16 TAC 25.43)."}
+  SB 6: {term: SB 6, meaning: "Texas Senate Bill 6 (2025); rules for loads of 75 MW or more: interconnection fees and disclosures, ERCOT emergency curtailment, PUCT review of transmission cost allocation."}

@@ -103,6 +103,7 @@ const LANES = ["regulators", "market_operator", "wholesale", "retail", "consumer
 const KIND_ORDER = ["legislature", "policy_maker", "regulator", "reliability_body", "iso", "system_operator", "market",
   "settlement_body", "scheme_administrator", "generator", "storage", "transmission_owner", "interconnector", "lse",
   "holding_group", "wires_utility", "retail_provider", "cca", "muni", "coop", "consumer"];
+const CLASS_ORDER = ["residential", "small_commercial", "large_ci", "large_load"];
 const ROLE_TYPES = ["regulates", "dispatches", "operates", "settles", "plans_procures"];
 const OWNER_TYPES = ["owns", "operates"];
 const MODE_TEXT = { sets: "sets", approves: "approves", caps: "caps", levies: "levies", passes_through: "passes through", market: "market price" };
@@ -128,7 +129,8 @@ try {
 } catch (e) {}
 function saveHash() {
   const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: [S.cols[0].mid, S.cols[0].arch, S.cols[0].util].filter(Boolean).join("/"), b: `${S.cols[1].mid}/${S.cols[1].arch}${S.cols[1].util ? "/" + S.cols[1].util : ""}` });
-  history.replaceState(null, "", "#" + p);
+  // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
+  try { history.replaceState(null, "", "#" + p); } catch (e) { try { location.replace("#" + p); } catch (e2) {} }
 }
 
 /* ---------- data helpers ---------- */
@@ -182,13 +184,22 @@ function fit(t, text, max, min = 7.5) {
   return t;
 }
 
+// A name too long for one line at a readable size ("Large commercial & industrial") wraps at the space nearest its middle
+function twoLines(g, text, max) {
+  const t = el("text", {}, g); t.textContent = text;
+  const tooLong = t.getComputedTextLength() > max * 1.2; t.remove();
+  if (!tooLong || !text.includes(" ")) return [text];
+  const sp = [...text.matchAll(/ /g)].map(m => m.index).sort((a, b) => Math.abs(a - text.length / 2) - Math.abs(b - text.length / 2))[0];
+  return [text.slice(0, sp), text.slice(sp + 1)];
+}
+
 /* ---------- layout ---------- */
 // Box order within each lane: start from kind order, then reorder each lane to minimise the total horizontal
 // length of all relationships (a line inside one lane counts double, since it has to loop out and back).
 // Uses every edge, not just the lens's, so boxes stay put when the lens changes. Deterministic: ties keep the order.
 function layout(nodes, edges = []) {
   const order = LANES.map(lane => nodes.filter(n => n.lane === lane)
-    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id)).map(n => n.id));
+    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || CLASS_ORDER.indexOf(a.id) - CLASS_ORDER.indexOf(b.id) || a.id.localeCompare(b.id)).map(n => n.id));
   const laneOf = Object.fromEntries(order.flatMap((ids, li) => ids.map(id => [id, li])));
   const es = edges.filter(e => e.from in laneOf && e.to in laneOf && e.from !== e.to);
   const slotX = (ids, i) => { const gap = (W - ids.length * NODE_W) / (ids.length + 1); return gap + i * (NODE_W + gap); };
@@ -204,7 +215,7 @@ function layout(nodes, edges = []) {
   for (let pass = 0; pass < 3; pass++) {
     let moved = false;
     order.forEach((ids, li) => {
-      if (ids.length < 2 || ids.length > 7) return;
+      if (ids.length < 2 || ids.length > 7 || LANES[li] === "consumers") return;   // consumer classes keep their order, smallest to largest
       let best = ids, bestCost = cost(xs());
       for (const p of perms(ids)) {
         order[li] = p; const c = cost(xs());
@@ -388,7 +399,8 @@ function renderCol(i) {
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
     if (ans) { ans.path.forEach(id => path.add(id)); ans.limits.forEach(id => path.add(id)); }
     edges.filter(e => path.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
-    caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls)));
+    caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
+      && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
     shown = shown.concat(edges.filter(e => path.has(e.id) && !shown.includes(e)));
   }
 
@@ -416,8 +428,9 @@ function renderCol(i) {
     const g = el("g", { class: `node${sel ? " sel" : ""}${active.has(n.id) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
       transform: `translate(${p.x},${p.y})`, "data-id": n.id, tabindex: 0, role: "button", "aria-label": name }, svg);
     el("rect", { width: NODE_W, height: NODE_H, rx: 5 }, g);
-    fit(el("text", { x: 8, y: 16 }, g), name, NODE_W - 16);
-    fit(el("text", { x: 8, y: 30, class: "k" }, g), label(C.kind_labels, n.kind), NODE_W - 16);
+    const lines = twoLines(g, name, NODE_W - 16);
+    lines.forEach((ln, k) => fit(el("text", { x: 8, y: lines.length > 1 ? 13 + 11 * k : 16 }, g), ln, NODE_W - 16));
+    fit(el("text", { x: 8, y: lines.length > 1 ? 36 : 30, class: "k" }, g), label(C.kind_labels, n.kind), NODE_W - 16);
     if (kindsElsewhere && !kindsElsewhere.has(n.kind)) el("text", { x: NODE_W, y: NODE_H + 11, class: "u", "text-anchor": "end" }, g).textContent = "only here";
     if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
       el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
@@ -476,17 +489,19 @@ function panel(col, C, byId, edges, ans) {
   const nm = id => esc(displayName(col, byId[id]));
   if (S.lens === "bill") {
     const cl = label(C.component_labels, S.comp);
-    if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not a bill component in ${esc(D.markets[col.mid].name)}.</p>`;
+    if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
     else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
     else {
       const chain = [ans.setter, ...ans.path.slice().reverse().map(id => edges.find(e => e.id === id).to)];
       const uniq = chain.filter((x, k) => chain.indexOf(x) === k);
-      const limits = ans.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)}: ${esc(e.label)}`);
+      const lim = ans.limits.map(id => edges.find(e => e.id === id)), whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
+      const limits = lim.map(e => `${nm(e.from)}: ${esc(e.label)}`);
       p.innerHTML = `<h3>${esc(cl)}</h3><dl>
         <dt>Set by</dt><dd>${nm(ans.setter)} (${MODE_TEXT[ans.mode]})</dd>
         <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
         <dt>Limited by</dt><dd>${limits.join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${ans.path.map(id => srcLink(edges.find(e => e.id === id).source)).join("<br>")}</dd></dl>`;
+        ${whole.length ? `<dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>")}</dd>` : ""}
+        <dt>Sources</dt><dd>${[...ans.path.map(id => edges.find(e => e.id === id)), ...lim, ...whole].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
     }
     return p;
   }
@@ -565,7 +580,7 @@ function pickUtility(col) {   // default: the first utility offering the current
 let lastView = null;
 function render() {
   // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
-  const keep = { x: scrollX, y: scrollY, h: $("#cols").offsetHeight, side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
+  const keep = { x: scrollX, y: scrollY, h: Math.ceil($("#cols").getBoundingClientRect().height), side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
   // a new selection in the same diagrams never shortens the page, so the view can't shift; a new diagram resets it
   const view = JSON.stringify([S.lens, S.cols.map(c => [c.mid, c.arch, c.util])]);
   $("#cols").style.minHeight = view === lastView ? keep.h + "px" : "";

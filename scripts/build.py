@@ -76,7 +76,7 @@ def _applies(e, cls):
 
 
 def who_sets(edges, cls, comp):
-    """Walk back from consumer `cls` through passes_through edges. -> {"path": [edge ids], "setter", "mode", "limits": [caps/approves edge ids]} or None."""
+    """Walk back from consumer `cls` through passes_through edges. -> {"path": [edge ids], "setter", "mode", "limits": [caps/approves edge ids for this component], "whole_bill_caps": [component-less caps]} or None."""
     def into(node):
         return [e for e in edges if e["type"] == "sets_rate" and e["to"] == node and _applies(e, cls)
                 and e.get("rate_component") == comp and e.get("mode", "sets") != "caps"]
@@ -90,8 +90,11 @@ def who_sets(edges, cls, comp):
         if e.get("mode", "sets") in SETTER_MODES:
             on_path = {x["from"] for x in edges if x["id"] in path}
             limits = [c["id"] for c in edges if c.get("mode") in ("caps", "approves") and c["id"] not in path
-                      and c["to"] in on_path and _applies(c, cls) and c.get("rate_component") in (None, comp)]
-            return {"path": path, "setter": e["from"], "mode": e.get("mode", "sets"), "limits": limits}
+                      and c["to"] in on_path and _applies(c, cls) and c.get("rate_component") == comp]
+            # a cap with no component is a ceiling on the whole bill (GB default tariff cap), not a limit on each line item
+            whole = [c["id"] for c in edges if c.get("mode") == "caps" and not c.get("rate_component")
+                     and c["to"] in on_path and _applies(c, cls)]
+            return {"path": path, "setter": e["from"], "mode": e.get("mode", "sets"), "limits": limits, "whole_bill_caps": whole}
         node = e["from"]
     return None                              # cycle
 

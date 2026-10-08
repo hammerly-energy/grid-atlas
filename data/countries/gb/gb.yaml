@@ -86,7 +86,7 @@ base:
       jurisdiction: private
       description: Self-dispatch against contracts traded bilaterally and on exchanges; no central pool. Pay no BSUoS since Apr 2023.
       holds_assets: [generation]
-      source: {title: NESO TNUoS (generator charges), url: "https://www.neso.energy/tnuos-10-minutes-0", accessed: "2026-10-07"}
+      source: {title: NESO BSUoS charges, url: "https://neso.energy/charging/balancing-services-use-system-bsuos-charges", accessed: "2026-10-08"}
 
 archetypes:
   domestic_default_capped:
@@ -128,7 +128,7 @@ archetypes:
          source: &cap {title: Ofgem energy price cap, url: "https://www.ofgem.gov.uk/energy-price-cap", accessed: "2026-10-07"}}
       # bill
       - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the tariff at or below the cap, status: needs_verification, source: *cap}
-      - {id: ofgem_neso_tx, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: transmission, subcomponent: TNUoS, label: approves transmission owner revenues (RIIO), status: needs_verification, source: *tnuos}
+      - {id: ofgem_neso_tx, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: transmission, subcomponent: TNUoS, label: approves the transmission owners' revenues (RIIO-T3) that NESO recovers through TNUoS, status: needs_verification, source: *tnuos}
       - {id: neso_sup_tx, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: sets TNUoS tariffs, status: needs_verification, source: *tnuos}
       - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: needs_verification, source: *cap}
       - {id: ofgem_dno_dx, from: ofgem, to: dno, type: sets_rate, mode: approves, rate_component: distribution, subcomponent: DUoS, label: sets DNO allowed revenue (RIIO-ED2), status: needs_verification, source: *ed2}
@@ -140,7 +140,7 @@ archetypes:
       - {id: esc_sup_cap, from: esc, to: supplier, type: sets_rate, mode: levies, rate_component: capacity, label: levies the Capacity Market supplier charge, status: needs_verification,
          source: &cm {title: Capacity Market collection, url: "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market", accessed: "2026-10-07"}}
       - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: needs_verification, source: *cap}
-      - {id: desnz_sup_levy, from: desnz, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, label: "levies scheme costs (CfD, RO, FiT, WHD, Nuclear RAB)", status: needs_verification,
+      - {id: desnz_sup_levy, from: desnz, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, label: "sets the schemes whose costs suppliers pay: CfD and nuclear RAB levies collected by LCCC; RO, FiT and WHD administered by Ofgem", status: needs_verification,
          source: &ea2013 {title: Energy Act 2013, url: "https://www.legislation.gov.uk/ukpga/2013/32/contents", accessed: "2026-10-07"}}
       - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: needs_verification, source: *cap}
       - {id: hmt_sup_vat, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, label: "VAT on domestic electricity: 0% from 1 Oct 2026 to 31 Mar 2027, normally 5%", status: needs_verification,

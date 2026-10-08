@@ -25,7 +25,7 @@ base:
       name: PJM
       lane: market_operator
       kind: iso
-      jurisdiction: national
+      jurisdiction: private
       description: Regional transmission organization for all or parts of 13 states and DC. Runs the energy, capacity (RPM) and ancillary service markets. Owns no wires.
       domain_area:
         full: [pjm]
@@ -36,8 +36,8 @@ base:
       name: RPM capacity auction
       lane: market_operator
       kind: market
-      jurisdiction: national
-      description: Reliability Pricing Model; PJM's annual capacity auction, about three years ahead of delivery.
+      jurisdiction: private
+      description: Reliability Pricing Model; PJM's capacity auction. Designed to run three years ahead of delivery; recent auctions ran on a compressed schedule.
     - id: generators
       name: Generators
       lane: wholesale
@@ -51,7 +51,7 @@ base:
       name: NERC
       lane: regulators
       kind: reliability_body
-      jurisdiction: national
+      jurisdiction: private
       description: Sets reliability standards approved by FERC; enforces them through regional entities.
       domain_area:
         full: [lower48, nerc_canada, mx_bcn]
@@ -62,7 +62,7 @@ base:
       name: ReliabilityFirst
       lane: regulators
       kind: reliability_body
-      jurisdiction: national
+      jurisdiction: private
       description: NERC's regional entity for most of the PJM footprint and PJM's lead regional entity.
       source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
       status: needs_verification
@@ -156,7 +156,7 @@ archetypes:
         name: SERC
         lane: regulators
         kind: reliability_body
-        jurisdiction: national
+        jurisdiction: private
         description: NERC's regional entity for the southeastern US, including Virginia.
         source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
         status: needs_verification
