@@ -546,7 +546,14 @@ function pickUtility(col) {   // default: the first utility offering the current
   const [name, u] = utils.find(([, u]) => u.archetypes.includes(col.arch)) || utils[0];
   col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
 }
+let lastView = null;
 function render() {
+  // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
+  const keep = { x: scrollX, y: scrollY, h: $("#cols").offsetHeight, side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
+  // a new selection in the same diagrams never shortens the page, so the view can't shift; a new diagram resets it
+  const view = JSON.stringify([S.lens, S.cols.map(c => [c.mid, c.arch, c.util])]);
+  $("#cols").style.minHeight = view === lastView ? keep.h + "px" : "";
+  lastView = view;
   S.cols.forEach(pickUtility);
   $("#cols").innerHTML = '<div class="col" id="col0"></div><div class="col" id="col1"></div>';
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
@@ -554,6 +561,8 @@ function render() {
     return Math.max(...LANES.map(l => nodes.filter(n => n.lane === l).length)) * (NODE_W + MIN_GAP) + MIN_GAP;
   }));
   renderBar(); renderCol(0); renderCol(1); renderLegend(); saveHash();
+  document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
+  scrollTo(keep.x, keep.y);
 }
 document.querySelectorAll("#lens button").forEach(b => b.onclick = () => { S.lens = b.dataset.v; S.cols.forEach(c => c.sel = null); render(); });
 render();

@@ -179,3 +179,18 @@ def test_every_line_shows_its_source(page, view):
     if hit.count():
         page.evaluate("() => document.querySelector('#col0 path.edge-hit').dispatchEvent(new MouseEvent('click', {bubbles: true}))")
         assert page.locator("#col0 .panel dt", has_text="Source").count() >= 1, f"{view}: line panel has no source"
+
+
+@pytest.mark.parametrize("width", [390, 1400])
+def test_clicking_keeps_the_scroll_position(page, width):
+    """Selecting a box or line redraws the columns; the page and the diagram's sideways scroll must not jump."""
+    page.set_viewport_size({"width": width, "height": 700})
+    page.goto(f"{PAGE}#lens=roles&a=ercot/competitive_area&b=/")
+    page.reload()
+    for target in ['#col0 g.node[data-id="residential"]', "#col0 path.edge-hit"]:
+        page.evaluate("() => { scrollTo(0, document.documentElement.scrollHeight); const d = document.querySelector('#col0 .diagram'); d.scrollLeft = d.scrollWidth; }")
+        before = page.evaluate("() => [scrollY, document.querySelector('#col0 .diagram').scrollLeft]")
+        page.evaluate("(sel) => document.querySelector(sel).dispatchEvent(new MouseEvent('click', {bubbles: true}))", target)
+        after = page.evaluate("() => [scrollY, document.querySelector('#col0 .diagram').scrollLeft]")
+        assert after == before, f"{width}px, {target}: scroll {before} -> {after}"
+    page.set_viewport_size({"width": 1400, "height": 1600})
