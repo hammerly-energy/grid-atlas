@@ -76,6 +76,18 @@
   .muted { color:var(--muted); }
   .legend { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--muted); font-size:12px; margin:12px 0; }
   .legend svg { width:34px; height:10px; display:inline-block; vertical-align:middle; margin-right:4px; }
+  .ans { width:100%; border-collapse:collapse; margin:4px 0 10px; font-size:13px; }
+  .ans caption { text-align:left; font-weight:600; padding:4px 0; }
+  .ans th { text-align:left; color:var(--muted); font-weight:500; font-size:12px; padding:2px 8px 2px 0; border-bottom:1px solid var(--line); }
+  .ans td { padding:5px 8px 5px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  .ans tr.row { cursor:pointer; }
+  .ans tr.row:hover td { background:var(--lane); }
+  .ans tr.cur td { background:var(--lane); }
+  .ans tr.cur td:first-child { box-shadow:inset 3px 0 0 var(--accent); padding-left:6px; }
+  .ans .mode { display:inline-block; font-size:11px; padding:0 6px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .ans .mode.m-caps, .ans .mode.m-approves { border-color:var(--accent); color:var(--accent); }
+  .ans .lim { color:var(--muted); font-size:12px; }
+  .edge.faint { opacity:.14; }
   footer { color:var(--muted); font-size:12px; margin-top:16px; }
 </style>
 </head>
@@ -377,6 +389,8 @@ function renderCol(i) {
   if (!col.arch) return;
 
   const { nodes, edges, byId } = resolve(col.mid, col.arch);
+  box.appendChild(answers(col, C, nodes, edges, byId));
+  const focus = focusEdges(col, edges);
   const pos = layout(nodes, edges);
   const svg = el("svg", { viewBox: `0 0 ${W} ${TOP + LANES.length * LANE_H}`, role: "img", "aria-label": `${m.name} ${col.arch.replace(/_/g, " ")}` });
   const wrap = document.createElement("div"); wrap.className = "diagram"; wrap.appendChild(svg); box.appendChild(wrap);
@@ -410,10 +424,12 @@ function renderCol(i) {
     const d = paths[e.id];
     if (!d) continue;
     const color = S.lens === "bill" ? "var(--t-sets_rate)" : `var(--t-${e.type})`;
-    const on = path.has(e.id), off = S.lens === "bill" && ans && !on;
+    const on = path.has(e.id) || (focus && focus.has(e.id)), off = S.lens === "bill" && ans && !on;
+    const faint = S.lens !== "bill" && !(focus && focus.has(e.id));
     const shape = S.lens === "bill" ? (MODE_SHAPE[e.mode || "sets"] || "arrow") : "arrow";
-    const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on ? " on" : ""}${off ? " off" : ""}`, stroke: color,
-      "marker-end": marker(defs, shape, on ? "var(--accent)" : color, on ? "on" : e.type) }, svg);
+    const hl = on && S.lens === "bill";
+    const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on && S.lens === "bill" ? " on" : ""}${off ? " off" : ""}${faint ? " faint" : ""}`, stroke: color,
+      "marker-end": marker(defs, shape, hl ? "var(--accent)" : color, hl ? "on" : e.type) }, svg);
     const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
     const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "verified" : "needs verification"})`;
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
@@ -425,7 +441,7 @@ function renderCol(i) {
   for (const n of nodes) {
     const p = pos[n.id], name = displayName(col, n);
     const sel = col.sel && col.sel.node === n.id;
-    const g = el("g", { class: `node${sel ? " sel" : ""}${active.has(n.id) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
+    const g = el("g", { class: `node${sel ? " sel" : ""}${(active.has(n.id) || (focus && focus.nodes.has(n.id) && !(col.sel && col.sel.node === n.id))) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
       transform: `translate(${p.x},${p.y})`, "data-id": n.id, tabindex: 0, role: "button", "aria-label": name }, svg);
     el("rect", { width: NODE_W, height: NODE_H, rx: 5 }, g);
     const lines = twoLines(g, name, NODE_W - 16);
@@ -449,6 +465,67 @@ function renderCol(i) {
   }
 
   box.appendChild(panel(col, C, byId, edges, ans));
+}
+
+/* ---------- answer table: the question first, the diagram second ---------- */
+const GROUP_TEXT = { "regulates|rates": "Sets or approves rates", "regulates|market_rules": "Writes market rules", "regulates|reliability": "Enforces reliability standards",
+  "regulates|licensing": "Licenses / certifies", "regulates|governance": "Oversees governance", "regulates|policy_standard": "Sets policy standards",
+  "dispatches|": "Dispatches power plants", "operates|": "Operates grid or market", "settles|": "Settles payments", "plans_procures|": "Plans / procures capacity" };
+const groupKey = e => `${e.type}|${e.type === "regulates" ? e.domain || "" : ""}`;
+const groupLabel = k => GROUP_TEXT[k] || k.replace(/[|_]/g, " ");
+function focusEdges(col, edges) {
+  if (!col.sel) return null;
+  let es = [];
+  if (col.sel.group) es = edges.filter(e => groupKey(e) === col.sel.group);
+  else if (col.sel.node) es = edges.filter(e => e.from === col.sel.node || e.to === col.sel.node);
+  else if (col.sel.edge) es = edges.filter(e => e.id === col.sel.edge);
+  const s = new Set(es.map(e => e.id)); s.nodes = new Set(es.flatMap(e => [e.from, e.to])); return s;
+}
+function answers(col, C, nodes, edges, byId) {
+  const t = document.createElement("table"); t.className = "ans";
+  const nm = id => esc(displayName(col, byId[id]));
+  const names = ids => [...new Set(ids)].map(nm).join(", ");
+  if (S.lens === "bill") {
+    t.innerHTML = `<caption>Who sets each part of a ${esc(S.cls.replace(/_/g, " "))} bill</caption><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr>`;
+    for (const c of componentsFor(col.mid)) {
+      const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`];
+      const tr = document.createElement("tr"); tr.className = "row" + (c === S.comp ? " cur" : "");
+      const lim = a ? a.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)} ${esc(MODE_TEXT[e.mode] || e.mode)}`) : [];
+      tr.innerHTML = `<td>${esc(label(C.component_labels, c))}</td><td>${a ? `${nm(a.setter)} <span class="mode m-${a.mode}">${esc(MODE_TEXT[a.mode])}</span>` : '<span class="muted">not entered</span>'}</td><td class="lim">${lim.join("<br>") || "—"}</td>`;
+      tr.onclick = () => { S.comp = c; render(); };
+      t.appendChild(tr);
+    }
+    const onPath = new Set(componentsFor(col.mid).flatMap(c => { const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`]; return a ? a.path.flatMap(id => { const e = edges.find(x => x.id === id); return [e.from, e.to]; }) : []; }));
+    const whole = edges.filter(e => e.mode === "caps" && !e.rate_component && onPath.has(e.to) && (!e.applies_to || e.applies_to.includes(S.cls)));
+    if (whole.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>Whole bill</td><td colspan="2">${whole.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td>`; t.appendChild(tr); }
+    return t;
+  }
+  if (S.lens === "roles") {
+    t.innerHTML = `<tr><th>Role</th><th>Who</th><th>Over</th></tr>`;
+    const groups = {};
+    edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => (groups[groupKey(e)] ||= []).push(e));
+    const order = Object.keys(GROUP_TEXT), o = S.cols[1 - S.cols.indexOf(col)];
+    if (o.mid && o.arch) resolve(o.mid, o.arch).edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => { groups[groupKey(e)] ||= []; });   // rows line up across columns; a missing role reads "none entered"
+    for (const k of Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
+      const es = groups[k], tr = document.createElement("tr");
+      tr.className = "row" + (col.sel && col.sel.group === k ? " cur" : "");
+      if (!es.length) { tr.className = ""; tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td class="muted">none entered</td><td></td>`; t.appendChild(tr); continue; }
+      tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td>${names(es.map(e => e.from))}</td><td class="lim">${names(es.map(e => e.to))}</td>`;
+      tr.onclick = () => { col.sel = col.sel && col.sel.group === k ? null : { group: k }; render(); };
+      t.appendChild(tr);
+    }
+    return t;
+  }
+  t.innerHTML = `<caption>Who owns which part of the grid</caption><tr><th>Who</th><th>Owns</th><th>Owned by</th></tr>`;
+  for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || n.owner)) {
+    const tr = document.createElement("tr"); tr.className = "row" + (col.sel && col.sel.node === n.id ? " cur" : "");
+    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${n.owner ? esc(n.owner.name) + " (" + esc(n.owner.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
+    tr.onclick = () => { col.sel = { node: n.id }; render(); };
+    t.appendChild(tr);
+  }
+  const none = nodes.filter(n => ["iso", "system_operator"].includes(n.kind) && !(n.holds_assets || []).length);
+  if (none.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>${names(none.map(n => n.id))}</td><td>nothing (operates, does not own)</td><td class="lim">—</td>`; t.appendChild(tr); }
+  return t;
 }
 
 /* ---------- domain map: where a body's authority applies ---------- */
@@ -503,6 +580,11 @@ function panel(col, C, byId, edges, ans) {
         ${whole.length ? `<dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>")}</dd>` : ""}
         <dt>Sources</dt><dd>${[...ans.path.map(id => edges.find(e => e.id === id)), ...lim, ...whole].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
     }
+    return p;
+  }
+  if (col.sel && col.sel.group) {
+    const es = edges.filter(e => groupKey(e) === col.sel.group);
+    p.innerHTML = `<h3>${esc(groupLabel(col.sel.group))}</h3><dl>${es.map(e => `<dt>${nm(e.from)} → ${nm(e.to)}</dt><dd>${esc(e.label)} · ${srcLink(e.source)}</dd>`).join("")}</dl>`;
     return p;
   }
   if (col.sel && col.sel.edge) {
