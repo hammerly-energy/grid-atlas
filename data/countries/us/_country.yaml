@@ -16,6 +16,7 @@ kind_labels:
   retail_provider: Retail provider (REP / ESP)
   reliability_body: NERC / regional entity
   muni: Publicly owned utility (POU)
+  coop: Electric cooperative (Co-op)
   system_operator: Balancing authority (BA)
   legislature: Elected governing body
 component_labels:
@@ -53,4 +54,9 @@ glossary:
   BANC: {term: BANC, meaning: "Balancing Authority of Northern California; a joint powers authority of SMUD and other POUs. SMUD operates it under contract."}
   SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a POU owned by its customers, who elect a seven-member board."}
   LADWP: {term: LADWP, meaning: "Los Angeles Department of Water and Power; the City of Los Angeles' POU and its own balancing authority."}
+  Co-op: {term: Co-op, meaning: "Electric cooperative: a utility owned by its customers (members), who elect its board. Texas co-op boards set their own rates; Virginia's SCC still approves co-op rates."}
+  NOVEC: {term: NOVEC, meaning: "Northern Virginia Electric Cooperative; a member-owned distribution co-op in the PJM region."}
+  ICC: {term: ICC, meaning: "Illinois Commerce Commission; sets ComEd's distribution rates and oversees default service."}
+  PEC: {term: PEC, meaning: "Pedernales Electric Cooperative; the largest US distribution co-op by customers (EIA-861), in the Texas Hill Country (ERCOT)."}
+  REC: {term: REC, meaning: "Rappahannock Electric Cooperative; a member-owned distribution co-op in central and northern Virginia (PJM)."}
   SCC: {term: SCC, meaning: "Virginia State Corporation Commission; sets the bundled retail rates of Virginia's investor-owned utilities."}

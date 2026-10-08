@@ -14,8 +14,9 @@ import shapely
 
 HERE = Path(__file__).resolve().parent
 UTILITIES = {   # EIA utility number (HIFLD ID) -> area id
-    '44372': 'oncor', '8901': 'centerpoint', '16604': 'cps',              # ERCOT
+    '44372': 'oncor', '8901': 'centerpoint', '16604': 'cps', '14626': 'pec', '5078': 'coserv',   # ERCOT
     '4110': 'comed', '19876': 'dominion_va', '15477': 'pseg', '14940': 'peco',   # PJM
+    '13640': 'novec', '40228': 'rec',                                      # PJM co-ops (Virginia)
 }
 TOLERANCE = 0.002    # degrees, about 200 m; far below a pixel on the state-framed map
 

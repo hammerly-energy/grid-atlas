@@ -82,8 +82,8 @@
   },
   "hifld_utilities": {
     "file": "derived/hifld_utilities.geojson",
-    "sha256": "f2f43afc754e02891204bc37b4f0defe5107a82bd32c3c28a11534f07885e7bd",
-    "title": "Oncor, CenterPoint, CPS Energy, ComEd, Dominion Virginia, PSE&G and PECO territories, extracted from the HIFLD archive by hifld_utilities.py",
+    "sha256": "0062108bb57ebb38d3e944d08b22351756c6f5c7fdd28e6f65fff9ead8ba4bcc",
+    "title": "Oncor, CenterPoint, CPS Energy, Pedernales EC, CoServ, ComEd, Dominion Virginia, PSE&G, PECO, NOVEC and Rappahannock EC territories, extracted from the HIFLD archive by hifld_utilities.py",
     "url": "https://source.coop/seerai/hifld/electric-retail-service-territories",
     "accessed": "2026-10-08",
     "credit": "HIFLD (US DHS)",

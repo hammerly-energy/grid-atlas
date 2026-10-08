@@ -203,12 +203,72 @@ archetypes:
       - {id: puc_viu_rider, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders, status: needs_verification, source: *va585}
       - {id: viu_res_rider, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
 
+  # Electric cooperative in Virginia: member-owned, board elected by members, but unlike most co-ops in Texas its rates
+  # stay under the state commission (Va. Code 56-231.34, 56-585.3). The board may move distribution rates up to 5%
+  # in any three years with only an informational filing; general rate cases go to the SCC.
+  coop:
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State commission that approves the co-op's rates in general rate cases.
+        source: &va2313 {title: "Va. Code § 56-231.34 (cooperatives subject to SCC jurisdiction)", url: "https://law.lis.virginia.gov/vacode/title56/chapter9.1/section56-231.34/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: coop_board
+        name: Board of directors
+        slot: coop_board
+        lane: regulators
+        kind: legislature
+        jurisdiction: local
+        description: Board elected by the co-op's members. Governs the co-op; may change distribution rates by up to 5% in any three years without commission approval.
+        source: &va5853 {title: "Va. Code § 56-585.3 (regulation of cooperative rates)", url: "https://law.lis.virginia.gov/vacode/title56/chapter23/section56-585.3/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: coop
+        name: Co-op
+        slot: coop
+        lane: retail
+        kind: coop
+        jurisdiction: local
+        description: Member-owned distribution utility. Owns the local wires, buys wholesale power and sells to residential members, who cannot pick another supplier.
+        holds_assets: [distribution]
+        source: *va2313
+        status: needs_verification
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household member of a Virginia electric cooperative.
+    edges:
+      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification, source: *oatt}
+      - {id: puc_coop, from: state_puc, to: coop, type: regulates, domain: rates, label: regulates the co-op's rates and service, status: needs_verification, source: *va2313}
+      - {id: board_coop_gov, from: coop_board, to: coop, type: regulates, domain: governance, label: governs the co-op; may change distribution rates up to 5% in 3 years, status: needs_verification, source: *va5853}
+      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
+      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
+      # bill: the SCC approves the co-op's rates in general rate cases; FERC approves transmission; PJM prices ancillary services
+      - {id: puc_coop_gen, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: generation, label: approves wholesale power cost recovery, status: needs_verification, source: *va5853}
+      - {id: coop_res_gen, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *va5853}
+      - {id: puc_coop_cap, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: capacity, label: approves recovery of capacity within wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_res_cap, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within the power cost charge, status: needs_verification, source: *va5853}
+      - {id: pjm_coop_as, from: pjm, to: coop, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va5853}
+      - {id: ferc_coop_tx, from: ferc, to: coop, type: sets_rate, mode: approves, rate_component: transmission, label: approves the PJM transmission rates the co-op pays, status: needs_verification, source: *oatt}
+      - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
+      - {id: puc_coop_dx, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: distribution, label: approves distribution rates in general rate cases, status: needs_verification,
+         source: {title: "SCC Case PUR-2017-00044, Rappahannock Electric Cooperative rate case (hearing examiner's report)", url: "https://scc.virginia.gov/docketsearch/DOCS/3%24pn01!.PDF", accessed: "2026-10-08"}}
+      - {id: coop_res_dx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
+      - {id: puc_coop_rider, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: riders_public_purpose, label: approves rate adjustment clauses, status: needs_verification, source: *va5853}
+      - {id: coop_res_rider, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va5853}
+
 utilities:
   ComEd:
     area: IL
     archetypes: [restructured_choice]
     fills:
-      state_puc: {name: Illinois Commerce Commission}
+      state_puc: {name: ICC (Illinois)}
       edc:
         name: ComEd
         domain_area: {full: [comed], note: "ComEd service territory, Chicago and northern Illinois", source: &hifld {title: HIFLD Electric Retail Service Territories (archived), url: "https://source.coop/seerai/hifld/electric-retail-service-territories", accessed: "2026-10-08"}, status: needs_verification}
@@ -236,3 +296,23 @@ utilities:
       edc:
         name: PECO
         domain_area: {full: [peco], note: "PECO service territory, Philadelphia and southeastern Pennsylvania", source: *hifld, status: needs_verification}
+  NOVEC:
+    area: VA
+    archetypes: [coop]
+    fills:
+      state_puc: {name: Virginia SCC}
+      coop_board: {name: NOVEC board}
+      coop:
+        name: NOVEC
+        owner: {name: Its members, type: cooperative, as_of: "2026-10-08", source: {title: About NOVEC, url: "https://www.novec.com/About_NOVEC/", accessed: "2026-10-08"}}
+        domain_area: {full: [novec], note: "NOVEC territory, Northern Virginia (Prince William, Loudoun, Fairfax and nearby counties)", source: *hifld, status: needs_verification}
+  Rappahannock Electric Cooperative:
+    area: VA
+    archetypes: [coop]
+    fills:
+      state_puc: {name: Virginia SCC}
+      coop_board: {name: REC board}
+      coop:
+        name: REC
+        owner: {name: Its members, type: cooperative, as_of: "2026-10-08", source: {title: "SCC Case PUR-2017-00044, Rappahannock Electric Cooperative rate case (hearing examiner's report)", url: "https://scc.virginia.gov/docketsearch/DOCS/3%24pn01!.PDF", accessed: "2026-10-08"}}
+        domain_area: {full: [rec], note: "Rappahannock Electric Cooperative territory, central and northern Virginia", source: *hifld, status: needs_verification}

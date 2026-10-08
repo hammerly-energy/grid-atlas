@@ -185,6 +185,59 @@ archetypes:
       - {id: ercot_noie_as, from: ercot, to: noie, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
       - {id: noie_res_as, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
 
+  # Electric cooperative outside retail competition (almost all ERCOT co-ops; Nueces EC opted in). Owned by its members,
+  # who elect the board; the board sets retail rates. The PUCT's jurisdiction over a co-op is limited to wholesale
+  # transmission rates and service, certification and a few other items (PURA 41.004).
+  coop:
+    nodes:
+      - id: coop_board
+        name: Board of directors
+        slot: coop_board
+        lane: regulators
+        kind: legislature
+        jurisdiction: local
+        description: Board elected by the co-op's members. Approves the co-op's retail rates; the PUCT does not.
+        source: &pecrates {title: Pedernales Electric Cooperative rate policy, url: "https://mypec.com/wp-content/uploads/2023/11/Rate-Policy.pdf", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: coop
+        name: Co-op
+        slot: coop
+        lane: retail
+        kind: coop
+        jurisdiction: local
+        description: Member-owned distribution utility outside retail competition. Owns the local wires, buys wholesale power and is the only seller to customers in its area.
+        holds_assets: [distribution]
+        source: &pura41 {title: "PURA § 41.004 (PUCT jurisdiction over electric cooperatives)", url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.41.htm", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household member of a co-op that has not opted in to retail competition. It has no choice of retailer.
+    edges:
+      # regulation
+      - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: oversees ERCOT and approves its protocols, status: needs_verification, source: *pura39}
+      - {id: board_coop_gov, from: coop_board, to: coop, type: regulates, domain: governance, label: governs the co-op and approves its rates, status: needs_verification, source: *pecrates}
+      - {id: puct_coop_cert, from: puct, to: coop, type: regulates, domain: licensing, label: certificates the co-op's service area, status: needs_verification, source: *pura41}
+      # operations
+      - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *ercotops}
+      # bill: the board sets generation, distribution and riders
+      - {id: board_coop_gen, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: generation, label: approves the power cost charge, status: needs_verification, source: *pecrates}
+      - {id: coop_res_gen, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *pecrates}
+      - {id: board_coop_dx, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: distribution, label: approves delivery charges, status: needs_verification, source: *pecrates}
+      - {id: coop_res_dx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges, status: needs_verification, source: *pecrates}
+      - {id: board_coop_rider, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders and program charges, status: needs_verification, source: *pecrates}
+      - {id: coop_res_rider, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
+      # bill: the PUCT still sets wholesale transmission rates; ERCOT prices ancillary services
+      - {id: puct_coop_tx, from: puct, to: coop, type: sets_rate, mode: sets, rate_component: transmission, label: sets wholesale transmission rates the co-op pays and charges, status: needs_verification, source: *pura41}
+      - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
+      - {id: ercot_coop_as, from: ercot, to: coop, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
+      - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+
 utilities:
   Oncor:
     area: TX
@@ -209,3 +262,21 @@ utilities:
         name: CPS Energy
         owner: {name: City of San Antonio, type: municipal, as_of: "2026-10-08", source: *cpsrates}
         domain_area: {full: [cps], note: "CPS Energy service territory, San Antonio and Bexar County area", source: *hifld, status: needs_verification}
+  Pedernales Electric Cooperative:
+    area: TX
+    archetypes: [coop]
+    fills:
+      coop_board: {name: PEC board}
+      coop:
+        name: PEC
+        owner: {name: Its members, type: cooperative, as_of: "2026-10-08", source: *pecrates}
+        domain_area: {full: [pec], note: "Pedernales Electric Cooperative territory, Texas Hill Country around Austin and San Antonio", source: *hifld, status: needs_verification}
+  CoServ:
+    area: TX
+    archetypes: [coop]
+    fills:
+      coop_board: {name: CoServ board}
+      coop:
+        name: CoServ Electric
+        owner: {name: Its members, type: cooperative, as_of: "2026-10-08", source: {title: About CoServ, url: "https://coserv.com/about", accessed: "2026-10-08"}}
+        domain_area: {full: [coserv], note: "CoServ territory, Denton County and neighboring North Texas counties", source: *hifld, status: needs_verification}

@@ -38,7 +38,7 @@ def by_kind(nodes, kind):
 THIN_SLICE = "thin slice: only the residential class is wired so far"
 KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
               for mid, arch in [("ercot", "competitive_area"), ("pjm", "restructured_choice"),
-                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("ercot", "noie"), ("pjm", "limited_choice"),
+                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("ercot", "noie"), ("pjm", "limited_choice"), ("ercot", "coop"), ("pjm", "coop"),
                                 ("gb", "domestic_default_capped")]
               for cls in ("small_commercial", "large_ci", "large_load")}
 
@@ -162,7 +162,31 @@ def test_ercot_noie_retail_rates_set_by_its_governing_body():
     assert MARKETS["ercot"][1]["utilities"]["CPS Energy"]["archetypes"] == ["noie"]
 
 
+def test_ercot_coop_board_sets_retail_rates_puct_sets_transmission():
+    """PURA 41.004: the PUCT's jurisdiction over a co-op is wholesale transmission, certification and a few other items."""
+    nodes, edges = g("ercot", "coop")
+    for comp in ("generation", "distribution", "riders_public_purpose"):
+        assert build.who_sets(edges, "residential", comp)["setter"] == "coop_board", comp
+    assert build.who_sets(edges, "residential", "transmission")["setter"] == "puct"
+    assert nodes["coop"]["kind"] == "coop"
+    for name in ("Pedernales Electric Cooperative", "CoServ"):
+        u = MARKETS["ercot"][1]["utilities"][name]
+        assert u["archetypes"] == ["coop"] and u["fills"]["coop"]["owner"]["type"] == "cooperative", name
+
+
 # ---- PJM ----
+def test_virginia_coop_rates_approved_by_the_scc_not_its_board():
+    """Va. Code 56-231.34 and 56-585.3: co-op rates stay under the SCC; the board only governs (and may move
+    distribution rates up to 5% in three years). Contrast with ERCOT, where the co-op board sets rates."""
+    _, edges = g("pjm", "coop")
+    for comp in ("generation", "distribution", "capacity", "riders_public_purpose"):
+        a = build.who_sets(edges, "residential", comp)
+        assert a["setter"] == "state_puc" and a["mode"] == "approves", comp
+    assert not [e for e in edges if e["type"] == "sets_rate" and e["from"] == "coop_board"]
+    for name in ("NOVEC", "Rappahannock Electric Cooperative"):
+        u = MARKETS["pjm"][1]["utilities"][name]
+        assert u["area"] == "VA" and u["archetypes"] == ["coop"], name
+
 def test_dominion_virginia_is_vertically_integrated():
     nodes, edges = g("pjm", "limited_choice")
     assert {"generation", "transmission", "distribution"} <= set(nodes["viu"]["holds_assets"])
@@ -336,9 +360,9 @@ def test_iso_utility_territories_sit_inside_their_iso():
     b = build.load_maps()["north_america"]["bbox"]
     inside = lambda u, iso: all(abs(min(0, x)) <= 3 for x in
                                 (b[u][0] - b[iso][0], b[u][1] - b[iso][1], b[iso][2] - b[u][2], b[iso][3] - b[u][3]))
-    for u in ("oncor", "centerpoint", "cps"):
+    for u in ("oncor", "centerpoint", "cps", "pec", "coserv"):
         assert inside(u, "ercot"), u
-    for u in ("comed", "dominion_va", "pseg", "peco"):
+    for u in ("comed", "dominion_va", "pseg", "peco", "novec", "rec"):
         assert inside(u, "pjm"), u
 
 

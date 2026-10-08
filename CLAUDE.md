@@ -155,7 +155,7 @@ Each edge type gets its own color and can be toggled on/off in the UI.
 **ERCOT (3)**
 1. `competitive_area` — customer picks a REP; REP sets energy price; TDSP (e.g. Oncor, CenterPoint) wires rates set by PUCT
 2. `noie` — non-opt-in entity: munis (Austin Energy, CPS Energy) and co-ops that haven't opted in; city council/board sets retail rates, **PUCT still sets their transmission rates**. Some have opted in (Nueces EC, Lubbock P&L) and belong in `competitive_area`
-3. `coop` — member-owned; board sets rates
+3. `coop` — member-owned; board elected by members sets retail rates; PUCT keeps only wholesale transmission rates, certification and a few other items (PURA 41.004). Utilities: Pedernales EC, CoServ
 
 Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has no rate or market-rule jurisdiction. PUCT oversees ERCOT.
 
@@ -164,7 +164,7 @@ Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has n
 2. `municipal_aggregation` — opt-out municipal aggregation (OH, IL, NJ); CCA-like
 3. `vertically_integrated` — e.g. WV, the PJM part of KY (not LG&E/KU, which are outside PJM); utility owns generation + wires, PUC sets bundled rates
 4. `limited_choice` — vertically integrated with limited retail choice: VA (>5 MW), MI (10% cap)
-5. `muni_coop`
+5. `muni_coop` — munis not yet modeled. Co-ops are their own archetype, `coop`: Virginia co-ops (NOVEC, Rappahannock EC) stay under the SCC, which approves their rates; the board governs and may move distribution rates up to 5% in three years (Va. Code 56-231.34, 56-585.3). Maryland (SMECO) and Delaware co-ops differ and are not modeled yet
 
 **CAISO (5)** — no central capacity market: resource adequacy is an LSE obligation set by the CPUC and munis
 1. `iou_bundled` — PG&E / SCE / SDG&E do generation + wires; CPUC sets rates
