@@ -106,7 +106,8 @@ const KIND_ORDER = ["legislature", "policy_maker", "regulator", "reliability_bod
 const ROLE_TYPES = ["regulates", "dispatches", "operates", "settles", "plans_procures"];
 const OWNER_TYPES = ["owns", "operates"];
 const MODE_TEXT = { sets: "sets", approves: "approves", caps: "caps", levies: "levies", passes_through: "passes through", market: "market price" };
-const W = 600, LANE_H = 104, TOP = 4, NODE_W = 136, NODE_H = 40;
+const W_MIN = 600, LANE_H = 104, TOP = 4, NODE_W = 136, NODE_H = 40, MIN_GAP = 40;
+let W = W_MIN;   // grows so the busiest lane keeps MIN_GAP between boxes; set per render, shared by both columns
 
 if (!D) {
   document.body.innerHTML = '<p>web/data.js missing. Run <code>python3 scripts/build.py</code>.</p>';
@@ -293,10 +294,7 @@ function renderCol(i) {
 
   const m = D.markets[col.mid], C = country(col.mid);
   const utils = Object.entries(m.utilities);
-  if (utils.length && !m.utilities[col.util]) {   // default: the first utility offering the current setup, else the first utility
-    const [name, u] = utils.find(([, u]) => u.archetypes.includes(col.arch)) || utils[0];
-    col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
-  }
+  pickUtility(col);
   if (utils.length) {      // one list of named utilities; the setup follows from the utility
     const uSel = document.createElement("select"); uSel.setAttribute("aria-label", C.chain[1] || "Utility");
     utils.forEach(([name, u]) => uSel.add(new Option(`${name} [${u.area}] (${utilityType(col.mid, u)})`, name)));
@@ -505,8 +503,19 @@ function renderLegend() {
     + (D.maps ? " Map shapes: " + [...new Set(Object.values(D.maps).flatMap(m => m.layers.map(l => `${l.credit} (${l.licence.toLowerCase()})`)))].join(", ") + "." : "");
 }
 
+function pickUtility(col) {   // default: the first utility offering the current setup, else the first utility
+  const utils = col.mid ? Object.entries(D.markets[col.mid].utilities) : [];
+  if (!utils.length || D.markets[col.mid].utilities[col.util]) return;
+  const [name, u] = utils.find(([, u]) => u.archetypes.includes(col.arch)) || utils[0];
+  col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
+}
 function render() {
+  S.cols.forEach(pickUtility);
   $("#cols").innerHTML = '<div class="col" id="col0"></div><div class="col" id="col1"></div>';
+  W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
+    const nodes = resolve(c.mid, c.arch).nodes;
+    return Math.max(...LANES.map(l => nodes.filter(n => n.lane === l).length)) * (NODE_W + MIN_GAP) + MIN_GAP;
+  }));
   renderBar(); renderCol(0); renderCol(1); renderLegend(); saveHash();
 }
 document.querySelectorAll("#lens button").forEach(b => b.onclick = () => { S.lens = b.dataset.v; S.cols.forEach(c => c.sel = null); render(); });

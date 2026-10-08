@@ -89,6 +89,23 @@ TEXT_FITS = """() => {
 }"""
 
 
+BOXES_APART = """() => {
+  const r = [...document.querySelectorAll('#col0 g.node')].map(g => ({ id: g.dataset.id, b: g.querySelector('rect').getBoundingClientRect() }));
+  const lanes = [...document.querySelectorAll('#col0 rect.lane-bg')].map(l => l.getBoundingClientRect());
+  const out = [];
+  for (let i = 0; i < r.length; i++) {
+    const a = r[i].b;
+    if (!lanes.some(l => a.left >= l.left - 0.5 && a.right <= l.right + 0.5 && a.top >= l.top && a.bottom <= l.bottom))
+      out.push(`${r[i].id} sticks out of its lane`);
+    for (let j = i + 1; j < r.length; j++) {
+      const b = r[j].b;
+      if (a.left < b.right + 4 && b.left < a.right + 4 && a.top < b.bottom && b.top < a.bottom) out.push(`${r[i].id} overlaps ${r[j].id}`);
+    }
+  }
+  return out;
+}"""
+
+
 def utility_views():
     for c in DATA.values():
         for mid, m in c["markets"].items():
@@ -102,6 +119,14 @@ def test_box_text_is_never_cut_off(page, view):
     page.goto(f"{PAGE}#{view}")
     page.reload()
     problems = page.evaluate(TEXT_FITS)
+    assert not problems, f"{view}: " + "; ".join(problems)
+
+
+@pytest.mark.parametrize("view", list(views()) + list(utility_views()))
+def test_boxes_never_overlap(page, view):
+    page.goto(f"{PAGE}#{view}")
+    page.reload()
+    problems = page.evaluate(BOXES_APART)
     assert not problems, f"{view}: " + "; ".join(problems)
 
 
