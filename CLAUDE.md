@@ -21,7 +21,7 @@ The questions the tool must answer for any market and consumer class:
 | Markets v1 | ERCOT, PJM, CAISO. Other 4 ISOs (MISO, SPP, NYISO, ISO-NE) are a separate milestone |
 | Countries | US first; **Great Britain** is its own milestone (approved 2026-10-07, see `docs/countries-proposal.md`). NI is not GB: a future separate `sem` market |
 | Main interaction | Side-by-side compare, same template per market, **including across countries** (e.g. PJM vs GB) |
-| Detail level | **All variants**, selectable via chained dropdowns. US: State → Wires utility → Supply option. GB: Nation → Distribution area → Tariff type. Country is the first link in each column's chain |
+| Detail level | **All variants**, selectable via chained dropdowns: Market → Utility (one list, labelled `Name [area] (IOU/POU/…)`, first utility in the YAML is the default) → Supply option, shown only when that utility offers more than one archetype (Christian, 2026-10-08). Country is the first link in each column's chain |
 | Priority layer | Institutions + roles first; then money/market flows; then ownership; then planning/policy |
 | Consumers | Must include consumer classes and who sets each class's rate |
 

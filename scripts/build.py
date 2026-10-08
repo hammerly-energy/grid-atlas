@@ -116,7 +116,7 @@ def compile_all(data, maps=None):
 
 def main():
     compiled = compile_all(load(), load_maps())
-    js = json.dumps(compiled, separators=(",", ":"), ensure_ascii=False, sort_keys=True)
+    js = json.dumps(compiled, separators=(",", ":"), ensure_ascii=False)   # keep YAML order: the first utility listed is the default
     (ROOT / "web/data.json").write_text(js)
     (ROOT / "web/data.js").write_text("window.GRID_ATLAS=" + js + ";\n")
     print(f"wrote web/data.json + web/data.js ({len(js)/1024:.1f} KB), {len(compiled['markets'])} markets, {len(compiled['answers'])} answers")

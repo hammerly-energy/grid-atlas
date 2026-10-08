@@ -149,6 +149,12 @@ function domainOf(col, n) {     // a utility's fill can carry its own territory 
   const f = u && u.fills && n.slot && u.fills[n.slot];
   return (f && typeof f === "object" && f.domain_area) || n.domain_area;
 }
+function utilityType(mid, u) {   // the abbreviation in the kind label of the node the utility fills, e.g. IOU, POU
+  const nodes = resolve(mid, u.archetypes[0]).nodes.filter(n => n.lane === "retail" && n.slot && u.fills && u.fills[n.slot]);
+  const k = nodes.length ? label(country(mid).kind_labels, nodes[0].kind) : "";
+  const ab = k.match(/\(([^)]+)\)/);
+  return ab ? ab[1] : k;
+}
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
 /* ---------- layout ---------- */
@@ -273,25 +279,29 @@ function renderCol(i) {
     mSel.appendChild(g);
   }
   mSel.value = col.mid;
-  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; col.sel = null; render(); };
+  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; col.sel = null; render(); };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return;
 
   const m = D.markets[col.mid], C = country(col.mid);
-  const aSel = document.createElement("select"); aSel.setAttribute("aria-label", "Setup");
-  const archs = Object.keys(m.archetypes);
-  if (!archs.length) aSel.add(new Option("No setups entered", ""));
-  archs.forEach(a => aSel.add(new Option(a.replace(/_/g, " "), a)));
-  aSel.value = col.arch;
-  aSel.onchange = () => { col.arch = aSel.value; col.util = ""; col.sel = null; render(); };
-  chain.appendChild(aSel);
-
-  const uSel = document.createElement("select"); uSel.setAttribute("aria-label", C.chain[C.chain.length - 2] || "Utility");
-  uSel.add(new Option(`Any ${(C.chain[1] || "utility").toLowerCase()}`, ""));
-  Object.entries(m.utilities).filter(([, u]) => u.archetypes.includes(col.arch)).forEach(([name, u]) => uSel.add(new Option(`${name} (${u.area})`, name)));
-  uSel.value = col.util;
-  uSel.onchange = () => { col.util = uSel.value; render(); };
-  chain.appendChild(uSel);
+  const utils = Object.entries(m.utilities);
+  if (utils.length && !m.utilities[col.util]) { col.util = utils[0][0]; col.arch = utils[0][1].archetypes[0]; }
+  if (utils.length) {      // one list of named utilities; the setup follows from the utility
+    const uSel = document.createElement("select"); uSel.setAttribute("aria-label", C.chain[1] || "Utility");
+    utils.forEach(([name, u]) => uSel.add(new Option(`${name} [${u.area}] (${utilityType(col.mid, u)})`, name)));
+    uSel.value = col.util;
+    uSel.onchange = () => { col.util = uSel.value; col.arch = m.utilities[col.util].archetypes[0]; col.sel = null; render(); };
+    chain.appendChild(uSel);
+  }
+  const archs = utils.length ? m.utilities[col.util].archetypes : Object.keys(m.archetypes);
+  if (archs.length !== 1) {   // a supply choice only when the utility offers more than one setup
+    const aSel = document.createElement("select"); aSel.setAttribute("aria-label", C.chain[2] || "Setup");
+    if (!archs.length) aSel.add(new Option("No setups entered", ""));
+    archs.forEach(a => aSel.add(new Option(a.replace(/_/g, " "), a)));
+    aSel.value = col.arch;
+    aSel.onchange = () => { col.arch = aSel.value; col.sel = null; render(); };
+    chain.appendChild(aSel);
+  }
 
   if (!col.arch) return;
 
