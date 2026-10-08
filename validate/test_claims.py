@@ -33,7 +33,7 @@ def by_kind(nodes, kind):
     return [n for n in nodes.values() if n["kind"] == kind]
 
 
-# ---- completeness: every class x bill component has a path ending at a setter ----
+# ---- completeness: every class x bill component has at least one line item, each with one path ending at a setter ----
 # (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
 THIN_SLICE = "thin slice: only the residential class is wired so far"
 KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
@@ -55,7 +55,45 @@ def _bill_cases():
 
 @pytest.mark.parametrize("mid,arch,cls,comp,edges", list(_bill_cases()))
 def test_complete_bill_path(mid, arch, cls, comp, edges):
-    assert build.who_sets(edges, cls, comp), f"no unique path to a setter for {cls}/{comp} in {mid}:{arch}"
+    items, problems = build.line_items(edges, cls, comp)
+    assert items and not problems, f"{cls}/{comp} in {mid}:{arch}: {problems or 'no path to a setter'}"
+
+
+# ---- line items: one bill line, several setters (approved 2026-10-08) ----
+def _e(i, frm, to, mode="sets", sub=None, comp="ancillary_uplift"):
+    return {"id": i, "from": frm, "to": to, "type": "sets_rate", "mode": mode, "rate_component": comp} | ({"subcomponent": sub} if sub else {})
+
+
+def test_line_items_share_unlabelled_hops():
+    edges = [_e("rep_res", "rep", "residential", "passes_through"),
+             _e("iso_rep", "iso", "rep", "market", "Ancillary services"),
+             _e("puc_rep", "puc", "rep", "approves", "Securitization"),
+             _e("puc_iso_fee", "puc", "iso", "approves", "Administration fee")]
+    a = build.answer(edges, "residential", "ancillary_uplift")
+    got = {i["subcomponent"]: (i["setter"], i["path"]) for i in a["items"]}
+    assert got == {"Ancillary services": ("iso", ["rep_res", "iso_rep"]), "Securitization": ("puc", ["rep_res", "puc_rep"])}
+    assert build.who_sets(edges, "residential", "ancillary_uplift") is None     # two setters: no single answer
+
+
+def test_line_item_label_without_its_own_path_is_a_limit_on_the_default_item():
+    edges = [_e("rep_res", "rep", "residential", "passes_through"), _e("iso_rep", "iso", "rep", "market"),
+             _e("puc_iso_fee", "puc", "iso", "approves", "Administration fee")]
+    items, problems = build.line_items(edges, "residential", "ancillary_uplift")
+    assert not problems and len(items) == 1 and items[0]["limits"] == ["puc_iso_fee"]
+
+
+def test_two_lines_for_one_line_item_are_an_error():
+    edges = [_e("rep_res", "rep", "residential", "passes_through"),
+             _e("a", "iso", "rep", "market", "Ancillary services"), _e("b", "puc", "rep", "sets", "Ancillary services")]
+    items, problems = build.line_items(edges, "residential", "ancillary_uplift")
+    assert problems and build.answer(edges, "residential", "ancillary_uplift") is None
+
+
+def test_line_item_that_stops_short_of_a_setter_is_an_error():
+    edges = [_e("rep_res", "rep", "residential", "passes_through"), _e("iso_rep", "iso", "rep", "market", "Ancillary services"),
+             _e("x_rep", "x", "rep", "passes_through", "Securitization")]
+    items, problems = build.line_items(edges, "residential", "ancillary_uplift")
+    assert [i["subcomponent"] for i in items] == ["Ancillary services"] and problems
 
 
 # ---- mode and ownership invariants (all countries) ----

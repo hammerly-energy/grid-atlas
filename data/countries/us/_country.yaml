@@ -41,6 +41,9 @@ glossary:
   IOU: {term: IOU, meaning: Investor-owned utility.}
   Muni / co-op: {term: Muni / co-op, meaning: City-owned / member-owned utility.}
   LSE: {term: LSE, meaning: Load-serving entity; buys wholesale power for end customers., equivalent: {GB: Supplier (as a BSC party)}}
+  ERCOT: {term: ERCOT, meaning: "Electric Reliability Council of Texas; the ISO for about 90% of Texas load, outside FERC rate and market-rule jurisdiction."}
+  PJM: {term: PJM, meaning: "PJM Interconnection; the RTO for all or parts of 13 states and the District of Columbia."}
+  CAISO: {term: CAISO, meaning: California Independent System Operator; the ISO for most of California.}
   REP: {term: REP, meaning: Retail electric provider (ERCOT term)., equivalent: {GB: Supplier}}
   TDSP / EDC: {term: TDSP / EDC, meaning: Wires-only utility (ERCOT term / PA term)., equivalent: {GB: DNO}}
   NOIE: {term: NOIE, meaning: Non-opt-in entity; an ERCOT municipal utility or co-op that has not opted in to retail competition.}

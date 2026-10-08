@@ -140,6 +140,7 @@ Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL 
 | `asset` | `owns` (required) and `operates` (required, except when the target is a `market` node, e.g. PJM → RPM) |
 | `applies_to` | consumer classes, if class-specific |
 | `rate_component` | `generation` · `transmission` · `distribution` · `capacity` · `ancillary_uplift` · `riders_public_purpose` · `exit_fee` · `balancing` · `policy_levy` · `tax` · `supplier_margin` · `metering`. Line items in `subcomponent` (TNUoS, DUoS, CfD, RO, PCIA). Never add a synonym (e.g. no `wholesale_energy`; GB relabels `generation`) |
+| `subcomponent` | a bill line can hold several line items with different setters (approved 2026-10-08). Edges with the same `subcomponent` form one item; an edge without one is a hop shared by every item (e.g. the REP that bills everything) |
 | `valid_from` / `valid_to` | time-bounded facts (e.g. GB 0% domestic VAT to 2027-03-31) |
 | `source` | `{title, url, accessed}` — **required** on every edge |
 | `status` | `verified` · `needs_verification` |
@@ -148,7 +149,7 @@ Each edge type gets its own color and can be toggled on/off in the UI.
 
 ### Consumer classes
 
-`residential`, `small_commercial`, `large_ci`, `large_load` (data centers / very large or transmission-connected). Every class in every archetype must have a complete `sets_rate` path, ending at a setter (`sets`, `approves`, `levies`, `market`), for every bill component that applies. `build.py` precomputes these as `answers["market|archetype|class|component"]`.
+`residential`, `small_commercial`, `large_ci`, `large_load` (data centers / very large or transmission-connected). Every class in every archetype must have at least one complete `sets_rate` path, ending at a setter (`sets`, `approves`, `levies`, `market`), for every bill component that applies, and every line item (`subcomponent`) must have exactly one. `build.py` precomputes these as `answers["market|archetype|class|component"] = {items: [{subcomponent, path, setter, mode, limits}], whole_bill_caps}`.
 
 ## Archetypes (all `needs_verification` until researched)
 

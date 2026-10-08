@@ -58,6 +58,7 @@
   .cap-t { fill:var(--accent); font-size:9.5px; }
   .panel { border-top:1px solid var(--line); margin-top:8px; padding-top:8px; font-size:13px; }
   .panel h3 { font-size:13px; margin:0 0 4px; }
+  .panel h4 { font-size:12px; margin:8px 0 2px; color:var(--muted); font-weight:600; }
   .panel dl { display:grid; grid-template-columns:max-content 1fr; gap:2px 10px; margin:0; }
   .panel dt { color:var(--muted); }
   .panel dd { margin:0; }
@@ -87,6 +88,7 @@
   .ans .mode { display:inline-block; font-size:11px; padding:0 6px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
   .ans .mode.m-caps, .ans .mode.m-approves { border-color:var(--accent); color:var(--accent); }
   .ans .lim { color:var(--muted); font-size:12px; }
+  .ans .item { display:block; color:var(--muted); font-size:12px; }
   .edge.faint { opacity:.14; }
   footer { color:var(--muted); font-size:12px; margin-top:16px; }
 </style>
@@ -411,7 +413,7 @@ function renderCol(i) {
     shown = edges.filter(e => (e.type === "sets_rate" || e.type === "pays") && e.rate_component === S.comp && e.mode !== "caps"
       && (!e.applies_to || e.applies_to.includes(S.cls)));
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
-    if (ans) { ans.path.forEach(id => path.add(id)); ans.limits.forEach(id => path.add(id)); }
+    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); });
     edges.filter(e => path.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
     caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
       && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
@@ -488,14 +490,18 @@ function answers(col, C, nodes, edges, byId) {
   if (S.lens === "bill") {
     t.innerHTML = `<caption>Who sets each part of a ${esc(S.cls.replace(/_/g, " "))} bill</caption><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr>`;
     for (const c of componentsFor(col.mid)) {
-      const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`];
-      const tr = document.createElement("tr"); tr.className = "row" + (c === S.comp ? " cur" : "");
-      const lim = a ? a.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)} ${esc(MODE_TEXT[e.mode] || e.mode)}`) : [];
-      tr.innerHTML = `<td>${esc(label(C.component_labels, c))}</td><td>${a ? `${nm(a.setter)} <span class="mode m-${a.mode}">${esc(MODE_TEXT[a.mode])}</span>` : '<span class="muted">not entered</span>'}</td><td class="lim">${lim.join("<br>") || "—"}</td>`;
-      tr.onclick = () => { S.comp = c; render(); };
-      t.appendChild(tr);
+      const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`], cl = esc(label(C.component_labels, c));
+      // one row per line item; a bill line with several setters gets one row per setter
+      (a ? a.items : [null]).forEach((it, k) => {
+        const tr = document.createElement("tr"); tr.className = "row" + (c === S.comp ? " cur" : "");
+        const lim = it ? it.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)} ${esc(MODE_TEXT[e.mode] || e.mode)}`) : [];
+        const sub = it && it.subcomponent ? `<span class="item">${k ? "↳ " : ""}${esc(it.subcomponent)}</span>` : "";
+        tr.innerHTML = `<td>${k ? "" : cl}${sub}</td><td>${it ? `${nm(it.setter)} <span class="mode m-${it.mode}">${esc(MODE_TEXT[it.mode])}</span>` : '<span class="muted">not entered</span>'}</td><td class="lim">${lim.join("<br>") || "—"}</td>`;
+        tr.onclick = () => { S.comp = c; render(); };
+        t.appendChild(tr);
+      });
     }
-    const onPath = new Set(componentsFor(col.mid).flatMap(c => { const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`]; return a ? a.path.flatMap(id => { const e = edges.find(x => x.id === id); return [e.from, e.to]; }) : []; }));
+    const onPath = new Set(componentsFor(col.mid).flatMap(c => { const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`]; return a ? a.items.flatMap(it => it.path.flatMap(id => { const e = edges.find(x => x.id === id); return [e.from, e.to]; })) : []; }));
     const whole = edges.filter(e => e.mode === "caps" && !e.rate_component && onPath.has(e.to) && (!e.applies_to || e.applies_to.includes(S.cls)));
     if (whole.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>Whole bill</td><td colspan="2">${whole.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td>`; t.appendChild(tr); }
     return t;
@@ -569,16 +575,18 @@ function panel(col, C, byId, edges, ans) {
     if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
     else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
     else {
-      const chain = [ans.setter, ...ans.path.slice().reverse().map(id => edges.find(e => e.id === id).to)];
-      const uniq = chain.filter((x, k) => chain.indexOf(x) === k);
-      const lim = ans.limits.map(id => edges.find(e => e.id === id)), whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
-      const limits = lim.map(e => `${nm(e.from)}: ${esc(e.label)}`);
-      p.innerHTML = `<h3>${esc(cl)}</h3><dl>
-        <dt>Set by</dt><dd>${nm(ans.setter)} (${MODE_TEXT[ans.mode]})</dd>
+      const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
+      const item = it => {   // one block per line item
+        const chain = [it.setter, ...it.path.slice().reverse().map(id => edges.find(e => e.id === id).to)];
+        const uniq = chain.filter((x, k) => chain.indexOf(x) === k);
+        const lim = it.limits.map(id => edges.find(e => e.id === id));
+        return `${ans.items.length > 1 || it.subcomponent ? `<h4>${esc(it.subcomponent || cl)}</h4>` : ""}<dl>
+        <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
-        <dt>Limited by</dt><dd>${limits.join("<br>") || "—"}</dd>
-        ${whole.length ? `<dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>")}</dd>` : ""}
-        <dt>Sources</dt><dd>${[...ans.path.map(id => edges.find(e => e.id === id)), ...lim, ...whole].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+        <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
+        <dt>Sources</dt><dd>${[...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+      };
+      p.innerHTML = `<h3>${esc(cl)}</h3>${ans.items.map(item).join("")}${whole.length ? `<dl><dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd></dl>` : ""}`;
     }
     return p;
   }
