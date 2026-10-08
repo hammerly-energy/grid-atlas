@@ -163,3 +163,19 @@ def test_domain_map_fills_the_selected_body(page, view, node, n_full):
     page.click(f'#col0 g.node[data-id="{node}"]')
     assert page.locator("#col0 .dmap").count() == 1, f"{node}: no map"
     assert page.locator("#col0 .dmap path.full").count() == n_full, f"{node}: wrong areas filled"
+
+
+SOURCED = """() => [...document.querySelectorAll('#col0 path.edge-hit')]
+  .filter(h => !/\\nSource: \\S/.test(h.querySelector('title').textContent)).map(h => h.dataset.edge)"""
+
+
+@pytest.mark.parametrize("view", list(views()))
+def test_every_line_shows_its_source(page, view):
+    page.goto(f"{PAGE}#{view}")
+    page.reload()
+    missing = page.evaluate(SOURCED)
+    assert not missing, f"{view}: no source on hover for " + ", ".join(missing)
+    hit = page.locator("#col0 path.edge-hit").first
+    if hit.count():
+        page.evaluate("() => document.querySelector('#col0 path.edge-hit').dispatchEvent(new MouseEvent('click', {bubbles: true}))")
+        assert page.locator("#col0 .panel dt", has_text="Source").count() >= 1, f"{view}: line panel has no source"

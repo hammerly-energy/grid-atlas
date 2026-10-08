@@ -257,6 +257,8 @@ Define a term in the UI tooltip the first time it appears in a market column.
 ## Working conventions
 
 - Research before data entry. Every fact gets a primary source (ISO, FERC, PUC, utility tariff, EIA; Ofgem, DESNZ/gov.uk, legislation.gov.uk, NESO, Elexon, LCCC) where possible; secondary sources mark the edge `needs_verification`. `docs/research/` holds the sourced research; [NV] items there stay `needs_verification`.
+- **Expert review of every line (Christian, 2026-10-08).** A power markets expert must check each line (edge) before it is marked `status: verified`: that the relationship exists, that `type`, `mode`, `domain` and `rate_component` are right, and that the cited `source` supports it. Until then the line stays `needs_verification` and is drawn dashed.
+- **Every line shows its source.** `source` is required on every edge (schema), shown on hover, in the line's detail panel, and under "Lines" in each connected box's panel. `test_every_line_shows_its_source` enforces this.
 - Never invent a node or edge to make a diagram look complete. Leave it out and log the gap in the PR/commit.
 - Schema v2 is settled. Further schema changes: stop and discuss first.
 - Quote YAML flow-map values that contain commas; `additionalProperties: false` will catch it, but only if you run the build.

@@ -387,7 +387,7 @@ function renderCol(i) {
     const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on ? " on" : ""}${off ? " off" : ""}`, stroke: color,
       "marker-end": marker(defs, shape, on ? "var(--accent)" : color, on ? "on" : e.type) }, svg);
     const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
-    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}`;
+    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "verified" : "needs verification"})`;
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
     p.onclick = hit.onclick;
   }
@@ -485,6 +485,7 @@ function panel(col, C, byId, edges, ans) {
   }
   if (col.sel && col.sel.node && byId[col.sel.node]) {
     const n = byId[col.sel.node], g = gloss(C, n.name);
+    const lines = edges.filter(e => e.from === n.id || e.to === n.id);
     const da = domainOf(col, n), ua = col.util && D.markets[col.mid].utilities[col.util].area;
     const dm = da ? domainMap(da, D.markets[col.mid].country, da !== n.domain_area && ua ? ua.toLowerCase() : null) : "";
     p.innerHTML = `<h3>${nm(n.id)}</h3><div class="dwrap"><dl>
@@ -494,7 +495,8 @@ function panel(col, C, byId, edges, ans) {
       <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
       ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
       ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}
-      ${da ? `<dt>Domain source</dt><dd>${srcLink(da.source)}</dd>` : ""}</dl>${dm}</div>`;
+      ${da ? `<dt>Domain source</dt><dd>${srcLink(da.source)}</dd>` : ""}
+      ${lines.length ? `<dt>Lines</dt><dd>${lines.map(e => `${e.from === n.id ? "→ " + nm(e.to) : "← " + nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd>` : ""}</dl>${dm}</div>`;
     return p;
   }
   p.innerHTML = `<p class="muted">Select a box or line for details.</p>`;
