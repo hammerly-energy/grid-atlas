@@ -268,7 +268,7 @@ utilities:
     area: IL
     archetypes: [restructured_choice]
     fills:
-      state_puc: {name: Illinois Commerce Commission}
+      state_puc: {name: ICC (Illinois)}
       edc:
         name: ComEd
         domain_area: {full: [comed], note: "ComEd service territory, Chicago and northern Illinois", source: &hifld {title: HIFLD Electric Retail Service Territories (archived), url: "https://source.coop/seerai/hifld/electric-retail-service-territories", accessed: "2026-10-08"}, status: needs_verification}
