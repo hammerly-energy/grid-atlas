@@ -194,3 +194,16 @@ def test_clicking_keeps_the_scroll_position(page, width):
         after = page.evaluate("() => [scrollY, document.querySelector('#col0 .diagram').scrollLeft]")
         assert after == before, f"{width}px, {target}: scroll {before} -> {after}"
     page.set_viewport_size({"width": 1400, "height": 1600})
+
+
+@pytest.mark.parametrize("mid,first,second", [("caiso", "PG&E", "SMUD"), ("ercot", "Oncor", "CenterPoint"), ("pjm", "ComEd", "Dominion Energy Virginia")])
+def test_switching_utility_keeps_the_utility_box_selected(page, mid, first, second):
+    page.goto(f"{PAGE}#lens=roles&a={quote(f'{mid}//{first}', safe='/')}&b=/")
+    page.reload()
+    box = page.evaluate("(u) => [...document.querySelectorAll('#col0 g.node')].find(g => g.textContent.includes(u)).dataset.id", first)
+    page.click(f'#col0 g.node[data-id="{box}"]')
+    page.locator("#col0 .chain select").nth(1).select_option(second)
+    assert page.locator("#col0 .panel h3").inner_text().startswith(second)
+    page.click('#col0 g.node[data-id="ferc"]')
+    page.locator("#col0 .chain select").nth(1).select_option(first)
+    assert page.locator("#col0 .panel h3").inner_text() == "FERC", "a box that is still drawn stays selected"

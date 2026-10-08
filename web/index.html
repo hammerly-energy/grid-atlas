@@ -156,6 +156,22 @@ function utilityType(mid, u) {   // the abbreviation in the kind label of the no
   const ab = k.match(/\(([^)]+)\)/);
   return ab ? ab[1] : k;
 }
+// switching market, utility or setup keeps the selection: the utility's own box stays selected as the new
+// utility's box (Oncor -> CenterPoint, PG&E -> SMUD); any other box or line stays selected if it is still drawn
+function utilityBox(mid, arch, uname) {
+  const u = uname && D.markets[mid].utilities[uname];
+  const n = u && u.fills && resolve(mid, arch).nodes.find(n => n.lane === "retail" && n.slot && u.fills[n.slot]);
+  return n ? n.id : null;
+}
+function hold(col) { col.carry = { ...(col.prev || {}), sel: col.sel }; col.sel = null; }
+function carrySel(col, old) {
+  if (!old.sel || !col.mid || !col.arch) return null;
+  const { byId, edges } = resolve(col.mid, col.arch);
+  if (old.sel.edge) return edges.some(e => e.id === old.sel.edge) ? old.sel : null;
+  const was = old.mid && utilityBox(old.mid, old.arch, old.util), now = utilityBox(col.mid, col.arch, col.util);
+  if (was && old.sel.node === was) return now ? { node: now } : null;
+  return byId[old.sel.node] ? old.sel : null;
+}
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
 // Full text, never truncated: shrink the font until the text fits the box (the diagram is in the page, so it can measure)
@@ -323,7 +339,7 @@ function renderCol(i) {
     mSel.appendChild(g);
   }
   mSel.value = col.mid;
-  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; col.sel = null; render(); };   // render picks the first utility
+  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col); render(); };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return;
 
@@ -334,7 +350,7 @@ function renderCol(i) {
     const uSel = document.createElement("select"); uSel.setAttribute("aria-label", C.chain[1] || "Utility");
     utils.forEach(([name, u]) => uSel.add(new Option(`${name} [${u.area}] (${utilityType(col.mid, u)})`, name)));
     uSel.value = col.util;
-    uSel.onchange = () => { col.util = uSel.value; col.arch = m.utilities[col.util].archetypes[0]; col.sel = null; render(); };
+    uSel.onchange = () => { col.util = uSel.value; col.arch = m.utilities[col.util].archetypes[0]; hold(col); render(); };
     chain.appendChild(uSel);
   }
   const archs = utils.length ? m.utilities[col.util].archetypes : Object.keys(m.archetypes);
@@ -343,7 +359,7 @@ function renderCol(i) {
     if (!archs.length) aSel.add(new Option("No setups entered", ""));
     archs.forEach(a => aSel.add(new Option(a.replace(/_/g, " "), a)));
     aSel.value = col.arch;
-    aSel.onchange = () => { col.arch = aSel.value; col.sel = null; render(); };
+    aSel.onchange = () => { col.arch = aSel.value; hold(col); render(); };
     chain.appendChild(aSel);
   }
 
@@ -554,7 +570,11 @@ function render() {
   const view = JSON.stringify([S.lens, S.cols.map(c => [c.mid, c.arch, c.util])]);
   $("#cols").style.minHeight = view === lastView ? keep.h + "px" : "";
   lastView = view;
-  S.cols.forEach(pickUtility);
+  S.cols.forEach(c => {
+    pickUtility(c);
+    if (c.carry) { c.sel = carrySel(c, c.carry); delete c.carry; }
+    c.prev = { mid: c.mid, arch: c.arch, util: c.util };
+  });
   $("#cols").innerHTML = '<div class="col" id="col0"></div><div class="col" id="col1"></div>';
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
     const nodes = resolve(c.mid, c.arch).nodes;
