@@ -42,14 +42,22 @@ function rtoCounties() {
   return t;
 }
 
-// Wires utility territories: counties listed in derived/county_utility.csv (from EIA-861 by eia861_counties.py)
-function utilityCounties() {
-  const rows = read('county_utility').toString().trim().split('\n').slice(1).map(l => l.split(','));
-  const t = structuredClone(input('census_counties'));
-  const geoms = t.objects.counties.geometries;
-  t.objects = { counties: { type: 'GeometryCollection', geometries: rows.map(([fips, u]) =>
-    ({ ...geoms.find(g => g.id === fips), properties: { aid: u } })).filter(g => g.type) } };
-  return t;
+// Wires utility territories: California Energy Commission service-area polygons, one per utility.
+// Franchise territories are exclusive, so any overlap means a bad input and fails the build.
+const CEC_UTILITY = { 'PG&E': 'pge', 'SCE': 'sce', 'SDG&E': 'sdge' };   // CEC Acronym -> area id
+async function utilityAreas() {
+  const d = input('cec_utilities');
+  d.features = d.features.filter(f => CEC_UTILITY[f.properties.Acronym])
+    .map(f => ({ ...f, properties: { aid: CEC_UTILITY[f.properties.Acronym] } }));
+  const ids = Object.values(CEC_UTILITY);
+  for (const [i, x] of ids.entries()) for (const y of ids.slice(i + 1)) {
+    const only = id => ({ ...d, features: d.features.filter(f => f.properties.aid === id) });
+    const out = await mapshaper.applyCommands(`-i x.json y.json combine-files -clip y target=x -proj ${MAPS.north_america.proj} target=x -each 'a=this.area' target=x -o format=json target=x out.json`,
+      { 'x.json': only(x), 'y.json': only(y) });
+    const km2 = JSON.parse(out['out.json']).reduce((s, r) => s + r.a, 0) / 1e6;
+    if (km2 > 1) throw new Error(`cec_utilities: ${x} and ${y} overlap by ${km2.toFixed(0)} km²`);
+  }
+  return d;
 }
 
 // GB: the 14 DNO licence areas (NESO, British National Grid) reprojected to lon/lat
@@ -118,7 +126,7 @@ const MAPS = {
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
       { id: 'iso', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties()) },
-      { id: 'utility', src: 'county_utility', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(utilityCounties()) },
+      { id: 'utility', src: 'cec_utilities', overlay: true, topo: await utilityAreas(), interval: 3000 },   // drawn zoomed in on the state
     ],
     groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()) },
   },

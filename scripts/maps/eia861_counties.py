@@ -1,4 +1,4 @@
-"""List the RTOs, and selected wires utilities, serving each contiguous-US county from EIA-861, for the locator map.
+"""List the RTOs serving each contiguous-US county from EIA-861, for the ISO footprints on the locator map.
 
 EIA-861 lists each utility's counties (Service_Territory) and, per state, its customers and balancing authority
 (Sales_Ult_Cust, Delivery_Companies; the "Operating in these RTOs" flags in Utility_Data also count market
@@ -7,12 +7,7 @@ customers are spread evenly over its counties in that state; a county is in an R
 utilities hold at least MIN_SHARE of its estimated customers. County-level approximation: a border county can be in
 two footprints, and a small utility at the edge of a county doesn't pull the county in.
 
-Wires utilities in UTILITY_AREAS get the same estimate: a county is in a utility's territory when the utility holds at
-least UTILITY_MIN of its estimated customers, so a county it serves only in part still counts, but a stray listing
-(PG&E in San Diego County) does not. The even spread can't tell which utility serves most of a shared county.
-
-    python3 -I scripts/maps/eia861_counties.py scripts/maps/raw/f8612025
-    # -> scripts/maps/derived/county_rto.csv, scripts/maps/derived/county_utility.csv
+    python3 -I scripts/maps/eia861_counties.py scripts/maps/raw/f8612025   # -> scripts/maps/derived/county_rto.csv
 """
 import collections, csv, json, re, sys, unicodedata
 from pathlib import Path
@@ -21,8 +16,6 @@ import openpyxl
 HERE = Path(__file__).resolve().parent
 MIN_SHARE = 0.3   # an RTO's utilities must hold at least this share of a county's estimated customers
 RTO_BA = {'CISO': 'caiso', 'ERCO': 'ercot', 'PJM': 'pjm', 'MISO': 'miso', 'SWPP': 'spp', 'NYIS': 'nyiso', 'ISNE': 'isone'}   # EIA BA code -> area id
-UTILITY_AREAS = {14328: 'pge', 17609: 'sce', 16609: 'sdge'}   # EIA utility number -> area id (PG&E, SCE, SDG&E)
-UTILITY_MIN = 0.1
 FIPS_STATE = {'01': 'AL', '04': 'AZ', '05': 'AR', '06': 'CA', '08': 'CO', '09': 'CT', '10': 'DE', '11': 'DC', '12': 'FL', '13': 'GA',
     '16': 'ID', '17': 'IL', '18': 'IN', '19': 'IA', '20': 'KS', '21': 'KY', '22': 'LA', '23': 'ME', '24': 'MD', '25': 'MA', '26': 'MI',
     '27': 'MN', '28': 'MS', '29': 'MO', '30': 'MT', '31': 'NE', '32': 'NV', '33': 'NH', '34': 'NJ', '35': 'NM', '36': 'NY', '37': 'NC',
@@ -65,14 +58,12 @@ def main(raw):
 
     total = collections.Counter()                 # FIPS -> estimated customers
     by_rto = collections.defaultdict(collections.Counter)    # FIPS -> RTO -> estimated customers
-    by_util = collections.defaultdict(collections.Counter)   # FIPS -> utility area id -> estimated customers
     for key, fl in served.items():
         for code, c in cust.get(key, {}).items():
             per = c / len(fl)                     # customers spread evenly over the utility's counties in that state
             for f in fl:
                 total[f] += per
                 if code in RTO_BA: by_rto[f][RTO_BA[code]] += per
-                if key[0] in UTILITY_AREAS: by_util[f][UTILITY_AREAS[key[0]]] += per
     out = HERE / 'derived/county_rto.csv'
     weight = {}
     with out.open('w', newline='') as fh:
@@ -81,13 +72,6 @@ def main(raw):
             for rto, c in sorted(by_rto[f].items()):
                 if total[f] and c / total[f] >= MIN_SHARE:
                     w.writerow([f, rto, round(c / total[f], 2)]); weight[f] = True
-    with (HERE / 'derived/county_utility.csv').open('w', newline='') as fh:
-        w = csv.writer(fh); w.writerow(['fips', 'utility', 'share'])
-        for f in sorted(by_util):
-            for u, c in sorted(by_util[f].items()):
-                share = c / total[f]
-                if share >= UTILITY_MIN:
-                    w.writerow([f, u, round(share, 2)])
     print(f'{len(weight)} counties in an RTO; {len(missing)} county names unmatched: {sorted(missing)[:15]}')
 
 

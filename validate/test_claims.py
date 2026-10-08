@@ -278,23 +278,16 @@ def test_iso_footprints_match_known_counties():
     assert "caiso" in c["06073"] and "caiso" in c["06075"]           # San Diego (SDG&E), San Francisco (PG&E)
 
 
-def county_utility():
-    """FIPS -> set of wires utility area ids, from scripts/maps/derived/county_utility.csv (EIA-861)."""
-    out = {}
-    for line in (build.ROOT / "scripts/maps/derived/county_utility.csv").read_text().splitlines()[1:]:
-        fips, u, _ = line.split(",")
-        out.setdefault(fips, set()).add(u)
-    return out
-
-
-def test_california_iou_territories_match_known_counties():
-    c = county_utility()
-    assert c["06075"] == {"pge"} and c["06001"] == {"pge"}          # San Francisco, Alameda: PG&E only
-    assert c["06111"] == {"sce"}                                    # Ventura: SCE only
-    assert {"sce"} <= c["06037"] and "pge" not in c["06037"]        # Los Angeles: SCE (with LADWP and other munis)
-    assert "sdge" in c["06073"] and "pge" not in c["06073"]         # San Diego: SDG&E; PG&E's stray listing dropped
-    assert {"sdge", "sce"} <= c["06059"]                            # Orange: SCE north, SDG&E south
-    assert "sdge" not in c.get("06037", set())                      # SDG&E stops south of Los Angeles County
+def test_california_iou_territories_sit_north_to_south():
+    # CEC polygons; make_maps.mjs already fails the build if two territories overlap
+    m = build.load_maps()["north_america"]
+    b = m["bbox"]                                        # [x0, y0, x1, y1], SVG y grows southward
+    assert {"pge", "sce", "sdge"} <= set(b)
+    assert b["pge"][1] < b["sce"][1] < b["sdge"][1]     # PG&E reaches furthest north, SDG&E least
+    assert b["sdge"][3] >= b["sce"][3]                  # SDG&E reaches the Mexican border
+    for u in ("pge", "sce", "sdge"):                     # all inside California
+        assert all(lo >= hi for lo, hi in zip(b[u][:2], [c - 1 for c in b["ca"][:2]]))
+        assert all(hi <= lo for hi, lo in zip(b[u][2:], [c + 1 for c in b["ca"][2:]]))
 
 
 def test_hm_treasury_covers_the_uk_and_desnz_only_gb():

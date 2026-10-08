@@ -62,13 +62,13 @@
     "credit": "NESO",
     "licence": "NESO Open Data Licence"
   },
-  "county_utility": {
-    "file": "derived/county_utility.csv",
-    "sha256": "af045e60064fd742fad0df88833d6cdab0fa880fd964c0ade2b8b4b053aad286",
-    "title": "County to wires utility table (PG&E, SCE, SDG&E) derived from EIA-861 2025 service territories by eia861_counties.py",
-    "url": "https://www.eia.gov/electricity/data/eia861/",
-    "accessed": "2026-10-07",
-    "credit": "US EIA",
-    "licence": "Public domain (US government work)"
+  "cec_utilities": {
+    "file": "raw/ca-utilities.geojson",
+    "sha256": "3e0b8d11fd9b6ddff254ad3b58bce91934a787b0da0cfdde11de3fa3241bcc71",
+    "title": "California Energy Commission, Electric Load Serving Entities (IOU & POU) service territories",
+    "url": "https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/ElectricLoadServingEntities_IOU_POU/FeatureServer/0/query?where=1%3D1&outFields=Acronym,Utility,Type&outSR=4326&f=geojson",
+    "accessed": "2026-10-08",
+    "credit": "California Energy Commission",
+    "licence": "Public domain (California open data)"
   }
 }

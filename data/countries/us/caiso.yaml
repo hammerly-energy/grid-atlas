@@ -92,7 +92,7 @@ archetypes:
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ra}
       - {id: iou_res_rider, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose charges, status: needs_verification, source: *ra}
 
-# Territories: counties the utility serves at least in part, from EIA-861 Service_Territory (scripts/maps/eia861_counties.py).
+# Territories: California Energy Commission service-area polygons (scripts/maps/make_maps.mjs fails if two overlap).
 utilities:
   PG&E:
     area: CA
@@ -102,8 +102,8 @@ utilities:
         name: PG&E
         domain_area:
           full: [pge]
-          note: Counties PG&E serves at least in part; northern and central California (county-level approximation)
-          source: &eia861 {title: EIA-861 2025 service territories, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-07"}
+          note: PG&E service territory, northern and central California; excludes city-owned utility areas such as SMUD
+          source: &cec {title: California Energy Commission electric load serving entities, url: "https://cecgis-caenergy.opendata.arcgis.com/", accessed: "2026-10-08"}
           status: needs_verification
   SCE:
     area: CA
@@ -113,8 +113,8 @@ utilities:
         name: Southern California Edison
         domain_area:
           full: [sce]
-          note: Counties SCE serves at least in part; southern and east-central California (county-level approximation)
-          source: *eia861
+          note: SCE service territory, southern and east-central California; excludes LADWP and other city-owned utilities
+          source: *cec
           status: needs_verification
   SDG&E:
     area: CA
@@ -124,6 +124,6 @@ utilities:
         name: San Diego Gas & Electric
         domain_area:
           full: [sdge]
-          note: Counties SDG&E serves at least in part; San Diego and southern Orange County (county-level approximation)
-          source: *eia861
+          note: SDG&E service territory, San Diego County and southern Orange County
+          source: *cec
           status: needs_verification
