@@ -54,6 +54,32 @@ base:
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
+    - id: nerc
+      name: NERC
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: national
+      description: Sets reliability standards approved by FERC; enforces them through regional entities.
+      domain_area:
+        full: [lower48, canada]
+        note: Contiguous US, most of Canada and northern Baja California (Mexico)
+        source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}
+        status: needs_verification
+    - id: wecc
+      name: WECC
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: national
+      description: Western Electricity Coordinating Council; NERC's regional entity for the Western Interconnection, including all of California.
+      source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
+      status: needs_verification
+  edges:
+    # reliability (FPA s.215): FERC approves NERC standards; the regional entity enforces them
+    - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
+       source: &nerc {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}}
+    - {id: nerc_wecc_rel, from: nerc, to: wecc, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
+    - {id: wecc_caiso_rel, from: wecc, to: caiso, type: regulates, domain: reliability, label: enforces reliability standards on CAISO, status: needs_verification, source: *nerc}
+
 archetypes:
   iou_bundled:
     nodes:
@@ -139,6 +165,7 @@ archetypes:
         jurisdiction: private
         description: Household customer of the publicly owned utility. It has no choice of supplier.
     edges:
+      - {id: wecc_ba_rel, from: wecc, to: banc, type: regulates, domain: reliability, label: enforces reliability standards on the balancing authority, status: needs_verification, source: *nerc}
       # regulation and operations
       - {id: ferc_caiso_weim, from: ferc, to: caiso, type: regulates, domain: market_rules, label: approves CAISO's tariff including WEIM rules, status: needs_verification, source: *caisomkt}
       - {id: caiso_operates_weim, from: caiso, to: weim, type: operates, label: runs the real-time market, status: needs_verification, source: *weim}

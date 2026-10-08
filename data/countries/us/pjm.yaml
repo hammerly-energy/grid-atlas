@@ -47,6 +47,32 @@ base:
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
+    - id: nerc
+      name: NERC
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: national
+      description: Sets reliability standards approved by FERC; enforces them through regional entities.
+      domain_area:
+        full: [lower48, canada]
+        note: Contiguous US, most of Canada and northern Baja California (Mexico)
+        source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}
+        status: needs_verification
+    - id: rf
+      name: ReliabilityFirst
+      lane: regulators
+      kind: reliability_body
+      jurisdiction: national
+      description: NERC's regional entity for most of the PJM footprint and PJM's lead regional entity.
+      source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
+      status: needs_verification
+  edges:
+    # reliability (FPA s.215): FERC approves NERC standards; the regional entity enforces them
+    - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
+       source: &nerc {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}}
+    - {id: nerc_rf_rel, from: nerc, to: rf, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
+    - {id: rf_pjm_rel, from: rf, to: pjm, type: regulates, domain: reliability, label: enforces reliability standards on PJM, status: needs_verification, source: *nerc}
+
 archetypes:
   restructured_choice:
     nodes:
@@ -121,6 +147,14 @@ archetypes:
         description: State commission that sets the utility's bundled retail rates, including generation.
         source: &va585 {title: "Va. Code § 56-585.1 (SCC review of utility rates)", url: "https://law.lis.virginia.gov/vacode/title56/chapter23/section56-585.1/", accessed: "2026-10-08"}
         status: needs_verification
+      - id: serc
+        name: SERC
+        lane: regulators
+        kind: reliability_body
+        jurisdiction: national
+        description: NERC's regional entity for the southeastern US, including Virginia.
+        source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
+        status: needs_verification
       - id: viu
         name: Vertically integrated utility
         slot: viu
@@ -138,6 +172,8 @@ archetypes:
         jurisdiction: private
         description: Household customer of a vertically integrated utility. Only customers above 5 MW may buy from a competitive supplier.
     edges:
+      - {id: nerc_serc_rel, from: nerc, to: serc, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
+      - {id: serc_viu_rel, from: serc, to: viu, type: regulates, domain: reliability, label: enforces reliability standards on the utility's transmission, status: needs_verification, source: *nerc}
       - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification, source: *oatt}
       - {id: puc_viu, from: state_puc, to: viu, type: regulates, domain: rates, label: regulates bundled retail rates, status: needs_verification, source: *va585}
       - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}

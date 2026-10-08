@@ -128,6 +128,22 @@ def test_ercot_ferc_does_not_regulate_rates_or_market_rules():
     assert {("ferc", "nerc"), ("nerc", "texas_re"), ("texas_re", "ercot")} <= rel
 
 
+RELIABILITY_RE = {"ercot": "texas_re", "caiso": "wecc", "pjm": "rf"}
+
+
+@pytest.mark.parametrize("mid,re_id", RELIABILITY_RE.items())
+def test_every_us_iso_sits_under_nerc_and_its_regional_entity(mid, re_id):
+    """FPA s.215: FERC approves NERC standards; the regional entity enforces them on the ISO, in every archetype."""
+    for arch, nodes, edges in all_graphs(mid):
+        rel = {(e["from"], e["to"]) for e in edges if e["type"] == "regulates" and e.get("domain") == "reliability"}
+        assert {("ferc", "nerc"), ("nerc", re_id), (re_id, mid)} <= rel, f"{mid}:{arch}"
+
+
+def test_dominion_virginia_is_in_serc():
+    _, edges = g("pjm", "limited_choice")
+    assert any(e["from"] == "serc" and e["to"] == "viu" and e.get("domain") == "reliability" for e in edges)
+
+
 def test_puct_oversees_ercot():
     _, edges = g("ercot", "competitive_area")
     assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "ercot" for e in edges)

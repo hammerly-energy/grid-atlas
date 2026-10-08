@@ -34,6 +34,8 @@ glossary:
   BA: {term: BA, meaning: Balancing authority; balances load and generation within its area.}
   FERC: {term: FERC, meaning: Federal Energy Regulatory Commission; regulates wholesale markets and interstate transmission., equivalent: {GB: Ofgem (wholesale and network side)}}
   NERC: {term: NERC, meaning: North American Electric Reliability Corporation; sets reliability standards approved by FERC and enforced through regional entities.}
+  WECC: {term: WECC, meaning: "Western Electricity Coordinating Council; NERC regional entity for the Western Interconnection."}
+  SERC: {term: SERC, meaning: "SERC Reliability Corporation; NERC regional entity for the southeastern US."}
   PUC: {term: PUC / PUCT / CPUC, meaning: State utility commission (generic / Texas / California)., equivalent: {GB: Ofgem (retail and distribution side)}}
   IOU: {term: IOU, meaning: Investor-owned utility.}
   Muni / co-op: {term: Muni / co-op, meaning: City-owned / member-owned utility.}
