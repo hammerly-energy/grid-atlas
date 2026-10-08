@@ -157,6 +157,14 @@ function utilityType(mid, u) {   // the abbreviation in the kind label of the no
 }
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
+// Full text, never truncated: shrink the font until the text fits the box (the diagram is in the page, so it can measure)
+function fit(t, text, max, min = 7.5) {
+  t.textContent = text;
+  let fs = parseFloat(getComputedStyle(t).fontSize);
+  while (t.getComputedTextLength() > max && fs > min) { fs -= 0.5; t.style.fontSize = fs + "px"; }
+  return t;
+}
+
 /* ---------- layout ---------- */
 function layout(nodes) {
   const pos = {};
@@ -285,7 +293,10 @@ function renderCol(i) {
 
   const m = D.markets[col.mid], C = country(col.mid);
   const utils = Object.entries(m.utilities);
-  if (utils.length && !m.utilities[col.util]) { col.util = utils[0][0]; col.arch = utils[0][1].archetypes[0]; }
+  if (utils.length && !m.utilities[col.util]) {   // default: the first utility offering the current setup, else the first utility
+    const [name, u] = utils.find(([, u]) => u.archetypes.includes(col.arch)) || utils[0];
+    col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
+  }
   if (utils.length) {      // one list of named utilities; the setup follows from the utility
     const uSel = document.createElement("select"); uSel.setAttribute("aria-label", C.chain[1] || "Utility");
     utils.forEach(([name, u]) => uSel.add(new Option(`${name} [${u.area}] (${utilityType(col.mid, u)})`, name)));
@@ -356,8 +367,8 @@ function renderCol(i) {
     const g = el("g", { class: `node${sel ? " sel" : ""}${active.has(n.id) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
       transform: `translate(${p.x},${p.y})`, "data-id": n.id, tabindex: 0, role: "button", "aria-label": name }, svg);
     el("rect", { width: NODE_W, height: NODE_H, rx: 5 }, g);
-    el("text", { x: 8, y: 16 }, g).textContent = name.length > 22 ? name.slice(0, 21) + "…" : name;
-    el("text", { x: 8, y: 30, class: "k" }, g).textContent = label(C.kind_labels, n.kind);
+    fit(el("text", { x: 8, y: 16 }, g), name, NODE_W - 16);
+    fit(el("text", { x: 8, y: 30, class: "k" }, g), label(C.kind_labels, n.kind), NODE_W - 16);
     if (kindsElsewhere && !kindsElsewhere.has(n.kind)) el("text", { x: NODE_W, y: NODE_H + 11, class: "u", "text-anchor": "end" }, g).textContent = "only here";
     if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
       el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);

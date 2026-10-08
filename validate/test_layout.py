@@ -74,6 +74,37 @@ def test_every_line_is_clickable(page, view):
     assert not problems, f"{view}: " + "; ".join(problems)
 
 
+TEXT_FITS = """() => {
+  const out = [];
+  for (const g of document.querySelectorAll('#col0 g.node')) {
+    const r = g.querySelector('rect').getBBox();
+    for (const t of g.querySelectorAll('text:not(.u):not(.asset-t)')) {
+      const b = t.getBBox(), fs = parseFloat(getComputedStyle(t).fontSize);
+      if (b.x < r.x + 4 || b.x + b.width > r.x + r.width - 4) out.push(`${g.dataset.id}: '${t.textContent}' overflows its box`);
+      if (fs < 8) out.push(`${g.dataset.id}: '${t.textContent}' shrunk to ${fs}px`);
+      if (t.textContent.endsWith('…')) out.push(`${g.dataset.id}: '${t.textContent}' is cut off`);
+    }
+  }
+  return out;
+}"""
+
+
+def utility_views():
+    for c in DATA.values():
+        for mid, m in c["markets"].items():
+            for name, u in m["utilities"].items():
+                for arch in u["archetypes"]:
+                    yield f"lens=roles&a={quote(f'{mid}/{arch}/{name}', safe='/')}&b=/"
+
+
+@pytest.mark.parametrize("view", list(utility_views()))
+def test_box_text_is_never_cut_off(page, view):
+    page.goto(f"{PAGE}#{view}")
+    page.reload()
+    problems = page.evaluate(TEXT_FITS)
+    assert not problems, f"{view}: " + "; ".join(problems)
+
+
 def domain_views():
     maps = build.load_maps()
     for cc, c in DATA.items():
