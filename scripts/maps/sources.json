@@ -97,5 +97,14 @@
     "accessed": "2026-10-08",
     "credit": "US EIA",
     "licence": "Public domain (US government work)"
+  },
+  "natural_earth_admin1": {
+    "file": "raw/ne_10m_admin_1_states_provinces.geojson",
+    "sha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+    "title": "Natural Earth 1:10m admin 1 states and provinces v5.1.2 (GitHub nvkelso/natural-earth-vector)",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_10m_admin_1_states_provinces.geojson",
+    "accessed": "2026-10-08",
+    "credit": "Natural Earth",
+    "licence": "Public domain"
   }
 }

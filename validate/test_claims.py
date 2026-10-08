@@ -297,8 +297,11 @@ def domain(mid, node_id):
 
 
 def test_nerc_covers_contiguous_us_and_canada():
+    """NERC: contiguous US, the Canadian provinces in a regional entity, and Baja California (in WECC); not all of Mexico,
+    not the territories, not Alaska or Hawaii."""
     full, _ = domain("ercot", "nerc")
-    assert {"tx", "ca", "pa", "canada"} <= full and "mexico" not in full
+    assert {"tx", "ca", "pa", "ca_on", "ca_qc", "ca_bc", "mx_bcn"} <= full
+    assert not full & {"mexico", "canada", "ak", "hi"}
 
 
 def test_puct_domain_is_texas_only():

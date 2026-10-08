@@ -66,6 +66,16 @@ async function utilityAreas(src) {
   return d;
 }
 
+// Canadian provinces and Baja California (Mexico), for bodies whose authority crosses the US border (NERC, WECC, NPCC, MRO).
+// Only these are drawn; the territories (YT, NT, NU) and Newfoundland and Labrador sit outside every NERC regional entity.
+const ADMIN1 = { 'CA-BC': 'ca_bc', 'CA-AB': 'ca_ab', 'CA-SK': 'ca_sk', 'CA-MB': 'ca_mb', 'CA-ON': 'ca_on', 'CA-QC': 'ca_qc',
+  'CA-NB': 'ca_nb', 'CA-NS': 'ca_ns', 'CA-PE': 'ca_pe', 'MX-BCN': 'mx_bcn' };
+function admin1() {
+  const d = input('natural_earth_admin1');
+  d.features = d.features.filter(f => ADMIN1[f.properties.iso_3166_2]).map(f => ({ ...f, properties: { aid: ADMIN1[f.properties.iso_3166_2] } }));
+  return d;
+}
+
 // GB: the 14 DNO licence areas (NESO, British National Grid) reprojected to lon/lat
 async function dnoAreas() {
   const out = await mapshaper.applyCommands(
@@ -132,11 +142,13 @@ const MAPS = {
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
       { id: 'iso', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties()) },
+      { id: 'admin1', src: 'natural_earth_admin1', overlay: true, topo: admin1() },
       { id: 'nerc_re', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties('county_re')) },
       { id: 'utility', src: 'cec_utilities', overlay: true, topo: await utilityAreas('cec_utilities'), interval: 3000 },   // drawn zoomed in on the state
       { id: 'utility_hifld', src: 'hifld_utilities', overlay: true, topo: await utilityAreas('hifld_utilities'), interval: 3000 },
     ],
-    groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()) },
+    groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()),
+      nerc_canada: Object.values(ADMIN1).filter(a => a.startsWith('ca_')) },
   },
   europe: {
     countries: { GB: 'uk' },

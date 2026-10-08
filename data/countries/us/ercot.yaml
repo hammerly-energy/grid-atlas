@@ -28,7 +28,7 @@ base:
       jurisdiction: national
       description: Sets reliability standards approved by FERC; enforces them through regional entities.
       domain_area:
-        full: [lower48, canada]
+        full: [lower48, nerc_canada, mx_bcn]
         note: Contiguous US, most of Canada and northern Baja California (Mexico)
         source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}
         status: needs_verification
