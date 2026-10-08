@@ -64,6 +64,7 @@ def test_ui_abbreviations_are_defined():
         known = {t for k, v in p["glossary"].items() for t in _tokens(k + " " + v["term"])} | ALLOWED
         shown = [l["subtitle"] for l in p["lanes"].values()] + list(p["chain"])
         shown += [v for key in ("kind_labels", "component_labels", "jurisdiction_labels") for v in p[key].values()]
+        shown += sorted({e["subcomponent"] for c2, _, _, _, edges in graphs() if c2 == cc for e in edges if e.get("subcomponent")})   # line item names in the bill table
         for s in shown:
             for t in _tokens(s):
                 base = t[:-1] if t.endswith("s") and t[:-1].isupper() else t

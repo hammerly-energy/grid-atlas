@@ -402,7 +402,7 @@
         },
         "subcomponent": {
           "type": "string",
-          "description": "Country-specific line item, key into country_profile.glossary (e.g. CfD, RO, TNUoS, DUoS, PCIA)."
+          "description": "Line item within rate_component (e.g. CfD, RO, TNUoS, DUoS, PCIA, Uri securitization). Edges with the same subcomponent form one line item with exactly one path to one setter; an edge without one is shared by every item of that component. Abbreviations need a glossary entry."
         },
         "asset": {
           "$ref": "#/$defs/asset_class",
