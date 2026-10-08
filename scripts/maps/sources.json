@@ -70,5 +70,23 @@
     "accessed": "2026-10-08",
     "credit": "California Energy Commission",
     "licence": "Public domain (California open data)"
+  },
+  "hifld_archive": {
+    "file": "raw/hifld-retail-service-territories.parquet",
+    "sha256": "d9748b71e57247ab9dc18136058d6ddd0f822535aac70f880faf5e216a428a0f",
+    "title": "HIFLD Electric Retail Service Territories (archived copy; HIFLD Open went offline 2025-08-25)",
+    "url": "https://source.coop/seerai/hifld/electric-retail-service-territories",
+    "accessed": "2026-10-08",
+    "credit": "HIFLD (US DHS) via Source Cooperative",
+    "licence": "Public domain (US government work)"
+  },
+  "hifld_utilities": {
+    "file": "derived/hifld_utilities.geojson",
+    "sha256": "f2f43afc754e02891204bc37b4f0defe5107a82bd32c3c28a11534f07885e7bd",
+    "title": "Oncor, CenterPoint, CPS Energy, ComEd, Dominion Virginia, PSE&G and PECO territories, extracted from the HIFLD archive by hifld_utilities.py",
+    "url": "https://source.coop/seerai/hifld/electric-retail-service-territories",
+    "accessed": "2026-10-08",
+    "credit": "HIFLD (US DHS)",
+    "licence": "Public domain (US government work)"
   }
 }

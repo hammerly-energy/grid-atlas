@@ -55,6 +55,7 @@ grid-atlas/
 ├── scripts/maps/make_maps.mjs      # node + mapshaper; only rerun when shapes change
 ├── scripts/maps/sources.json       # every shape input: URL, sha256, credit, licence
 ├── scripts/maps/eia861_counties.py # EIA-861 → derived/county_rto.csv (ISO footprints as counties)
+├── scripts/maps/hifld_utilities.py # HIFLD archive (GeoParquet) → derived/hifld_utilities.geojson (utility territories outside CA)
 ├── validate/
 │   ├── conftest.py
 │   ├── test_schema.py      # cross-file integrity: ids resolve, slots, ownership sources

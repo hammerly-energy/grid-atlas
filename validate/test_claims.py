@@ -315,6 +315,17 @@ def test_california_iou_territories_sit_north_to_south():
         assert all(hi <= lo for hi, lo in zip(b[u][2:], [c + 1 for c in b["ca"][2:]]))
 
 
+def test_iso_utility_territories_sit_inside_their_iso():
+    # HIFLD territories; make_maps.mjs already fails the build if two investor-owned territories overlap
+    b = build.load_maps()["north_america"]["bbox"]
+    inside = lambda u, iso: all(abs(min(0, x)) <= 3 for x in
+                                (b[u][0] - b[iso][0], b[u][1] - b[iso][1], b[iso][2] - b[u][2], b[iso][3] - b[u][3]))
+    for u in ("oncor", "centerpoint", "cps"):
+        assert inside(u, "ercot"), u
+    for u in ("comed", "dominion_va", "pseg", "peco"):
+        assert inside(u, "pjm"), u
+
+
 def test_hm_treasury_covers_the_uk_and_desnz_only_gb():
     full, _ = domain("gb", "hm_treasury")
     assert "ni" in full

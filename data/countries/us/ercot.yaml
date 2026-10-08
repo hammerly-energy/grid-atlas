@@ -186,8 +186,20 @@ archetypes:
       - {id: noie_res_as, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
 
 utilities:
-  Oncor: {area: TX, archetypes: [competitive_area], fills: {tdsp: {name: Oncor}}}
-  CenterPoint: {area: TX, archetypes: [competitive_area], fills: {tdsp: {name: CenterPoint Energy}}}
+  Oncor:
+    area: TX
+    archetypes: [competitive_area]
+    fills:
+      tdsp:
+        name: Oncor
+        domain_area: {full: [oncor], note: "Oncor service territory, north, central and west Texas", source: &hifld {title: HIFLD Electric Retail Service Territories (archived), url: "https://source.coop/seerai/hifld/electric-retail-service-territories", accessed: "2026-10-08"}, status: needs_verification}
+  CenterPoint:
+    area: TX
+    archetypes: [competitive_area]
+    fills:
+      tdsp:
+        name: CenterPoint Energy
+        domain_area: {full: [centerpoint], note: "CenterPoint service territory, the Houston area", source: *hifld, status: needs_verification}
   CPS Energy:
     area: TX
     archetypes: [noie]
@@ -196,3 +208,4 @@ utilities:
       noie:
         name: CPS Energy
         owner: {name: City of San Antonio, type: municipal, as_of: "2026-10-08", source: *cpsrates}
+        domain_area: {full: [cps], note: "CPS Energy service territory, San Antonio and Bexar County area", source: *hifld, status: needs_verification}

@@ -42,23 +42,25 @@ function rtoCounties() {
   return t;
 }
 
-// Wires utility territories: California Energy Commission service-area polygons, one per utility.
+// Wires utility territories, one polygon per utility: California Energy Commission in California, HIFLD elsewhere.
 // IOU franchise territories are exclusive, so an overlap between two IOUs fails the build. Overlaps involving a
 // publicly owned utility are printed: the CEC layer draws LADWP's Owens Valley area inside SCE's.
-const CEC_IOU = new Set(['pge', 'sce', 'sdge']);
+// Pairs are checked within one source only (CEC and HIFLD cover different states).
+const IOU = new Set(['pge', 'sce', 'sdge', 'oncor', 'centerpoint', 'comed', 'dominion_va', 'pseg', 'peco']);
 const CEC_UTILITY = { 'PG&E': 'pge', 'SCE': 'sce', 'SDG&E': 'sdge', 'SMUD': 'smud', 'LADWP': 'ladwp' };   // CEC Acronym -> area id
-async function utilityAreas() {
-  const d = input('cec_utilities');
-  d.features = d.features.filter(f => CEC_UTILITY[f.properties.Acronym])
-    .map(f => ({ ...f, properties: { aid: CEC_UTILITY[f.properties.Acronym] } }));
-  const ids = Object.values(CEC_UTILITY);
+async function utilityAreas(src) {
+  const d = input(src);
+  d.features = src === 'cec_utilities'
+    ? d.features.filter(f => CEC_UTILITY[f.properties.Acronym]).map(f => ({ ...f, properties: { aid: CEC_UTILITY[f.properties.Acronym] } }))
+    : d.features.map(f => ({ ...f, properties: { aid: f.properties.aid } }));   // hifld_utilities.py already set aid
+  const ids = [...new Set(d.features.map(f => f.properties.aid))];
   for (const [i, x] of ids.entries()) for (const y of ids.slice(i + 1)) {
     const only = id => ({ ...d, features: d.features.filter(f => f.properties.aid === id) });
     const out = await mapshaper.applyCommands(`-i x.json y.json combine-files -clip y target=x -proj ${MAPS.north_america.proj} target=x -each 'a=this.area' target=x -o format=json target=x out.json`,
       { 'x.json': only(x), 'y.json': only(y) });
     const km2 = JSON.parse(out['out.json']).reduce((s, r) => s + r.a, 0) / 1e6;
-    if (km2 > 1 && CEC_IOU.has(x) && CEC_IOU.has(y)) throw new Error(`cec_utilities: ${x} and ${y} overlap by ${km2.toFixed(0)} km²`);
-    if (km2 > 1) console.log(`  note: ${x} and ${y} overlap by ${km2.toFixed(0)} km² in the CEC layer`);
+    if (km2 > 1 && IOU.has(x) && IOU.has(y)) throw new Error(`${src}: ${x} and ${y} overlap by ${km2.toFixed(0)} km²`);
+    if (km2 > 1) console.log(`  note: ${x} and ${y} overlap by ${km2.toFixed(0)} km² in ${src}`);
   }
   return d;
 }
@@ -129,7 +131,8 @@ const MAPS = {
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
       { id: 'iso', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties()) },
-      { id: 'utility', src: 'cec_utilities', overlay: true, topo: await utilityAreas(), interval: 3000 },   // drawn zoomed in on the state
+      { id: 'utility', src: 'cec_utilities', overlay: true, topo: await utilityAreas('cec_utilities'), interval: 3000 },   // drawn zoomed in on the state
+      { id: 'utility_hifld', src: 'hifld_utilities', overlay: true, topo: await utilityAreas('hifld_utilities'), interval: 3000 },
     ],
     groups: { lower48: Object.values(POSTAL).map(s => s.toLowerCase()) },
   },

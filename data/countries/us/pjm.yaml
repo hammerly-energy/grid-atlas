@@ -161,13 +161,32 @@ utilities:
   ComEd:
     area: IL
     archetypes: [restructured_choice]
-    fills: {state_puc: {name: Illinois Commerce Commission}, edc: {name: ComEd}}
+    fills:
+      state_puc: {name: Illinois Commerce Commission}
+      edc:
+        name: ComEd
+        domain_area: {full: [comed], note: "ComEd service territory, Chicago and northern Illinois", source: &hifld {title: HIFLD Electric Retail Service Territories (archived), url: "https://source.coop/seerai/hifld/electric-retail-service-territories", accessed: "2026-10-08"}, status: needs_verification}
   Dominion Energy Virginia:
     area: VA
     archetypes: [limited_choice]
-    fills: {state_puc: {name: Virginia SCC}, viu: {name: Dominion Energy Virginia}}
+    fills:
+      state_puc: {name: Virginia SCC}
+      viu:
+        name: Dominion Energy Virginia
+        domain_area: {full: [dominion_va], note: "Dominion Energy Virginia service territory, central, northern and eastern Virginia and northeast North Carolina", source: *hifld, status: needs_verification}
   PSE&G:
     area: NJ
     archetypes: [restructured_choice]
-    fills: {state_puc: {name: NJ Board of Public Utilities}, edc: {name: PSE&G}}
-  PECO: {area: PA, archetypes: [restructured_choice], fills: {state_puc: {name: Pennsylvania PUC}, edc: {name: PECO}}}
+    fills:
+      state_puc: {name: NJ Board of Public Utilities}
+      edc:
+        name: PSE&G
+        domain_area: {full: [pseg], note: "PSE&G service territory, northern and central New Jersey", source: *hifld, status: needs_verification}
+  PECO:
+    area: PA
+    archetypes: [restructured_choice]
+    fills:
+      state_puc: {name: Pennsylvania PUC}
+      edc:
+        name: PECO
+        domain_area: {full: [peco], note: "PECO service territory, Philadelphia and southeastern Pennsylvania", source: *hifld, status: needs_verification}
