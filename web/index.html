@@ -399,7 +399,8 @@ function renderCol(i) {
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
     if (ans) { ans.path.forEach(id => path.add(id)); ans.limits.forEach(id => path.add(id)); }
     edges.filter(e => path.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
-    caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls)));
+    caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
+      && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
     shown = shown.concat(edges.filter(e => path.has(e.id) && !shown.includes(e)));
   }
 
@@ -488,17 +489,19 @@ function panel(col, C, byId, edges, ans) {
   const nm = id => esc(displayName(col, byId[id]));
   if (S.lens === "bill") {
     const cl = label(C.component_labels, S.comp);
-    if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not a bill component in ${esc(D.markets[col.mid].name)}.</p>`;
+    if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
     else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
     else {
       const chain = [ans.setter, ...ans.path.slice().reverse().map(id => edges.find(e => e.id === id).to)];
       const uniq = chain.filter((x, k) => chain.indexOf(x) === k);
-      const limits = ans.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)}: ${esc(e.label)}`);
+      const lim = ans.limits.map(id => edges.find(e => e.id === id)), whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
+      const limits = lim.map(e => `${nm(e.from)}: ${esc(e.label)}`);
       p.innerHTML = `<h3>${esc(cl)}</h3><dl>
         <dt>Set by</dt><dd>${nm(ans.setter)} (${MODE_TEXT[ans.mode]})</dd>
         <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
         <dt>Limited by</dt><dd>${limits.join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${ans.path.map(id => srcLink(edges.find(e => e.id === id).source)).join("<br>")}</dd></dl>`;
+        ${whole.length ? `<dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>")}</dd>` : ""}
+        <dt>Sources</dt><dd>${[...ans.path.map(id => edges.find(e => e.id === id)), ...lim, ...whole].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
     }
     return p;
   }

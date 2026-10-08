@@ -9,7 +9,7 @@ lanes:
   wholesale:       {title: WHOLESALE & TRANSMISSION,  subtitle: generators · storage · transmission owners · LSEs}
   retail:          {title: DISTRIBUTION & RETAIL,     subtitle: wires utility · retail provider / CCA / muni / co-op}
   consumers:       {title: CONSUMERS,                 subtitle: residential · small commercial · large commercial & industrial · large load}
-jurisdiction_labels: {national: Federal, subnational: State, local: Local, private: Private}
+jurisdiction_labels: {supranational: Multi-state, national: Federal, subnational: State, local: Local, private: Private}
 kind_labels:
   iso: ISO / RTO
   wires_utility: Investor-owned utility (IOU)
@@ -52,7 +52,7 @@ glossary:
   POU: {term: POU, meaning: "Publicly owned utility: a city department, utility district or irrigation district. Its elected board or council sets its rates, not the state PUC."}
   WEIM: {term: WEIM, meaning: "Western Energy Imbalance Market; CAISO's real-time market that balancing authorities outside CAISO can join."}
   BANC: {term: BANC, meaning: "Balancing Authority of Northern California; a joint powers authority of SMUD and other POUs. SMUD operates it under contract."}
-  SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a POU owned by its customers, who elect a seven-member board."}
+  SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a public agency (POU) governed by a seven-member board elected by voters in its district."}
   LADWP: {term: LADWP, meaning: "Los Angeles Department of Water and Power; the City of Los Angeles' POU and its own balancing authority."}
   Co-op: {term: Co-op, meaning: "Electric cooperative: a utility owned by its customers (members), who elect its board. Texas co-op boards set their own rates; Virginia's SCC still approves co-op rates."}
   NOVEC: {term: NOVEC, meaning: "Northern Virginia Electric Cooperative; a member-owned distribution co-op in the PJM region."}
