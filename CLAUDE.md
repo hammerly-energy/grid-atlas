@@ -160,19 +160,23 @@ Each edge type gets its own color and can be toggled on/off in the UI.
 
 Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has no rate or market-rule jurisdiction. PUCT oversees ERCOT.
 
-**PJM (5)** — PJM covers all or parts of 13 states + DC
-1. `restructured_choice` — PA, NJ, MD, OH, DE, DC, and **only ComEd's zone of IL** (IPA procures default supply); customer can switch supplier; otherwise default service procured via PUC-approved auction (PA default service, MD SOS, NJ BGS, OH SSO)
-2. `municipal_aggregation` — opt-out municipal aggregation (OH, IL, NJ); CCA-like
-3. `vertically_integrated` — e.g. WV, the PJM part of KY (not LG&E/KU, which are outside PJM); utility owns generation + wires, PUC sets bundled rates
-4. `limited_choice` — vertically integrated with limited retail choice: VA (>5 MW), MI (10% cap)
-5. `muni_coop` — munis not yet modeled. Co-ops are their own archetype, `coop`: Virginia co-ops (NOVEC, Rappahannock EC) stay under the SCC, which approves their rates; the board governs and may move distribution rates up to 5% in three years (Va. Code 56-231.34, 56-585.3). Maryland (SMECO) and Delaware co-ops differ and are not modeled yet
+**PJM (7)** — PJM covers all or parts of 13 states + DC
+1. `restructured_choice` — default service in PA, NJ, MD, DE, DC, OH: supply won in a PUC-approved auction or RFP (PA default service, MD SOS, NJ BGS, OH SSO). Residential and small commercial get a fixed auction price; above 100 kW default service is hourly at PJM's real-time price, with capacity at the RPM clearing price
+2. `default_service_ipa` — **only ComEd's zone of IL** (Ameren Illinois is in MISO): the Illinois Power Agency plans and runs the procurement, the ICC approves it, and the generation line has two line items (procured energy blocks, PJM market energy). ComEd buys RPM capacity itself
+3. `competitive_supplier` — the customer picked a licensed supplier (PA EGS, NJ TPS, IL ARES, OH CRES); the supplier sets supply, the PUC keeps the wires
+4. `municipal_aggregation` — opt-out municipal aggregation (IL, OH, NJ); residential and small commercial only (20 ILCS 3855/1-92)
+5. `vertically_integrated` — WV and the PJM part of KY (not LG&E/KU, which are outside PJM); utility owns generation + wires, PSC sets bundled rates
+6. `limited_choice` — vertically integrated with limited retail choice: VA (>5 MW), MI (10% cap)
+7. `coop` — Virginia co-ops (NOVEC, Rappahannock EC) stay under the SCC, which approves their distribution rates and riders; the board governs and may move distribution rates up to 5% in three years (Va. Code 56-231.34, 56-585.3). Their wholesale supply comes from a G&T co-op (ODEC for REC) under a FERC-accepted formula rate the SCC does not regulate. Munis, and Maryland (SMECO) and Delaware co-ops, are not modelled yet
 
-**CAISO (5)** — no central capacity market: resource adequacy is an LSE obligation set by the CPUC and munis
-1. `iou_bundled` — PG&E / SCE / SDG&E do generation + wires; CPUC sets rates
-2. `iou_cca` — CCA board sets generation rate; CPUC sets delivery + PCIA exit fee; IOU bills
-3. `iou_direct_access` — capped program; ESP sets generation price
-4. `muni_in_caiso` — munis inside CAISO's BA; distinguish transmission-owning munis under CAISO control (Anaheim, Riverside) from Metered Subsystems
+**CAISO (6)** — no central capacity market: resource adequacy is an LSE obligation set by the CPUC and munis, recovered inside the generation rate as its own line item
+1. `iou_bundled` — PG&E / SCE / SDG&E do generation + wires; CPUC sets rates; generation holds two line items (energy procurement, resource adequacy)
+2. `iou_cca` — CCA board sets generation rate; CPUC sets delivery and the PCIA exit fee; IOU bills
+3. `iou_direct_access` — capped program (about 28,800 GWh after SB 237), non-residential only, so this setup has no residential class; ESP sets the generation price
+4. `muni_in_caiso` — munis inside CAISO's BA: Anaheim and Riverside turned their transmission over to CAISO as participating transmission owners, so FERC approves their transmission rate while the council sets every retail rate. Metered Subsystems are not modelled yet
 5. `muni_own_ba` — LADWP, BANC (SMUD is a member and its operator; **SMUD is not itself a BA**), IID, TID: own balancing authorities, but they trade in CAISO's real-time market (WEIM). EDAM went live 1 May 2026
+
+PCIA note (open): the exit fee is entered as a `subcomponent` line item of `riders_public_purpose` (the non-bypassable charges the IOU bills) rather than as the `exit_fee` component, because a market-level component would read as a missing bill line for bundled and muni customers. Worth a decision before GB.
 
 **GB (4)** — research and sources in `docs/research/policy.md`
 1. `domestic_default_capped` — SVT/deemed tariff under Ofgem's default tariff cap (`caps` edge on the whole bill); supplier sets the actual price

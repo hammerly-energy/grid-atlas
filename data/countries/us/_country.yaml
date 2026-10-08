@@ -19,6 +19,9 @@ kind_labels:
   coop: Electric cooperative (Co-op)
   system_operator: Balancing authority (BA)
   legislature: Elected governing body
+  cca: Aggregator (CCA)
+  policy_maker: State procurement agency
+  lse: Load-serving entity (LSE)
 component_labels:
   generation: Generation
   transmission: Transmission

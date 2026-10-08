@@ -4,8 +4,10 @@ market: pjm
 name: PJM
 coverage_note: PJM covers all or parts of 13 states plus DC. Only ComEd's zone of Illinois (Ameren Illinois is in MISO) and only part of Kentucky (not LG&E/KU).
 
-# Thin slice: restructured_choice for a default-service customer in Pennsylvania, residential only.
-# A customer who picks a competitive supplier gets a different generation path; modelled in milestone 3.
+# Seven setups. The supply option a customer has depends on the state: default service (PA, NJ), Illinois Power Agency
+# procurement (ComEd), a competitive supplier, municipal aggregation (IL, OH, NJ), or a vertically integrated utility
+# (WV; VA with choice only above 5 MW), or a Virginia co-op. Not modelled yet: municipal utilities, Maryland and
+# Delaware co-ops, Ohio and Maryland default service variants.
 base:
   nodes:
     - id: ferc
@@ -37,7 +39,7 @@ base:
       lane: market_operator
       kind: market
       jurisdiction: private
-      description: Reliability Pricing Model; PJM's capacity auction. Designed to run three years ahead of delivery; recent auctions ran on a compressed schedule.
+      description: Reliability Pricing Model; PJM's capacity auction. Designed to run three years ahead of delivery; recent auctions ran on a compressed schedule. FERC approves its rules and demand curve.
     - id: generators
       name: Generators
       lane: wholesale
@@ -77,9 +79,19 @@ base:
        source: &nerc {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}}
     - {id: nerc_rf_rel, from: nerc, to: rf, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
     - {id: rf_pjm_rel, from: rf, to: pjm, type: regulates, domain: reliability, label: enforces reliability standards on PJM, status: needs_verification, source: *nerc}
+    # every setup: FERC approves PJM's rules; PJM dispatches and runs RPM
+    - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification,
+       source: &oatt {title: PJM Open Access Transmission Tariff, url: "https://www.pjm.com/directory/merged-tariffs/oatt.pdf", accessed: "2026-10-07"}}
+    - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
+    - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification,
+       source: &rpm {title: PJM capacity market (RPM), url: "https://www.pjm.com/markets-and-operations/rpm", accessed: "2026-10-07"}}
+    - {id: ferc_rpm_cap, from: ferc, to: rpm, type: sets_rate, mode: approves, rate_component: capacity, label: "approves RPM's rules, demand curve and price limits", status: needs_verification, source: *rpm}
 
 archetypes:
+  # Default service (PA, NJ, MD, DE, DC, OH): a customer who has not picked a supplier gets supply that wholesale
+  # suppliers win in a PUC-approved auction or RFP. Large customers get hourly-priced default service.
   restructured_choice:
+    label: Default service
     nodes:
       - id: state_puc
         name: State PUC
@@ -87,13 +99,13 @@ archetypes:
         lane: regulators
         kind: regulator
         jurisdiction: subnational
-        description: State utility commission (e.g. PA PUC). Sets distribution rates and approves the default service plan.
+        description: State utility commission (e.g. PA PUC, NJ BPU). Sets distribution rates and approves the default service plan and the auction results.
       - id: default_supplier
         name: Wholesale suppliers
         lane: wholesale
         kind: lse
         jurisdiction: private
-        description: Wholesale suppliers that win the utility's default service auction and deliver full-requirements supply.
+        description: Wholesale suppliers that win the utility's default service auction or RFP and deliver full-requirements supply at a fixed price (residential, small commercial) or a spot price (large customers).
       - id: edc
         name: EDC
         slot: edc
@@ -103,45 +115,342 @@ archetypes:
         description: Electric distribution company. Owns the local wires and bills default service customers.
         holds_assets: [transmission, distribution]
         source: &pjmmembers {title: PJM member list, url: "https://www.pjm.com/about-pjm/member-services/member-list", accessed: "2026-10-07"}
-      - id: residential
-        name: Residential
-        lane: consumers
-        kind: consumer
-        jurisdiction: private
-        description: Household customer on default service (has not picked a competitive supplier).
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household customer on default service (has not picked a competitive supplier).}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business on fixed-price default service.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: "Large customer (above 100 kW at PECO) on hourly-priced default service unless it picks a supplier."}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center, often served at transmission voltage; on hourly-priced default service unless it picks a supplier."}
     edges:
-      # regulation
-      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification,
-         source: &oatt {title: PJM Open Access Transmission Tariff, url: "https://www.pjm.com/directory/merged-tariffs/oatt.pdf", accessed: "2026-10-07"}}
+      # regulation and operations
       - {id: puc_edc, from: state_puc, to: edc, type: regulates, domain: rates, label: regulates distribution service and default service, status: needs_verification,
-         source: &papuc {title: Pennsylvania PUC, url: "https://www.puc.pa.gov", accessed: "2026-10-07"}}
-      # operations
-      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
+         source: &pa2807 {title: "66 Pa.C.S. § 2807 (duties of electric distribution companies; default service)", url: "https://www.legis.state.pa.us/cfdocs/legis/LI/consCheck.cfm?txtType=HTM&ttl=66&div=0&chpt=28&sctn=7&subsctn=0", accessed: "2026-10-08"}}
       - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
-      - {id: puc_auction, from: state_puc, to: default_supplier, type: plans_procures, label: approves the default service procurement, status: needs_verification, source: *papuc}
-      # bill: generation, capacity, ancillary (inside the full-requirements default service price)
-      - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, label: energy price set by auction bids, status: needs_verification, source: *papuc}
-      - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: needs_verification,
-         source: &rpm {title: PJM capacity market (RPM), url: "https://www.pjm.com/markets-and-operations/rpm", accessed: "2026-10-07"}}
-      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
-      - {id: sup_edc_cap, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: capacity, label: capacity cost priced into auction bids, status: needs_verification, source: *rpm}
-      - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: ancillary cost priced into auction bids, status: needs_verification, source: *oatt}
-      - {id: edc_res_gen, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the default service price, status: needs_verification, source: *papuc}
-      - {id: edc_res_cap, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within the default service price, status: needs_verification, source: *papuc}
-      - {id: edc_res_as, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the default service price, status: needs_verification, source: *papuc}
-      # bill: transmission
+      - {id: puc_auction, from: state_puc, to: default_supplier, type: plans_procures, label: approves the default service plan and auction or RFP, status: needs_verification,
+         source: &njbgs {title: "NJ BPU order approving the 2025 Basic Generation Service auction results", url: "https://nj.gov/bpu/pdf/boardorders/2025/20250212/LSA%20ORDER%202025%20BGS%20Auction%20Results.pdf", accessed: "2026-10-08"}}
+      # bill: generation, capacity, ancillary. Fixed-price classes: the auction price, limited by the PUC's approval of the result.
+      # Hourly classes: PJM's real-time energy price and RPM's capacity price, passed through.
+      - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, applies_to: [residential, small_commercial], label: fixed energy price set by auction or RFP bids, status: needs_verification, source: *njbgs}
+      - {id: puc_sup_gen, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: generation, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
+      - {id: pjm_edc_gen, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: generation, applies_to: [large_ci, large_load], label: hourly-priced default service at PJM real-time energy prices, status: needs_verification,
+         source: &pecodsp {title: "PAIEUG answer on PECO's default service program 2017-2019 (P-2016-2534980)", url: "https://www.puc.pa.gov/pcdocs/1430606.pdf", accessed: "2026-10-08"}}
+      - {id: sup_edc_cap, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: capacity, applies_to: [residential, small_commercial], label: capacity cost priced into auction bids, status: needs_verification, source: *njbgs}
+      - {id: puc_sup_cap, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: capacity, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
+      - {id: rpm_edc_cap, from: rpm, to: edc, type: sets_rate, mode: market, rate_component: capacity, applies_to: [large_ci, large_load], label: capacity at the RPM clearing price on hourly-priced service, status: needs_verification, source: *rpm}
+      - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: needs_verification, source: *rpm}
+      - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: ancillary cost priced into auction bids, status: needs_verification, source: *njbgs}
+      - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: ancillary services at PJM market prices on hourly-priced service, status: needs_verification, source: *pecodsp}
+      # bill: wires and riders
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
-      - {id: edc_res_tx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *papuc}
-      # bill: distribution and riders
-      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *papuc}
-      - {id: edc_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *papuc}
-      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *papuc}
-      - {id: edc_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *papuc}
+      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *pa2807}
+      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *pa2807}
+      - {id: edc_res_gen, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_res_cap, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_res_as, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_res_tx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pecodsp}
+      - {id: edc_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edc_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edc_sc_gen, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_sc_cap, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_sc_as, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_sc_tx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pecodsp}
+      - {id: edc_sc_dx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edc_sc_rider, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edc_lci_gen, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_lci_cap, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_lci_as, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_lci_tx, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pecodsp}
+      - {id: edc_lci_dx, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edc_lci_rider, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edc_ll_gen, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_ll_cap, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_ll_as, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within default service supply, status: needs_verification, source: *pa2807}
+      - {id: edc_ll_tx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pecodsp}
+      - {id: edc_ll_dx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edc_ll_rider, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
 
+  # ComEd's zone of Illinois: the Illinois Power Agency (IPA) plans and runs the procurement of default supply; the ICC
+  # approves the plan and the results. ComEd buys capacity in RPM and the rest of its energy in PJM's markets.
+  # Customers above 100 kW are on hourly supply.
+  default_service_ipa:
+    label: Default service (Illinois Power Agency)
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: Illinois Commerce Commission. Sets ComEd's delivery rates and approves the Illinois Power Agency's procurement plan and results.
+        source: &il16108 {title: "220 ILCS 5/16-108 (recovery of delivery service costs)", url: "https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=022000050K16-108", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: ipa
+        name: Illinois Power Agency
+        lane: regulators
+        kind: policy_maker
+        jurisdiction: subnational
+        description: State agency that writes the annual electricity procurement plan for ComEd's default supply customers and runs the procurement events.
+        source: &ipaplan {title: Illinois Power Agency annual electricity procurement plan, url: "https://ipa.illinois.gov/electricity-procurement/electricity-procurement-plan.html", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: default_supplier
+        name: Wholesale suppliers
+        lane: wholesale
+        kind: lse
+        jurisdiction: private
+        description: Wholesale suppliers that win the Illinois Power Agency's procurement events and sell energy blocks to ComEd.
+      - id: edc
+        name: EDC
+        slot: edc
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Electric distribution company. Owns the local wires, buys default supply under the agency's plan and bills it at cost.
+        holds_assets: [transmission, distribution]
+        source: *pjmmembers
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household customer on ComEd's default supply.}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business on ComEd's default supply.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: Customer above 100 kW. Its supply was declared competitive (220 ILCS 5/16-113); ComEd offers it only hourly supply at PJM prices.}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: Very large site such as a data center; on hourly supply unless it picks a supplier.}
+    edges:
+      - {id: puc_edc, from: state_puc, to: edc, type: regulates, domain: rates, label: regulates delivery service and default supply, status: needs_verification, source: *il16108}
+      - {id: puc_ipa, from: state_puc, to: ipa, type: regulates, domain: rates, label: approves the agency's procurement plan and the procurement results, status: needs_verification, source: *ipaplan}
+      - {id: ipa_procures, from: ipa, to: default_supplier, type: plans_procures, label: runs the procurement events for ComEd's default supply, status: needs_verification, source: *ipaplan}
+      - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
+      # bill: generation has two line items for fixed-price classes: IPA-procured blocks and PJM market energy
+      - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, subcomponent: Energy blocks bought by the Illinois Power Agency, applies_to: [residential, small_commercial], label: energy block prices set by procurement bids, status: needs_verification, source: *ipaplan}
+      - {id: puc_sup_gen, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: generation, subcomponent: Energy blocks bought by the Illinois Power Agency, applies_to: [residential, small_commercial], label: approves the procurement results, status: needs_verification, source: *ipaplan}
+      - {id: pjm_edc_gen_spot, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: generation, subcomponent: Energy bought in PJM's markets, applies_to: [residential, small_commercial], label: energy beyond the procured blocks at PJM day-ahead and real-time prices, status: needs_verification, source: *ipaplan}
+      - {id: pjm_edc_gen, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: generation, applies_to: [large_ci, large_load], label: hourly supply at PJM real-time energy prices, status: needs_verification,
+         source: &il16113 {title: "220 ILCS 5/16-113 (declaration of service as a competitive service)", url: "https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=022000050K16-113", accessed: "2026-10-08"}}
+      # bill: ComEd pays RPM itself; FERC approves RPM's rules (base edge), which shows as the limit
+      - {id: rpm_edc_cap, from: rpm, to: edc, type: sets_rate, mode: market, rate_component: capacity, label: capacity for ComEd's supply customers at the RPM clearing price, status: needs_verification, source: *ipaplan}
+      - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets delivery rates, status: needs_verification, source: *il16108}
+      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *il16108}
+      - {id: comed_res_gen, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_res_cap, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_res_as, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_res_tx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills its transmission services charge, status: needs_verification, source: *oatt}
+      - {id: comed_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: comed_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+      - {id: comed_sc_gen, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_sc_cap, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_sc_as, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_sc_tx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills its transmission services charge, status: needs_verification, source: *oatt}
+      - {id: comed_sc_dx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: comed_sc_rider, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+      - {id: comed_lci_gen, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_lci_cap, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_lci_as, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_lci_tx, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills its transmission services charge, status: needs_verification, source: *oatt}
+      - {id: comed_lci_dx, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: comed_lci_rider, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+      - {id: comed_ll_gen, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_ll_cap, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_ll_as, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within its purchased electricity charge, status: needs_verification, source: *ipaplan}
+      - {id: comed_ll_tx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills its transmission services charge, status: needs_verification, source: *oatt}
+      - {id: comed_ll_dx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: comed_ll_rider, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+
+  # A customer in a restructured state who picked a competitive supplier (PA EGS, NJ TPS, IL ARES, OH CRES, MD).
+  # The supplier sets the supply price; the utility keeps the wires and usually bills the supplier's charges too.
+  competitive_supplier:
+    label: Competitive supplier
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State utility commission. Licenses retail suppliers and sets the utility's distribution rates; does not set supplier prices.
+      - id: supplier
+        name: Retail supplier
+        lane: retail
+        kind: retail_provider
+        jurisdiction: private
+        description: Licensed retail supplier the customer picked. Buys wholesale power and sets the supply price in its contract; its charges usually appear on the utility's bill.
+        source: &pa2809 {title: "66 Pa.C.S. § 2809 (requirements for electric generation suppliers)", url: "https://www.legis.state.pa.us/cfdocs/legis/LI/consCheck.cfm?txtType=HTM&ttl=66&div=0&chpt=28&sctn=9&subsctn=0", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: edc
+        name: EDC
+        slot: edc
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Electric distribution company. Owns the local wires; delivers the supplier's power.
+        holds_assets: [transmission, distribution]
+        source: *pjmmembers
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household customer that picked a competitive supplier.}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business that picked a competitive supplier.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: Large customer on a negotiated supply contract.}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: Very large site such as a data center on a negotiated supply contract.}
+    edges:
+      - {id: puc_sup_lic, from: state_puc, to: supplier, type: regulates, domain: licensing, label: licenses retail suppliers, status: needs_verification, source: *pa2809}
+      - {id: puc_edc, from: state_puc, to: edc, type: regulates, domain: rates, label: regulates distribution service, status: needs_verification, source: *pa2807}
+      - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
+      - {id: sup_pjm_gen, from: supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: buys energy at PJM prices or through bilateral contracts, status: needs_verification, source: *oatt}
+      - {id: sup_rpm_cap, from: supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price for its customers' load, status: needs_verification, source: *rpm}
+      # bill: transmission is part of supply in PA and IL: the supplier pays the zonal network rate and recovers it
+      - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: edc_sup_tx, from: edc, to: supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *pecodsp}
+      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *pa2807}
+      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *pa2807}
+      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: needs_verification, source: *pa2809}
+      - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_res_as, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *pecodsp}
+      - {id: sup_sc_gen, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: needs_verification, source: *pa2809}
+      - {id: sup_sc_cap, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_sc_as, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_sc_tx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *pecodsp}
+      - {id: sup_lci_gen, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: needs_verification, source: *pa2809}
+      - {id: sup_lci_cap, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_lci_as, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_lci_tx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *pecodsp}
+      - {id: sup_ll_gen, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: needs_verification, source: *pa2809}
+      - {id: sup_ll_cap, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_ll_as, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: needs_verification, source: *pa2809}
+      - {id: sup_ll_tx, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *pecodsp}
+      - {id: edcs_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edcs_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edcs_sc_dx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edcs_sc_rider, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edcs_lci_dx, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edcs_lci_rider, from: edc, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+      - {id: edcs_ll_dx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pa2807}
+      - {id: edcs_ll_rider, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pa2807}
+
+  # Opt-out municipal aggregation (IL, OH, NJ): a municipality picks a supplier by bid for its residents and small
+  # businesses, who are enrolled unless they opt out. Larger customers are not included.
+  municipal_aggregation:
+    label: Municipal aggregation
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State utility commission. Licenses the aggregation's supplier and sets the utility's distribution rates.
+      - id: aggregator
+        name: Municipal aggregation
+        lane: retail
+        kind: cca
+        jurisdiction: local
+        description: City, village or county that buys supply for its residents and small businesses by bid. In Illinois an opt-out program needs a referendum and an ordinance (20 ILCS 3855/1-92).
+        source: &il192 {title: "20 ILCS 3855/1-92 (aggregation of electrical load by municipalities, townships and counties)", url: "https://www.ilga.gov/Documents/legislation/ilcs/documents/002038550K1-92.htm", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: agg_supplier
+        name: Aggregation supplier
+        lane: retail
+        kind: retail_provider
+        jurisdiction: private
+        description: Licensed retail supplier that won the municipality's bid. Its charges appear on the utility's bill.
+      - id: edc
+        name: EDC
+        slot: edc
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Electric distribution company. Owns the local wires; delivers the aggregation supplier's power.
+        holds_assets: [transmission, distribution]
+        source: *pjmmembers
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household enrolled in the municipal aggregation (did not opt out).}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business enrolled in the municipal aggregation.}
+    edges:
+      - {id: puc_sup_lic, from: state_puc, to: agg_supplier, type: regulates, domain: licensing, label: licenses retail suppliers, status: needs_verification, source: *il192}
+      - {id: puc_edc, from: state_puc, to: edc, type: regulates, domain: rates, label: regulates distribution service, status: needs_verification, source: *il16108}
+      - {id: agg_procures, from: aggregator, to: agg_supplier, type: plans_procures, label: picks the supplier by bid and signs the contract, status: needs_verification, source: *il192}
+      - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
+      - {id: agg_sup_gen_ok, from: aggregator, to: agg_supplier, type: sets_rate, mode: approves, rate_component: generation, label: approves the contract price, status: needs_verification, source: *il192}
+      - {id: agg_sup_cap_ok, from: aggregator, to: agg_supplier, type: sets_rate, mode: approves, rate_component: capacity, label: approves the contract price, status: needs_verification, source: *il192}
+      - {id: agg_sup_as_ok, from: aggregator, to: agg_supplier, type: sets_rate, mode: approves, rate_component: ancillary_uplift, label: approves the contract price, status: needs_verification, source: *il192}
+      - {id: sup_rpm_cap, from: agg_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price for the aggregation's load, status: needs_verification, source: *rpm}
+      - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: edc_sup_tx, from: edc, to: agg_supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
+      - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *il16108}
+      - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *il16108}
+      - {id: agg_res_gen, from: agg_supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in the aggregation contract, status: needs_verification, source: *il192}
+      - {id: agg_res_cap, from: agg_supplier, to: residential, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside the contract price, status: needs_verification, source: *il192}
+      - {id: agg_res_as, from: agg_supplier, to: residential, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside the contract price, status: needs_verification, source: *il192}
+      - {id: agg_res_tx, from: agg_supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in IL, status: needs_verification, source: *pecodsp}
+      - {id: agg_sc_gen, from: agg_supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in the aggregation contract, status: needs_verification, source: *il192}
+      - {id: agg_sc_cap, from: agg_supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside the contract price, status: needs_verification, source: *il192}
+      - {id: agg_sc_as, from: agg_supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside the contract price, status: needs_verification, source: *il192}
+      - {id: agg_sc_tx, from: agg_supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in IL, status: needs_verification, source: *pecodsp}
+      - {id: edca_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: edca_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+      - {id: edca_sc_dx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *il16108}
+      - {id: edca_sc_rider, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
+
+  # Vertically integrated, no retail choice (West Virginia, the PJM part of Kentucky): one utility owns generation and
+  # wires, and the state commission sets bundled rates.
+  vertically_integrated:
+    label: Vertically integrated
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State commission that sets the utility's bundled retail rates, including generation and fuel.
+        source: &wv {title: "W. Va. Code § 24-2-3 (Public Service Commission power to set rates)", url: "https://code.wvlegislature.gov/24-2-3/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: viu
+        name: Vertically integrated utility
+        slot: viu
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Owns generation, transmission and distribution and sells to every customer in its area; no customer can pick another supplier.
+        holds_assets: [generation, transmission, distribution]
+        source: *wv
+        status: needs_verification
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household customer of a vertically integrated utility; no choice of supplier.}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business on the utility's bundled rates.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: Large customer on the utility's bundled rates.}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: Very large site such as a data center on the utility's bundled rates or a special contract the commission approves.}
+    edges:
+      - {id: rf_viu_rel, from: rf, to: viu, type: regulates, domain: reliability, label: enforces reliability standards on the utility's transmission, status: needs_verification, source: *nerc}
+      - {id: puc_viu, from: state_puc, to: viu, type: regulates, domain: rates, label: regulates bundled retail rates, status: needs_verification, source: *wv}
+      - {id: pjm_operates_tx_viu, from: pjm, to: viu, type: operates, asset: transmission, label: operates the transmission the utility owns, status: needs_verification, source: *oatt}
+      - {id: puc_viu_gen, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: generation, label: sets generation and fuel rates, status: needs_verification, source: *wv}
+      - {id: puc_viu_cap, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: capacity, label: sets base rates that recover the utility's own generating capacity, status: needs_verification, source: *wv}
+      - {id: pjm_viu_as, from: pjm, to: viu, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: ferc_viu_tx, from: ferc, to: viu, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: puc_viu_dx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates, status: needs_verification, source: *wv}
+      - {id: puc_viu_rider, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders, status: needs_verification, source: *wv}
+      - {id: viu_res_gen, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *wv}
+      - {id: viu_res_cap, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *wv}
+      - {id: viu_res_as, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *wv}
+      - {id: viu_res_tx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *wv}
+      - {id: viu_res_dx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *wv}
+      - {id: viu_res_rider, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *wv}
+      - {id: viu_sc_gen, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *wv}
+      - {id: viu_sc_cap, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *wv}
+      - {id: viu_sc_as, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *wv}
+      - {id: viu_sc_tx, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *wv}
+      - {id: viu_sc_dx, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *wv}
+      - {id: viu_sc_rider, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *wv}
+      - {id: viu_lci_gen, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *wv}
+      - {id: viu_lci_cap, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *wv}
+      - {id: viu_lci_as, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *wv}
+      - {id: viu_lci_tx, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *wv}
+      - {id: viu_lci_dx, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *wv}
+      - {id: viu_lci_rider, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *wv}
+      - {id: viu_ll_gen, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *wv}
+      - {id: viu_ll_cap, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *wv}
+      - {id: viu_ll_as, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *wv}
+      - {id: viu_ll_tx, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *wv}
+      - {id: viu_ll_dx, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *wv}
+      - {id: viu_ll_rider, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *wv}
 
   # Vertically integrated with limited retail choice (Virginia): one utility owns generation and wires and the state
-  # commission sets bundled rates. Only customers above 5 MW may shop (Va. Code 56-577), so residential has no choice.
+  # commission sets bundled rates. Only customers above 5 MW may shop (Va. Code 56-577), so the diagram shows the
+  # utility's own supply for every class.
   limited_choice:
+    label: Vertically integrated (choice above 5 MW)
     nodes:
       - id: state_puc
         name: State PUC
@@ -175,38 +484,53 @@ archetypes:
         holds_assets: [generation, transmission, distribution]
         source: *va585
         status: needs_verification
-      - id: residential
-        name: Residential
-        lane: consumers
-        kind: consumer
-        jurisdiction: private
-        description: Household customer of a vertically integrated utility. Only customers above 5 MW may buy from a competitive supplier.
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household customer of a vertically integrated utility. Only customers above 5 MW may buy from a competitive supplier.}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business on the utility's bundled rates.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: Large customer on the utility's bundled rates. Above 5 MW it may buy from a licensed competitive supplier instead (Va. Code 56-577).}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center, shown on the utility's bundled rates. Above 5 MW it may buy from a licensed competitive supplier instead (Va. Code 56-577)."}
     edges:
       - {id: nerc_serc_rel, from: nerc, to: serc, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
       - {id: serc_viu_rel, from: serc, to: viu, type: regulates, domain: reliability, label: enforces reliability standards on the utility's transmission, status: needs_verification, source: *nerc}
-      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification, source: *oatt}
       - {id: puc_viu, from: state_puc, to: viu, type: regulates, domain: rates, label: regulates bundled retail rates, status: needs_verification, source: *va585}
-      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
       - {id: pjm_operates_tx_viu, from: pjm, to: viu, type: operates, asset: transmission, label: operates the transmission the utility owns, status: needs_verification, source: *oatt}
-      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
       # bill: the state commission sets the bundled rate; FERC approves transmission; PJM prices ancillary services
       - {id: puc_viu_gen, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: generation, label: sets generation and fuel rates, status: needs_verification, source: *va585}
-      - {id: viu_res_gen, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *va585}
       - {id: puc_viu_cap, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: capacity, label: sets base rates that recover the utility's own generating capacity, status: needs_verification, source: *va585}
-      - {id: viu_res_cap, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
       - {id: pjm_viu_as, from: pjm, to: viu, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
-      - {id: viu_res_as, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
       - {id: ferc_viu_tx, from: ferc, to: viu, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
-      - {id: viu_res_tx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
       - {id: puc_viu_dx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates, status: needs_verification, source: *va585}
-      - {id: viu_res_dx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
       - {id: puc_viu_rider, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders, status: needs_verification, source: *va585}
+      - {id: viu_res_gen, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *va585}
+      - {id: viu_res_cap, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
+      - {id: viu_res_as, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
+      - {id: viu_res_tx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
+      - {id: viu_res_dx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
       - {id: viu_res_rider, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
+      - {id: viu_sc_gen, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *va585}
+      - {id: viu_sc_cap, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
+      - {id: viu_sc_as, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
+      - {id: viu_sc_tx, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
+      - {id: viu_sc_dx, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
+      - {id: viu_sc_rider, from: viu, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
+      - {id: viu_lci_gen, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *va585}
+      - {id: viu_lci_cap, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
+      - {id: viu_lci_as, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
+      - {id: viu_lci_tx, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
+      - {id: viu_lci_dx, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
+      - {id: viu_lci_rider, from: viu, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
+      - {id: viu_ll_gen, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation and fuel rate, status: needs_verification, source: *va585}
+      - {id: viu_ll_cap, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
+      - {id: viu_ll_as, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
+      - {id: viu_ll_tx, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
+      - {id: viu_ll_dx, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
+      - {id: viu_ll_rider, from: viu, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
 
   # Electric cooperative in Virginia: member-owned, board elected by members, but unlike most co-ops in Texas its rates
   # stay under the state commission (Va. Code 56-231.34, 56-585.3). The board may move distribution rates up to 5%
-  # in any three years with only an informational filing; general rate cases go to the SCC.
+  # in any three years with only an informational filing; general rate cases go to the SCC. Its wholesale supplier
+  # (ODEC for REC) sells under a FERC-accepted formula rate, which the SCC does not regulate.
   coop:
+    label: Electric cooperative
     nodes:
       - id: state_puc
         name: State PUC
@@ -214,7 +538,7 @@ archetypes:
         lane: regulators
         kind: regulator
         jurisdiction: subnational
-        description: State commission that approves the co-op's rates in general rate cases.
+        description: State commission that approves the co-op's rates in general rate cases. It has no jurisdiction over the wholesale supplier's FERC-regulated rate.
         source: &va2313 {title: "Va. Code § 56-231.34 (cooperatives subject to SCC jurisdiction)", url: "https://law.lis.virginia.gov/vacode/title56/chapter9.1/section56-231.34/", accessed: "2026-10-08"}
         status: needs_verification
       - id: coop_board
@@ -222,51 +546,81 @@ archetypes:
         slot: coop_board
         lane: regulators
         kind: legislature
-        jurisdiction: local
-        description: Board elected by the co-op's members. Governs the co-op; may change distribution rates by up to 5% in any three years without commission approval.
+        jurisdiction: private
+        description: Corporate board elected by the co-op's members. Governs the co-op; may change distribution rates by up to 5% in any three years without commission approval.
         source: &va5853 {title: "Va. Code § 56-585.3 (regulation of cooperative rates)", url: "https://law.lis.virginia.gov/vacode/title56/chapter23/section56-585.3/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: wholesale_supplier
+        name: Wholesale supplier
+        slot: wholesale_supplier
+        lane: wholesale
+        kind: lse
+        jurisdiction: private
+        description: Sells the co-op its wholesale power, capacity and ancillary services as the load-serving entity in PJM. A generation and transmission co-op such as ODEC sells under a FERC-accepted formula rate, which state commissions do not regulate.
+        holds_assets: [generation, transmission]
+        source: &odec {title: "Old Dominion Electric Cooperative, Form 10-K for 2013", url: "https://www.sec.gov/Archives/edgar/data/885568/000119312514095422/d691690d10k.htm", accessed: "2026-10-08"}
         status: needs_verification
       - id: coop
         name: Co-op
         slot: coop
         lane: retail
         kind: coop
-        jurisdiction: local
-        description: Member-owned distribution utility. Owns the local wires, buys wholesale power and sells to residential members, who cannot pick another supplier.
+        jurisdiction: private
+        description: Member-owned distribution utility. Owns the local wires, buys wholesale power and sells to its members, who cannot pick another supplier.
         holds_assets: [distribution]
         source: *va2313
         status: needs_verification
-      - id: residential
-        name: Residential
-        lane: consumers
-        kind: consumer
-        jurisdiction: private
-        description: Household member of a Virginia electric cooperative.
+      - {id: residential, name: Residential, lane: consumers, kind: consumer, jurisdiction: private, description: Household member of a Virginia electric cooperative.}
+      - {id: small_commercial, name: Small commercial, lane: consumers, kind: consumer, jurisdiction: private, description: Small business member of the co-op.}
+      - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: Large commercial or industrial member of the co-op.}
+      - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: Very large site such as a data center served by the co-op.}
     edges:
-      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification, source: *oatt}
-      - {id: puc_coop, from: state_puc, to: coop, type: regulates, domain: rates, label: regulates the co-op's rates and service, status: needs_verification, source: *va2313}
+      - {id: puc_coop, from: state_puc, to: coop, type: regulates, domain: rates, label: "regulates the co-op's rates and service, including how it recovers wholesale power cost", status: needs_verification, source: *va2313}
       - {id: board_coop_gov, from: coop_board, to: coop, type: regulates, domain: governance, label: governs the co-op; may change distribution rates up to 5% in 3 years, status: needs_verification, source: *va5853}
-      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
-      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
-      # bill: the SCC approves the co-op's rates in general rate cases; FERC approves transmission; PJM prices ancillary services
-      - {id: puc_coop_gen, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: generation, label: approves wholesale power cost recovery, status: needs_verification, source: *va5853}
-      - {id: coop_res_gen, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the power cost charge, status: needs_verification, source: *va5853}
-      - {id: puc_coop_cap, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: capacity, label: approves recovery of capacity within wholesale power cost, status: needs_verification, source: *va5853}
-      - {id: coop_res_cap, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within the power cost charge, status: needs_verification, source: *va5853}
-      - {id: pjm_coop_as, from: pjm, to: coop, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
-      - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va5853}
+      - {id: ferc_ws, from: ferc, to: wholesale_supplier, type: regulates, domain: rates, label: accepts the wholesale supplier's formula rate, status: needs_verification, source: *odec}
+      - {id: pjm_operates_tx_ws, from: pjm, to: wholesale_supplier, type: operates, asset: transmission, label: operates the transmission the wholesale supplier owns, status: needs_verification, source: *odec}
+      - {id: ws_rpm_cap, from: wholesale_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: buys part of its capacity obligation in RPM, status: needs_verification, source: *odec}
+      - {id: ws_pjm_as, from: wholesale_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges as the load-serving entity, status: needs_verification, source: *odec}
+      # bill: supply comes from the wholesale supplier's FERC-accepted rate, passed through by the co-op; wires and riders
+      # are approved by the SCC
+      - {id: ws_coop_gen, from: wholesale_supplier, to: coop, type: sets_rate, mode: sets, rate_component: generation, label: sets the wholesale energy charge under its formula rate, status: needs_verification, source: *odec}
+      - {id: ferc_ws_gen, from: ferc, to: wholesale_supplier, type: sets_rate, mode: approves, rate_component: generation, label: accepts the wholesale formula rate, status: needs_verification, source: *odec}
+      - {id: ws_coop_cap, from: wholesale_supplier, to: coop, type: sets_rate, mode: sets, rate_component: capacity, label: sets the wholesale demand charge under its formula rate, status: needs_verification, source: *odec}
+      - {id: ferc_ws_cap, from: ferc, to: wholesale_supplier, type: sets_rate, mode: approves, rate_component: capacity, label: accepts the wholesale formula rate, status: needs_verification, source: *odec}
+      - {id: ws_coop_as, from: wholesale_supplier, to: coop, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: recovers PJM ancillary charges in its wholesale rate, status: needs_verification, source: *odec}
       - {id: ferc_coop_tx, from: ferc, to: coop, type: sets_rate, mode: approves, rate_component: transmission, label: approves the PJM transmission rates the co-op pays, status: needs_verification, source: *oatt}
-      - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
       - {id: puc_coop_dx, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: distribution, label: approves distribution rates in general rate cases, status: needs_verification,
          source: {title: "SCC Case PUR-2017-00044, Rappahannock Electric Cooperative rate case (hearing examiner's report)", url: "https://scc.virginia.gov/docketsearch/DOCS/3%24pn01!.PDF", accessed: "2026-10-08"}}
-      - {id: coop_res_dx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
       - {id: puc_coop_rider, from: state_puc, to: coop, type: sets_rate, mode: approves, rate_component: riders_public_purpose, label: approves rate adjustment clauses, status: needs_verification, source: *va5853}
+      - {id: coop_res_gen, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_res_cap, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
+      - {id: coop_res_dx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
       - {id: coop_res_rider, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va5853}
+      - {id: coop_sc_gen, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_sc_cap, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_sc_as, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_sc_tx, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
+      - {id: coop_sc_dx, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
+      - {id: coop_sc_rider, from: coop, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va5853}
+      - {id: coop_lci_gen, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_lci_cap, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_lci_as, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_lci_tx, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
+      - {id: coop_lci_dx, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
+      - {id: coop_lci_rider, from: coop, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va5853}
+      - {id: coop_ll_gen, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_ll_cap, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_ll_as, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: bills ancillary cost within the wholesale power cost, status: needs_verification, source: *va5853}
+      - {id: coop_ll_tx, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va5853}
+      - {id: coop_ll_dx, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va5853}
+      - {id: coop_ll_rider, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va5853}
 
 utilities:
   ComEd:
     area: IL
-    archetypes: [restructured_choice]
+    archetypes: [default_service_ipa, competitive_supplier, municipal_aggregation]
     fills:
       state_puc: {name: ICC (Illinois)}
       edc:
@@ -282,7 +636,7 @@ utilities:
         domain_area: {full: [dominion_va], note: "Dominion Energy Virginia service territory, central, northern and eastern Virginia and northeast North Carolina", source: *hifld, status: needs_verification}
   PSE&G:
     area: NJ
-    archetypes: [restructured_choice]
+    archetypes: [restructured_choice, competitive_supplier, municipal_aggregation]
     fills:
       state_puc: {name: NJ Board of Public Utilities}
       edc:
@@ -290,12 +644,21 @@ utilities:
         domain_area: {full: [pseg], note: "PSE&G service territory, northern and central New Jersey", source: *hifld, status: needs_verification}
   PECO:
     area: PA
-    archetypes: [restructured_choice]
+    archetypes: [restructured_choice, competitive_supplier]
     fills:
       state_puc: {name: Pennsylvania PUC}
       edc:
         name: PECO
         domain_area: {full: [peco], note: "PECO service territory, Philadelphia and southeastern Pennsylvania", source: *hifld, status: needs_verification}
+  Mon Power:
+    area: WV
+    archetypes: [vertically_integrated]
+    fills:
+      state_puc: {name: West Virginia PSC}
+      viu:
+        name: Mon Power
+        owner: {name: FirstEnergy, type: investor_owned, as_of: "2026-10-08",
+                source: {title: "FirstEnergy, Form 10-K (subsidiaries)", url: "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001031296&type=10-K", accessed: "2026-10-08"}}
   NOVEC:
     area: VA
     archetypes: [coop]
@@ -312,6 +675,9 @@ utilities:
     fills:
       state_puc: {name: Virginia SCC}
       coop_board: {name: REC board}
+      wholesale_supplier:
+        name: ODEC
+        owner: {name: Its 11 member co-ops, type: cooperative, as_of: "2026-10-08", source: *odec}
       coop:
         name: REC
         owner: {name: Its members, type: cooperative, as_of: "2026-10-08", source: {title: "SCC Case PUR-2017-00044, Rappahannock Electric Cooperative rate case (hearing examiner's report)", url: "https://scc.virginia.gov/docketsearch/DOCS/3%24pn01!.PDF", accessed: "2026-10-08"}}

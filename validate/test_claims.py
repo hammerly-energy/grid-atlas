@@ -12,7 +12,6 @@ GRAPHS = list(graphs())
 MARKETS = {mid: (cc, m) for cc, c in DATA.items() for mid, m in c["markets"].items()}
 
 M2 = pytest.mark.xfail(reason="milestone 2: ERCOT data not entered", strict=True)
-M3 = pytest.mark.xfail(reason="milestone 3: PJM/CAISO data not entered", strict=True)
 MGB = pytest.mark.xfail(reason="GB milestone: gb.yaml not entered", strict=True)
 
 
@@ -35,18 +34,19 @@ def by_kind(nodes, kind):
 
 # ---- completeness: every class x bill component has at least one line item, each with one path ending at a setter ----
 # (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
-THIN_SLICE = "thin slice: only the residential class is wired so far"
-KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
-              for mid, arch in [("pjm", "restructured_choice"),
-                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("pjm", "limited_choice"), ("pjm", "coop"),
-                                ("gb", "domestic_default_capped")]
+# (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
+KNOWN_GAPS = {(mid, arch, cls): "thin slice: only the residential class is wired so far"
+              for mid, arch in [("gb", "domestic_default_capped")]
               for cls in ("small_commercial", "large_ci", "large_load")}
 
 
 def _bill_cases():
     for cc, mid, arch, nodes, edges in GRAPHS:
         prof, m = DATA[cc]["profile"], MARKETS[mid][1]
-        for cls in prof["consumer_classes"]:
+        classes = [n["id"] for n in nodes.values() if n["kind"] == "consumer"]   # a class a setup cannot serve
+        for cls in prof["consumer_classes"]:                                      # (residential on Direct Access) is
+            if cls not in classes:                                                # covered by the test below instead
+                continue
             for comp in build.bill_components(prof, m):
                 reason = KNOWN_GAPS.get((mid, arch, cls))
                 marks = [pytest.mark.xfail(reason=reason, strict=True)] if reason else []
@@ -217,7 +217,7 @@ def test_virginia_coop_rates_approved_by_the_scc_not_its_board():
     """Va. Code 56-231.34 and 56-585.3: co-op rates stay under the SCC; the board only governs (and may move
     distribution rates up to 5% in three years). Contrast with ERCOT, where the co-op board sets rates."""
     _, edges = g("pjm", "coop")
-    for comp in ("generation", "distribution", "capacity", "riders_public_purpose"):
+    for comp in ("distribution", "riders_public_purpose"):
         a = build.who_sets(edges, "residential", comp)
         assert a["setter"] == "state_puc" and a["mode"] == "approves", comp
     assert not [e for e in edges if e["type"] == "sets_rate" and e["from"] == "coop_board"]
@@ -238,6 +238,93 @@ def test_pjm_has_capacity_auction():
     assert any(e["type"] == "operates" and e["from"] == "pjm" and e["to"] == "rpm" for e in edges)
 
 
+def test_every_archetype_serves_at_least_one_class_and_names_the_ones_it_cannot():
+    """Direct Access is closed to residential customers, so caiso:iou_direct_access has no residential box.
+    Every other setup here serves all four classes."""
+    for cc, mid, arch, nodes, edges in GRAPHS:
+        got = {n["id"] for n in nodes.values() if n["kind"] == "consumer"}
+        want = set(DATA[cc]["profile"]["consumer_classes"])
+        assert got, f"{mid}:{arch}: no consumer class"
+        if mid in ("pjm", "caiso"):
+            expected = want - {"residential"} if (mid, arch) == ("caiso", "iou_direct_access") else \
+                       {"residential", "small_commercial"} if (mid, arch) == ("pjm", "municipal_aggregation") else want
+            assert got == expected, f"{mid}:{arch}"
+
+
+def test_comed_default_supply_is_procured_by_the_illinois_power_agency():
+    """The IPA plans and runs ComEd's default procurement and the ICC approves it; ComEd itself buys RPM capacity."""
+    nodes, edges = g("pjm", "default_service_ipa")
+    assert nodes["ipa"]["kind"] == "policy_maker"
+    assert any(e["type"] == "plans_procures" and e["from"] == "ipa" for e in edges)
+    assert any(e["type"] == "regulates" and e["from"] == "state_puc" and e["to"] == "ipa" for e in edges)
+    items = {it["subcomponent"]: it["setter"] for it in build.answer(edges, "residential", "generation")["items"]}
+    assert set(items) == {"Energy blocks bought by the Illinois Power Agency", "Energy bought in PJM's markets"}
+    assert items["Energy blocks bought by the Illinois Power Agency"] == "default_supplier"
+    assert build.who_sets(edges, "residential", "capacity")["setter"] == "rpm"     # ComEd pays RPM directly
+    assert MARKETS["pjm"][1]["utilities"]["ComEd"]["archetypes"][0] == "default_service_ipa"
+
+
+def test_pjm_capacity_price_comes_from_rpm_and_ferc_only_approves_it():
+    """RPM sets the capacity price; FERC approves its rules rather than setting the price."""
+    for arch in ("default_service_ipa", "restructured_choice", "coop"):
+        _, edges = g("pjm", arch)
+        caps = [it for cls in ("residential", "large_ci") if (a := build.answer(edges, cls, "capacity")) for it in a["items"]]
+        assert caps, arch
+        assert all(it["setter"] in {"rpm", "default_supplier", "wholesale_supplier"} for it in caps), arch
+        assert any(e.get("mode") == "approves" and e["from"] == "ferc" and e["to"] == "rpm" for e in edges), arch
+    _, edges = g("pjm", "restructured_choice")
+    assert build.who_sets(edges, "large_ci", "capacity")["setter"] == "rpm"        # hourly service: the auction price
+
+
+def test_large_customers_on_pjm_default_service_pay_hourly_market_prices():
+    """Above 100 kW, default service is spot-priced: PJM's energy price reaches the customer, not an auction price."""
+    for arch in ("restructured_choice", "default_service_ipa"):
+        _, edges = g("pjm", arch)
+        assert build.who_sets(edges, "large_ci", "generation")["setter"] == "pjm", arch
+        res = {it["setter"] for it in build.answer(edges, "residential", "generation")["items"]}
+        assert "default_supplier" in res, arch      # households get the procured price, not the hourly one
+
+
+def test_a_pjm_competitive_supplier_sets_supply_and_the_wires_stay_regulated():
+    nodes, edges = g("pjm", "competitive_supplier")
+    assert nodes["supplier"]["kind"] == "retail_provider"
+    for comp in ("generation", "capacity", "ancillary_uplift"):
+        assert build.who_sets(edges, "residential", comp)["setter"] == "supplier", comp
+    assert build.who_sets(edges, "residential", "distribution")["setter"] == "state_puc"
+    assert build.who_sets(edges, "residential", "transmission")["setter"] == "ferc"
+
+
+def test_pjm_municipal_aggregation_covers_only_households_and_small_business():
+    """20 ILCS 3855/1-92 aggregates residential and small commercial load; its supplier sets the price and the
+    municipality approves the contract."""
+    nodes, edges = g("pjm", "municipal_aggregation")
+    assert nodes["aggregator"]["kind"] == "cca"
+    a = build.who_sets(edges, "residential", "generation")
+    assert a["setter"] == "agg_supplier" and "agg_sup_gen_ok" in a["limits"]
+    assert {n["id"] for n in nodes.values() if n["kind"] == "consumer"} == {"residential", "small_commercial"}
+
+
+def test_west_virginia_utility_is_vertically_integrated_with_no_choice():
+    nodes, edges = g("pjm", "vertically_integrated")
+    assert {"generation", "transmission", "distribution"} <= set(nodes["viu"]["holds_assets"])
+    assert not [n for n in nodes.values() if n["kind"] in {"retail_provider", "cca", "lse"}]
+    for cls in DATA["US"]["profile"]["consumer_classes"]:
+        assert build.who_sets(edges, cls, "generation")["setter"] == "state_puc", cls
+    assert MARKETS["pjm"][1]["utilities"]["Mon Power"]["area"] == "WV"
+
+
+def test_virginia_coop_wholesale_supply_is_a_ferc_rate_the_scc_does_not_set():
+    """ODEC sells REC its wholesale power under a FERC-accepted formula rate; the SCC's authority is the retail side."""
+    nodes, edges = g("pjm", "coop")
+    assert nodes["wholesale_supplier"]["kind"] == "lse"
+    for comp in ("generation", "capacity"):
+        a = build.who_sets(edges, "residential", comp)
+        assert a["setter"] == "wholesale_supplier" and any(edges[i]["from"] == "ferc" for i, e in enumerate(edges) if e["id"] in a["limits"]), comp
+    assert not [e for e in edges if e["type"] == "sets_rate" and e["from"] == "state_puc"
+                and e.get("rate_component") in {"generation", "capacity"}]
+    assert MARKETS["pjm"][1]["utilities"]["Rappahannock Electric Cooperative"]["fills"]["wholesale_supplier"]["name"] == "ODEC"
+
+
 # ---- CAISO ----
 def test_caiso_has_no_central_capacity_auction():
     for arch, nodes, edges in all_graphs("caiso"):
@@ -246,7 +333,44 @@ def test_caiso_has_no_central_capacity_auction():
     assert any(e["type"] == "plans_procures" and e["from"] == "cpuc" for e in edges), "CPUC sets RA obligations"
 
 
-@M3
+def test_caiso_resource_adequacy_is_a_line_item_inside_the_generation_rate():
+    """CAISO runs no capacity auction: RA capacity is bought by each LSE and recovered inside the generation rate."""
+    _, edges = g("caiso", "iou_bundled")
+    items = {it["subcomponent"]: it["setter"] for it in build.answer(edges, "residential", "generation")["items"]}
+    assert items == {"Energy procurement": "cpuc", "Resource adequacy": "cpuc"}
+    assert "capacity" not in build.bill_components(DATA["US"]["profile"], MARKETS["caiso"][1])
+
+
+def test_caiso_direct_access_is_closed_to_households_and_capped():
+    nodes, edges = g("caiso", "iou_direct_access")
+    assert "residential" not in nodes
+    assert nodes["esp"]["kind"] == "retail_provider"
+    for cls in ("small_commercial", "large_ci", "large_load"):
+        assert build.who_sets(edges, cls, "generation")["setter"] == "esp", cls
+    assert any(e["type"] == "regulates" and e.get("domain") == "licensing" and e["from"] == "cpuc" for e in edges)
+
+
+def test_cca_and_direct_access_customers_pay_the_pcia_exit_fee():
+    for arch, cls in (("iou_cca", "residential"), ("iou_direct_access", "large_ci")):
+        _, edges = g("caiso", arch)
+        items = {it["subcomponent"]: it["setter"] for it in build.answer(edges, cls, "riders_public_purpose")["items"]}
+        assert items.get("Exit fee (PCIA)") == "cpuc", arch
+    _, edges = g("caiso", "iou_bundled")           # a bundled customer pays no exit fee
+    assert not [e for e in edges if e.get("subcomponent") == "Exit fee (PCIA)"]
+
+
+def test_a_city_utility_inside_caiso_keeps_retail_rates_but_ferc_approves_transmission():
+    """Anaheim and Riverside turned their transmission over to CAISO as participating transmission owners."""
+    nodes, edges = g("caiso", "muni_in_caiso")
+    assert nodes["pou"]["kind"] == "muni"
+    assert build.who_sets(edges, "residential", "transmission")["setter"] == "ferc"
+    for comp in ("generation", "distribution", "riders_public_purpose"):
+        assert build.who_sets(edges, "residential", comp)["setter"] == "governing_body", comp
+    assert any(e["type"] == "operates" and e["from"] == "caiso" and e["to"] == "pou" for e in edges)
+    for name in ("Anaheim Public Utilities", "Riverside Public Utilities"):
+        assert MARKETS["caiso"][1]["utilities"][name]["archetypes"] == ["muni_in_caiso"], name
+
+
 def test_caiso_cca_sets_generation_rate():
     nodes, edges = g("caiso", "iou_cca")
     assert by_kind(nodes, "cca")

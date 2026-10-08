@@ -196,6 +196,26 @@ def test_clicking_keeps_the_scroll_position(page, width):
     page.set_viewport_size({"width": 1400, "height": 1600})
 
 
+@pytest.mark.parametrize("view,cols", [
+    ("lens=roles&a=ercot/competitive_area&b=pjm/restructured_choice&c=", 2),
+    ("lens=roles&a=ercot/competitive_area&b=pjm/restructured_choice&c=caiso/iou_cca", 3),
+    ("lens=bill&comp=generation&a=ercot/competitive_area&b=pjm/default_service_ipa&c=caiso/iou_cca", 3),
+])
+def test_two_up_and_three_up_compare(page, view, cols):
+    """Each column draws its own diagram, and a kind no other column has is flagged 'only here'."""
+    page.goto(f"{PAGE}#{view}")
+    page.reload()
+    assert page.locator(".col svg").count() >= cols, f"{view}: {cols} diagrams expected"
+    for i in range(cols):
+        assert page.locator(f"#col{i} svg").count() == 1, f"{view}: column {i} empty"
+    flagged = page.evaluate("""() => [...document.querySelectorAll('.col text.u')].map(t => t.textContent)""")
+    assert all(f == "only here" for f in flagged), flagged
+    if "caiso/iou_cca" in view:   # a CCA exists in no other column on screen
+        kinds = page.evaluate("""() => [...document.querySelectorAll('#col2 g.node')]
+            .filter(g => g.querySelector('text.u')).map(g => g.dataset.id)""")
+        assert "cca" in kinds, kinds
+
+
 @pytest.mark.parametrize("mid,first,second", [("caiso", "PG&E", "SMUD"), ("ercot", "Oncor", "CenterPoint"), ("pjm", "ComEd", "Dominion Energy Virginia")])
 def test_switching_utility_keeps_the_utility_box_selected(page, mid, first, second):
     page.goto(f"{PAGE}#lens=roles&a={quote(f'{mid}//{first}', safe='/')}&b=/")

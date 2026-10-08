@@ -31,7 +31,7 @@
   .chip[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
   select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:3px 6px; max-width:100%; }
   .cols { display:flex; flex-wrap:wrap; gap:16px; }
-  .col { flex:1 1 420px; min-width:0; }
+  .col { flex:1 1 360px; min-width:0; }
   .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
@@ -131,18 +131,22 @@ if (!D) {
 
 /* ---------- state (mirrored in the URL hash) ---------- */
 const firstArch = mid => Object.keys(D.markets[mid].archetypes)[0] || "";
+const COLS = ["a", "b", "c"];   // up to three markets side by side; the third opens once the second is picked
 const S = { lens: "roles", cls: "residential", comp: "generation", cols: [
   { mid: "ercot", arch: "competitive_area", util: "", sel: null },
+  { mid: "", arch: "", util: "", sel: null },
   { mid: "", arch: "", util: "", sel: null },
 ] };
 try {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
-  ["a", "b"].forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
+  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
 function saveHash() {
-  const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: [S.cols[0].mid, S.cols[0].arch, S.cols[0].util].filter(Boolean).join("/"), b: `${S.cols[1].mid}/${S.cols[1].arch}${S.cols[1].util ? "/" + S.cols[1].util : ""}` });
+  const q = { lens: S.lens, comp: S.comp };
+  S.cols.forEach((c, i) => { q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
+  const p = new URLSearchParams(q);
   // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
   try { history.replaceState(null, "", "#" + p); } catch (e) { try { location.replace("#" + p); } catch (e2) {} }
 }
@@ -343,28 +347,35 @@ function marker(defs, shape, color, key) {
 }
 
 /* ---------- column render ---------- */
-function otherKinds(i) {
-  const o = S.cols[1 - i];
-  if (!o.mid || !S.cols[i].mid) return null;
-  return new Set(resolve(o.mid, o.arch).nodes.map(n => n.kind));
+function otherCols(col) { return S.cols.filter(c => c !== col && c.mid && c.arch); }
+// the "only here" marker: a kind that none of the other markets on screen has (match on kind, per CLAUDE.md)
+function otherKinds(col) {
+  const others = otherCols(col);
+  if (!others.length || !col.mid) return null;
+  return new Set(others.flatMap(o => resolve(o.mid, o.arch).nodes.map(n => n.kind)));
 }
 
 function renderCol(i) {
   const col = S.cols[i], box = $(`#col${i}`);
+  if (!box) return;
   const markets = Object.entries(D.markets);
   box.innerHTML = "";
   const chain = document.createElement("div"); chain.className = "chain"; box.appendChild(chain);
 
   const mSel = document.createElement("select");
   mSel.setAttribute("aria-label", "Market");
-  if (i === 1) mSel.add(new Option("Compare with…", ""));
+  if (i > 0) mSel.add(new Option("Compare with…", ""));
   for (const cc of Object.keys(D.countries)) {
     const g = document.createElement("optgroup"); g.label = D.countries[cc].name;
     markets.filter(([, m]) => m.country === cc).forEach(([mid, m]) => g.appendChild(new Option(m.name, mid)));
     mSel.appendChild(g);
   }
   mSel.value = col.mid;
-  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col); render(); };   // render picks the first utility
+  mSel.onchange = () => {
+    col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col);
+    if (!col.mid) S.cols.slice(i + 1).forEach(c => { c.mid = ""; c.arch = ""; c.util = ""; c.sel = null; });   // no gaps between columns
+    render();
+  };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return;
 
@@ -382,7 +393,7 @@ function renderCol(i) {
   if (archs.length !== 1) {   // a supply choice only when the utility offers more than one setup
     const aSel = document.createElement("select"); aSel.setAttribute("aria-label", C.chain[2] || "Setup");
     if (!archs.length) aSel.add(new Option("No setups entered", ""));
-    archs.forEach(a => aSel.add(new Option(a.replace(/_/g, " "), a)));
+    archs.forEach(a => aSel.add(new Option((m.archetypes[a] && m.archetypes[a].label) || a.replace(/_/g, " "), a)));
     aSel.value = col.arch;
     aSel.onchange = () => { col.arch = aSel.value; hold(col); render(); };
     chain.appendChild(aSel);
@@ -439,7 +450,7 @@ function renderCol(i) {
   }
 
   // nodes
-  const kindsElsewhere = otherKinds(i);
+  const kindsElsewhere = otherKinds(col);
   for (const n of nodes) {
     const p = pos[n.id], name = displayName(col, n);
     const sel = col.sel && col.sel.node === n.id;
@@ -510,8 +521,9 @@ function answers(col, C, nodes, edges, byId) {
     t.innerHTML = `<tr><th>Role</th><th>Who</th><th>Over</th></tr>`;
     const groups = {};
     edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => (groups[groupKey(e)] ||= []).push(e));
-    const order = Object.keys(GROUP_TEXT), o = S.cols[1 - S.cols.indexOf(col)];
-    if (o.mid && o.arch) resolve(o.mid, o.arch).edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => { groups[groupKey(e)] ||= []; });   // rows line up across columns; a missing role reads "none entered"
+    const order = Object.keys(GROUP_TEXT);
+    otherCols(col).forEach(o => resolve(o.mid, o.arch).edges.filter(e => ROLE_TYPES.includes(e.type))
+      .forEach(e => { groups[groupKey(e)] ||= []; }));   // rows line up across columns; a missing role reads "none entered"
     for (const k of Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
       const es = groups[k], tr = document.createElement("tr");
       tr.className = "row" + (col.sel && col.sel.group === k ? " cur" : "");
@@ -632,7 +644,10 @@ function renderBar() {
   const mids = S.cols.map(c => c.mid).filter(Boolean);
   const comps = [...new Set(mids.flatMap(componentsFor))];
   if (!comps.includes(S.comp)) S.comp = comps[0];
-  const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))];
+  // only the classes the setups on screen serve: Direct Access, for instance, is closed to households
+  const served = new Set(S.cols.filter(c => c.mid && c.arch).flatMap(c => resolve(c.mid, c.arch).nodes.filter(n => n.kind === "consumer").map(n => n.id)));
+  const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))].filter(c => served.has(c));
+  if (!classes.includes(S.cls)) S.cls = classes[0] || S.cls;
   const cs = $("#cls"); cs.innerHTML = "";
   classes.forEach(c => cs.add(new Option(c.replace(/_/g, " "), c)));
   cs.value = S.cls; cs.onchange = () => { S.cls = cs.value; render(); };
@@ -640,7 +655,8 @@ function renderBar() {
   const C0 = country(mids[0]);
   for (const c of comps) {
     const b = document.createElement("button"); b.className = "chip"; b.textContent = label((mids.map(country).find(C => C.component_labels[c]) || C0).component_labels, c);
-    if (mids.length > 1 && D.markets[mids[1]].country !== D.markets[mids[0]].country) b.title = label(country(mids[1]).component_labels, c);
+    const abroad = mids.slice(1).find(mid => D.markets[mid].country !== D.markets[mids[0]].country);
+    if (abroad) b.title = label(country(abroad).component_labels, c);
     b.setAttribute("aria-pressed", c === S.comp); b.onclick = () => { S.comp = c; render(); };
     box.appendChild(b);
   }
@@ -680,12 +696,13 @@ function render() {
     if (c.carry) { c.sel = carrySel(c, c.carry); delete c.carry; }
     c.prev = { mid: c.mid, arch: c.arch, util: c.util };
   });
-  $("#cols").innerHTML = '<div class="col" id="col0"></div><div class="col" id="col1"></div>';
+  const shownCols = S.cols.filter((c, i) => i < 2 || S.cols[i - 1].mid);   // the third column appears once the second is picked
+  $("#cols").innerHTML = shownCols.map((c, i) => `<div class="col" id="col${i}"></div>`).join("");
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
     const nodes = resolve(c.mid, c.arch).nodes;
     return Math.max(...LANES.map(l => nodes.filter(n => n.lane === l).length)) * (NODE_W + MIN_GAP) + MIN_GAP;
   }));
-  renderBar(); renderCol(0); renderCol(1); renderLegend(); saveHash();
+  renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash();
   document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
   scrollTo(keep.x, keep.y);
 }
