@@ -92,6 +92,72 @@ archetypes:
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ra}
       - {id: iou_res_rider, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose charges, status: needs_verification, source: *ra}
 
+  # POUs with their own balancing authority (LADWP; SMUD inside BANC). The CPUC sets none of their rates;
+  # their elected board or council does. They trade with CAISO only in its real-time market (WEIM).
+  muni_own_ba:
+    nodes:
+      - id: governing_body
+        name: Governing body
+        slot: governing_body
+        lane: regulators
+        kind: legislature
+        jurisdiction: local
+        description: Elected board or city council that sets the publicly owned utility's retail rates. The CPUC does not.
+        source: &pourates {title: CPUC electric rates (publicly owned utilities), url: "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-rates", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: pou
+        name: POU
+        slot: pou
+        lane: retail
+        kind: muni
+        jurisdiction: local
+        description: Publicly owned utility. Owns generation, transmission and distribution, and sells to every customer in its area.
+        holds_assets: [generation, transmission, distribution]
+        source: *pourates
+        status: needs_verification
+      - id: banc
+        name: Balancing authority
+        slot: ba
+        lane: market_operator
+        kind: system_operator
+        jurisdiction: local
+        description: Balances load and generation for the utility's area. It is outside CAISO's balancing area and runs no energy market.
+        source: &weim {title: Western Energy Imbalance Market participants, url: "https://www.westernenergymarkets.com/western-energy-imbalance-market-weim", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: weim
+        name: WEIM
+        lane: market_operator
+        kind: market
+        jurisdiction: supranational
+        description: Western Energy Imbalance Market. CAISO's real-time market, joined by balancing authorities across the West.
+        source: *weim
+        status: needs_verification
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer of the publicly owned utility. It has no choice of supplier.
+    edges:
+      # regulation and operations
+      - {id: ferc_caiso_weim, from: ferc, to: caiso, type: regulates, domain: market_rules, label: approves CAISO's tariff including WEIM rules, status: needs_verification, source: *caisomkt}
+      - {id: caiso_operates_weim, from: caiso, to: weim, type: operates, label: runs the real-time market, status: needs_verification, source: *weim}
+      - {id: caiso_settles_ba, from: caiso, to: banc, type: settles, label: settles the balancing authority's real-time imbalance trades, status: needs_verification, source: *weim}
+      - {id: caiso_dispatch_weim, from: caiso, to: generators, type: dispatches, mechanism: central_sced, label: dispatches resources bid into WEIM every 5 minutes, status: needs_verification, source: *weim}
+      - {id: ba_operates_tx, from: banc, to: pou, type: operates, asset: transmission, label: balances the grid the utility owns, status: needs_verification, source: *weim}
+      - {id: cpuc_pou_safety, from: cpuc, to: pou, type: regulates, domain: policy_standard, label: safety oversight only; does not set rates, status: needs_verification, source: *pourates}
+      - {id: gov_pou_gov, from: governing_body, to: pou, type: regulates, domain: governance, label: governs the utility and approves its budget, status: needs_verification, source: *pourates}
+      # bill: the governing body sets every component; the utility bills it
+      - {id: gov_pou_gen, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *pourates}
+      - {id: pou_res_gen, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *pourates}
+      - {id: gov_pou_tx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: transmission, label: sets transmission charges, status: needs_verification, source: *pourates}
+      - {id: pou_res_tx, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pourates}
+      - {id: gov_pou_dx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution charges, status: needs_verification, source: *pourates}
+      - {id: pou_res_dx, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pourates}
+      - {id: gov_pou_rider, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets the public goods charge, status: needs_verification,
+         source: {title: "California Public Utilities Code §385 (POU public goods charge)", url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=PUC&sectionNum=385", accessed: "2026-10-08"}}
+      - {id: pou_res_rider, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills the public goods charge, status: needs_verification, source: *pourates}
+
 # Territories: California Energy Commission service-area polygons (scripts/maps/make_maps.mjs fails if two overlap).
 utilities:
   PG&E:
@@ -127,3 +193,34 @@ utilities:
           note: SDG&E service territory, San Diego County and southern Orange County
           source: *cec
           status: needs_verification
+  SMUD:
+    area: CA
+    archetypes: [muni_own_ba]
+    fills:
+      governing_body: {name: SMUD Board}
+      ba: {name: BANC}
+      pou:
+        name: SMUD
+        owner: {name: Sacramento Municipal Utility District, type: municipal, as_of: "2026-10-08",
+                source: {title: SMUD Board of Directors, url: "https://www.smud.org/en/Corporate/About-us/Company-Information/Board-of-Directors", accessed: "2026-10-08"}}
+        domain_area:
+          full: [smud]
+          note: SMUD service territory, mostly Sacramento County
+          source: *cec
+          status: needs_verification
+  LADWP:
+    area: CA
+    archetypes: [muni_own_ba]
+    fills:
+      governing_body: {name: LA City Council}
+      ba: {name: LADWP (BA)}
+      pou:
+        name: LADWP
+        owner: {name: City of Los Angeles, type: municipal, as_of: "2026-10-08",
+                source: {title: LADWP electric rates, url: "https://www.ladwp.com/electricrates", accessed: "2026-10-08"}}
+        domain_area:
+          full: [ladwp]
+          note: LADWP service territory, the City of Los Angeles and areas of the Owens Valley
+          source: *cec
+          status: needs_verification
+

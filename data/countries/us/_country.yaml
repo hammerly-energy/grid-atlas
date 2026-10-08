@@ -15,6 +15,9 @@ kind_labels:
   wires_utility: Utility (wires)
   retail_provider: Retail provider (REP / ESP)
   reliability_body: NERC / regional entity
+  muni: Publicly owned utility (POU)
+  system_operator: Balancing authority (BA)
+  legislature: Elected governing body
 component_labels:
   generation: Generation
   transmission: Transmission
@@ -43,3 +46,8 @@ glossary:
   DA / ESP: {term: DA / ESP, meaning: Direct Access / Electric Service Provider (California).}
   RA: {term: RA, meaning: "Resource adequacy; California's capacity obligation on LSEs, set by the CPUC and munis (no central auction)."}
   Default service: {term: Default service, meaning: Supply for customers who don't pick a retailer in restructured states., equivalent: {GB: Default tariff (price-capped)}}
+  POU: {term: POU, meaning: "Publicly owned utility: a city department, utility district or irrigation district. Its elected board or council sets its rates, not the state PUC."}
+  WEIM: {term: WEIM, meaning: "Western Energy Imbalance Market; CAISO's real-time market that balancing authorities outside CAISO can join."}
+  BANC: {term: BANC, meaning: "Balancing Authority of Northern California; a joint powers authority of SMUD and other POUs. SMUD operates it under contract."}
+  SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a POU owned by its customers, who elect a seven-member board."}
+  LADWP: {term: LADWP, meaning: "Los Angeles Department of Water and Power; the City of Los Angeles' POU and its own balancing authority."}

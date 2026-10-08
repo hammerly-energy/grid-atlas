@@ -43,8 +43,10 @@ function rtoCounties() {
 }
 
 // Wires utility territories: California Energy Commission service-area polygons, one per utility.
-// Franchise territories are exclusive, so any overlap means a bad input and fails the build.
-const CEC_UTILITY = { 'PG&E': 'pge', 'SCE': 'sce', 'SDG&E': 'sdge' };   // CEC Acronym -> area id
+// IOU franchise territories are exclusive, so an overlap between two IOUs fails the build. Overlaps involving a
+// publicly owned utility are printed: the CEC layer draws LADWP's Owens Valley area inside SCE's.
+const CEC_IOU = new Set(['pge', 'sce', 'sdge']);
+const CEC_UTILITY = { 'PG&E': 'pge', 'SCE': 'sce', 'SDG&E': 'sdge', 'SMUD': 'smud', 'LADWP': 'ladwp' };   // CEC Acronym -> area id
 async function utilityAreas() {
   const d = input('cec_utilities');
   d.features = d.features.filter(f => CEC_UTILITY[f.properties.Acronym])
@@ -55,7 +57,8 @@ async function utilityAreas() {
     const out = await mapshaper.applyCommands(`-i x.json y.json combine-files -clip y target=x -proj ${MAPS.north_america.proj} target=x -each 'a=this.area' target=x -o format=json target=x out.json`,
       { 'x.json': only(x), 'y.json': only(y) });
     const km2 = JSON.parse(out['out.json']).reduce((s, r) => s + r.a, 0) / 1e6;
-    if (km2 > 1) throw new Error(`cec_utilities: ${x} and ${y} overlap by ${km2.toFixed(0)} km²`);
+    if (km2 > 1 && CEC_IOU.has(x) && CEC_IOU.has(y)) throw new Error(`cec_utilities: ${x} and ${y} overlap by ${km2.toFixed(0)} km²`);
+    if (km2 > 1) console.log(`  note: ${x} and ${y} overlap by ${km2.toFixed(0)} km² in the CEC layer`);
   }
   return d;
 }

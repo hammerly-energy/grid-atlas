@@ -38,7 +38,7 @@ def by_kind(nodes, kind):
 THIN_SLICE = "thin slice: only the residential class is wired so far"
 KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
               for mid, arch in [("ercot", "competitive_area"), ("pjm", "restructured_choice"),
-                                ("caiso", "iou_bundled"), ("gb", "domestic_default_capped")]
+                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("gb", "domestic_default_capped")]
               for cls in ("small_commercial", "large_ci", "large_load")}
 
 
@@ -162,11 +162,22 @@ def test_caiso_cca_sets_generation_rate():
     assert ans and nodes[ans["setter"]]["kind"] == "cca"
 
 
-@M3
 def test_smud_is_not_a_balancing_authority():
     nodes, _ = g("caiso", "muni_own_ba")
     ops = {n["id"] for n in nodes.values() if n["lane"] == "market_operator"}
     assert "smud" not in ops and "banc" in ops
+    fills = MARKETS["caiso"][1]["utilities"]
+    assert fills["SMUD"]["fills"]["ba"]["name"] == "BANC"                 # SMUD operates BANC; BANC is the BA
+    assert fills["LADWP"]["fills"]["ba"]["name"].startswith("LADWP")    # LADWP is its own BA
+
+
+def test_pou_rates_are_set_by_their_own_board_not_the_cpuc():
+    nodes, edges = g("caiso", "muni_own_ba")
+    assert not any(e["type"] == "sets_rate" and e["from"] == "cpuc" for e in edges)    # CPUC: safety oversight only
+    assert nodes["pou"]["kind"] == "muni"
+    for comp in build.bill_components(DATA[MARKETS["caiso"][0]]["profile"], MARKETS["caiso"][1]):
+        ans = build.who_sets(edges, "residential", comp)
+        assert ans and ans["setter"] == "governing_body", comp
 
 
 # ---- GB ----
