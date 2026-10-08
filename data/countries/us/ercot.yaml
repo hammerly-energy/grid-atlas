@@ -131,5 +131,68 @@ archetypes:
       - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: needs_verification, source: *puct}
       - {id: rep_res_rider, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
 
+
+  # Non-opt-in entity: a city-owned utility (or co-op) that has not opted in to retail competition. Its own governing
+  # body sets retail rates; the PUCT keeps jurisdiction over wholesale transmission rates (PURA 40.004).
+  noie:
+    nodes:
+      - id: governing_body
+        name: Governing body
+        slot: governing_body
+        lane: regulators
+        kind: legislature
+        jurisdiction: local
+        description: Elected city council or utility board that approves the utility's retail rates. The PUCT does not.
+        source: &cpsrates {title: San Antonio City Council approves CPS Energy's rate request, url: "https://newsroom.cpsenergy.com/san-antonio-city-council-approves-cps-energys-rate-request/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: noie
+        name: NOIE
+        slot: noie
+        lane: retail
+        kind: muni
+        jurisdiction: local
+        description: City-owned utility outside retail competition. Owns generation and wires and is the only seller to customers in its area.
+        holds_assets: [generation, transmission, distribution]
+        source: *cpsrates
+        status: needs_verification
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer of a non-opt-in city-owned utility. It has no choice of retailer.
+    edges:
+      # regulation
+      - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: oversees ERCOT and approves its protocols, status: needs_verification, source: *pura39}
+      - {id: gov_noie_gov, from: governing_body, to: noie, type: regulates, domain: governance, label: governs the utility and approves its rates, status: needs_verification, source: *cpsrates}
+      # operations
+      - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *ercotops}
+      - {id: ercot_operates_tx_noie, from: ercot, to: noie, type: operates, asset: transmission, label: directs operation of the transmission the utility owns, status: needs_verification, source: *ercotops}
+      # bill: the governing body sets generation, distribution and riders
+      - {id: gov_noie_gen, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: generation, label: approves the generation and fuel rates, status: needs_verification, source: *cpsrates}
+      - {id: noie_res_gen, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *cpsrates}
+      - {id: gov_noie_dx, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: distribution, label: approves distribution charges, status: needs_verification, source: *cpsrates}
+      - {id: noie_res_dx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *cpsrates}
+      - {id: gov_noie_rider, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders and program charges, status: needs_verification, source: *cpsrates}
+      - {id: noie_res_rider, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
+      # bill: the PUCT still sets wholesale transmission rates; ERCOT prices ancillary services
+      - {id: puct_noie_tx, from: puct, to: noie, type: sets_rate, mode: sets, rate_component: transmission, label: sets wholesale transmission rates the utility pays and charges, status: needs_verification,
+         source: {title: PURA chapter 40 (PUCT jurisdiction over municipal wholesale transmission rates), url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.40.htm", accessed: "2026-10-08"}}
+      - {id: noie_res_tx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
+      - {id: ercot_noie_as, from: ercot, to: noie, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: allocates ancillary service costs at market-cleared prices, status: needs_verification, source: *ercotops}
+      - {id: noie_res_as, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
+
 utilities:
   Oncor: {area: TX, archetypes: [competitive_area], fills: {tdsp: {name: Oncor}}}
+  CenterPoint: {area: TX, archetypes: [competitive_area], fills: {tdsp: {name: CenterPoint Energy}}}
+  CPS Energy:
+    area: TX
+    archetypes: [noie]
+    fills:
+      governing_body: {name: San Antonio City Council}
+      noie:
+        name: CPS Energy
+        owner: {name: City of San Antonio, type: municipal, as_of: "2026-10-08", source: *cpsrates}

@@ -38,7 +38,8 @@ def by_kind(nodes, kind):
 THIN_SLICE = "thin slice: only the residential class is wired so far"
 KNOWN_GAPS = {(mid, arch, cls): THIN_SLICE
               for mid, arch in [("ercot", "competitive_area"), ("pjm", "restructured_choice"),
-                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("gb", "domestic_default_capped")]
+                                ("caiso", "iou_bundled"), ("caiso", "muni_own_ba"), ("ercot", "noie"), ("pjm", "limited_choice"),
+                                ("gb", "domestic_default_capped")]
               for cls in ("small_commercial", "large_ci", "large_load")}
 
 
@@ -132,14 +133,27 @@ def test_puct_oversees_ercot():
     assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "ercot" for e in edges)
 
 
-@M2
 def test_ercot_noie_transmission_rate_still_set_by_puct():
     _, edges = g("ercot", "noie")
     assert any(e["type"] == "sets_rate" and e["from"] == "puct" and e.get("rate_component") == "transmission"
                for e in edges)
 
 
+def test_ercot_noie_retail_rates_set_by_its_governing_body():
+    nodes, edges = g("ercot", "noie")
+    for comp in ("generation", "distribution", "riders_public_purpose"):
+        assert build.who_sets(edges, "residential", comp)["setter"] == "governing_body", comp
+    assert MARKETS["ercot"][1]["utilities"]["CPS Energy"]["archetypes"] == ["noie"]
+
+
 # ---- PJM ----
+def test_dominion_virginia_is_vertically_integrated():
+    nodes, edges = g("pjm", "limited_choice")
+    assert {"generation", "transmission", "distribution"} <= set(nodes["viu"]["holds_assets"])
+    assert build.who_sets(edges, "residential", "generation")["setter"] == "state_puc"   # no supplier choice
+    assert not any(n["kind"] == "retail_provider" for n in nodes.values())
+
+
 def test_pjm_has_capacity_auction():
     nodes, edges = g("pjm", "restructured_choice")
     assert "rpm" in nodes and nodes["rpm"]["kind"] == "market"

@@ -52,6 +52,7 @@ archetypes:
     nodes:
       - id: state_puc
         name: State PUC
+        slot: state_puc
         lane: regulators
         kind: regulator
         jurisdiction: subnational
@@ -86,7 +87,7 @@ archetypes:
       # operations
       - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
       - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: needs_verification, source: *oatt}
-      - {id: puc_auction, from: state_puc, to: default_supplier, type: plans_procures, label: approves the default service auction, status: needs_verification, source: *papuc}
+      - {id: puc_auction, from: state_puc, to: default_supplier, type: plans_procures, label: approves the default service procurement, status: needs_verification, source: *papuc}
       # bill: generation, capacity, ancillary (inside the full-requirements default service price)
       - {id: sup_edc_gen, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: generation, label: energy price set by auction bids, status: needs_verification, source: *papuc}
       - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: needs_verification,
@@ -106,5 +107,67 @@ archetypes:
       - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *papuc}
       - {id: edc_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *papuc}
 
+
+  # Vertically integrated with limited retail choice (Virginia): one utility owns generation and wires and the state
+  # commission sets bundled rates. Only customers above 5 MW may shop (Va. Code 56-577), so residential has no choice.
+  limited_choice:
+    nodes:
+      - id: state_puc
+        name: State PUC
+        slot: state_puc
+        lane: regulators
+        kind: regulator
+        jurisdiction: subnational
+        description: State commission that sets the utility's bundled retail rates, including generation.
+        source: &va585 {title: "Va. Code § 56-585.1 (SCC review of utility rates)", url: "https://law.lis.virginia.gov/vacode/title56/chapter23/section56-585.1/", accessed: "2026-10-08"}
+        status: needs_verification
+      - id: viu
+        name: Vertically integrated utility
+        slot: viu
+        lane: retail
+        kind: wires_utility
+        jurisdiction: private
+        description: Owns generation, transmission and distribution and sells to residential customers, who cannot pick another supplier.
+        holds_assets: [generation, transmission, distribution]
+        source: *va585
+        status: needs_verification
+      - id: residential
+        name: Residential
+        lane: consumers
+        kind: consumer
+        jurisdiction: private
+        description: Household customer of a vertically integrated utility. Only customers above 5 MW may buy from a competitive supplier.
+    edges:
+      - {id: ferc_pjm, from: ferc, to: pjm, type: regulates, domain: market_rules, label: approves PJM's tariff and market rules, status: needs_verification, source: *oatt}
+      - {id: puc_viu, from: state_puc, to: viu, type: regulates, domain: rates, label: regulates bundled retail rates, status: needs_verification, source: *va585}
+      - {id: pjm_dispatch, from: pjm, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *oatt}
+      - {id: pjm_operates_tx_viu, from: pjm, to: viu, type: operates, asset: transmission, label: operates the transmission the utility owns, status: needs_verification, source: *oatt}
+      - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: needs_verification, source: *rpm}
+      # bill: the state commission sets the bundled rate; FERC approves transmission; PJM prices ancillary services
+      - {id: puc_viu_gen, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: generation, label: sets generation and fuel rates, status: needs_verification, source: *va585}
+      - {id: viu_res_gen, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *va585}
+      - {id: puc_viu_cap, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: capacity, label: sets base rates that recover the utility's own generating capacity, status: needs_verification, source: *va585}
+      - {id: viu_res_cap, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: bills capacity cost within base rates, status: needs_verification, source: *va585}
+      - {id: pjm_viu_as, from: pjm, to: viu, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: viu_res_as, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *va585}
+      - {id: ferc_viu_tx, from: ferc, to: viu, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: needs_verification, source: *oatt}
+      - {id: viu_res_tx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *va585}
+      - {id: puc_viu_dx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates, status: needs_verification, source: *va585}
+      - {id: viu_res_dx, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *va585}
+      - {id: puc_viu_rider, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders, status: needs_verification, source: *va585}
+      - {id: viu_res_rider, from: viu, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *va585}
+
 utilities:
-  PECO: {area: PA, archetypes: [restructured_choice], fills: {edc: {name: PECO}}}
+  ComEd:
+    area: IL
+    archetypes: [restructured_choice]
+    fills: {state_puc: {name: Illinois Commerce Commission}, edc: {name: ComEd}}
+  Dominion Energy Virginia:
+    area: VA
+    archetypes: [limited_choice]
+    fills: {state_puc: {name: Virginia SCC}, viu: {name: Dominion Energy Virginia}}
+  PSE&G:
+    area: NJ
+    archetypes: [restructured_choice]
+    fills: {state_puc: {name: NJ Board of Public Utilities}, edc: {name: PSE&G}}
+  PECO: {area: PA, archetypes: [restructured_choice], fills: {state_puc: {name: Pennsylvania PUC}, edc: {name: PECO}}}

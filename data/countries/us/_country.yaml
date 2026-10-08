@@ -51,3 +51,4 @@ glossary:
   BANC: {term: BANC, meaning: "Balancing Authority of Northern California; a joint powers authority of SMUD and other POUs. SMUD operates it under contract."}
   SMUD: {term: SMUD, meaning: "Sacramento Municipal Utility District; a POU owned by its customers, who elect a seven-member board."}
   LADWP: {term: LADWP, meaning: "Los Angeles Department of Water and Power; the City of Los Angeles' POU and its own balancing authority."}
+  SCC: {term: SCC, meaning: "Virginia State Corporation Commission; sets the bundled retail rates of Virginia's investor-owned utilities."}
