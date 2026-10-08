@@ -167,14 +167,39 @@ function fit(t, text, max, min = 7.5) {
 }
 
 /* ---------- layout ---------- */
-function layout(nodes) {
+// Box order within each lane: start from kind order, then reorder each lane to minimise the total horizontal
+// length of all relationships (a line inside one lane counts double, since it has to loop out and back).
+// Uses every edge, not just the lens's, so boxes stay put when the lens changes. Deterministic: ties keep the order.
+function layout(nodes, edges = []) {
+  const order = LANES.map(lane => nodes.filter(n => n.lane === lane)
+    .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id)).map(n => n.id));
+  const laneOf = Object.fromEntries(order.flatMap((ids, li) => ids.map(id => [id, li])));
+  const es = edges.filter(e => e.from in laneOf && e.to in laneOf && e.from !== e.to);
+  const slotX = (ids, i) => { const gap = (W - ids.length * NODE_W) / (ids.length + 1); return gap + i * (NODE_W + gap); };
+  const xs = () => Object.fromEntries(order.flatMap(ids => ids.map((id, i) => [id, slotX(ids, i)])));
+  // same-lane lines (FERC → NERC → Texas RE) cost most: neighbours get a short straight line, in reading order
+  const cost = x => es.reduce((c, e) => {
+    const d = Math.abs(x[e.from] - x[e.to]);
+    if (laneOf[e.from] !== laneOf[e.to]) return c + d;
+    const ids = order[laneOf[e.from]], apart = Math.abs(ids.indexOf(e.from) - ids.indexOf(e.to));
+    return c + 4 * d + (apart > 1 ? W : 0) + (x[e.from] > x[e.to] ? NODE_W : 0);
+  }, 0);
+  const perms = a => a.length <= 1 ? [a] : a.flatMap((v, i) => perms([...a.slice(0, i), ...a.slice(i + 1)]).map(p => [v, ...p]));
+  for (let pass = 0; pass < 3; pass++) {
+    let moved = false;
+    order.forEach((ids, li) => {
+      if (ids.length < 2 || ids.length > 7) return;
+      let best = ids, bestCost = cost(xs());
+      for (const p of perms(ids)) {
+        order[li] = p; const c = cost(xs());
+        if (c < bestCost - 1e-6) { best = p; bestCost = c; moved = true; }
+      }
+      order[li] = best;
+    });
+    if (!moved) break;
+  }
   const pos = {};
-  LANES.forEach((lane, li) => {
-    const ns = nodes.filter(n => n.lane === lane)
-      .sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.id.localeCompare(b.id));
-    const gap = (W - ns.length * NODE_W) / (ns.length + 1);
-    ns.forEach((n, i) => { pos[n.id] = { x: gap + i * (NODE_W + gap), y: TOP + li * LANE_H + 40, lane: li }; });
-  });
+  order.forEach((ids, li) => ids.forEach((id, i) => { pos[id] = { x: slotX(ids, i), y: TOP + li * LANE_H + 40, lane: li }; }));
   return pos;
 }
 function el(tag, attrs = {}, parent) {
@@ -196,6 +221,9 @@ function freeGaps(pos, li) {
 function route(shown, pos) {
   const plan = shown.filter(e => pos[e.from] && pos[e.to]).map(e => {
     const a = pos[e.from], b = pos[e.to], dir = Math.sign(b.lane - a.lane);
+    // neighbours in one lane: straight across the gap, side to side
+    const side = !dir && !Object.values(pos).some(p => p.lane === a.lane && p.x > Math.min(a.x, b.x) && p.x < Math.max(a.x, b.x));
+    if (side) return { e, a, b, dir, side, sa: a.x < b.x ? "right" : "left", sb: a.x < b.x ? "left" : "right" };
     return { e, a, b, dir, sa: dir < 0 ? "top" : "bottom", sb: dir > 0 ? "top" : "bottom" };
   });
   // ports: spread every line's end along the box side, ordered by where the line is heading
@@ -204,15 +232,18 @@ function route(shown, pos) {
     (ends[`${r.e.from}|${r.sa}`] ||= []).push({ r, end: "ax", toward: r.b.x });
     (ends[`${r.e.to}|${r.sb}`] ||= []).push({ r, end: "bx", toward: r.a.x });
   }
+  const u0side = key => /\|(left|right)$/.test(key);
   for (const [key, list] of Object.entries(ends)) {
     const p = pos[key.split("|")[0]];
     list.sort((u, v) => u.toward - v.toward || u.r.e.id.localeCompare(v.r.e.id));
+    if (u0side(key)) { list.sort((u, v) => u.r.e.id.localeCompare(v.r.e.id)); list.forEach((u, i) => { u.r[u.end + "y"] = p.y + NODE_H * (i + 1) / (list.length + 1); }); continue; }
     list.forEach((u, i) => { u.r[u.end] = p.x + NODE_W * (i + 1) / (list.length + 1); });
   }
   // lines that skip a lane pass through a gap between that lane's boxes; lines sharing a gap are spaced apart
   const inGap = {};
   for (const r of plan) {
     r.via = [];
+    if (r.side) continue;
     for (let li = r.a.lane + r.dir; r.dir && li !== r.b.lane; li += r.dir) {
       const want = r.ax + (r.bx - r.ax) * (li - r.a.lane) / (r.b.lane - r.a.lane);
       let best = null, bd = Infinity;
@@ -230,6 +261,10 @@ function route(shown, pos) {
   }
   const d = {};
   for (const r of plan) {
+    if (r.side) {
+      const x1 = r.sa === "right" ? r.a.x + NODE_W : r.a.x, x2 = r.sb === "right" ? r.b.x + NODE_W : r.b.x, s = Math.sign(x2 - x1);
+      d[r.e.id] = `M${x1},${r.axy} L${x1 + LEAD * s},${r.axy} C${(x1 + x2) / 2},${r.axy} ${(x1 + x2) / 2},${r.bxy} ${x2 - LEAD * s},${r.bxy} L${x2},${r.bxy}`; continue;
+    }
     const y1 = r.sa === "bottom" ? r.a.y + NODE_H : r.a.y, y2 = r.sb === "bottom" ? r.b.y + NODE_H : r.b.y;
     if (!r.dir) {   // same lane: arc under the row, deeper for longer spans
       const dep = 16 + Math.abs(r.bx - r.ax) * 0.08;
@@ -315,7 +350,7 @@ function renderCol(i) {
   if (!col.arch) return;
 
   const { nodes, edges, byId } = resolve(col.mid, col.arch);
-  const pos = layout(nodes);
+  const pos = layout(nodes, edges);
   const svg = el("svg", { viewBox: `0 0 ${W} ${TOP + LANES.length * LANE_H}`, role: "img", "aria-label": `${m.name} ${col.arch.replace(/_/g, " ")}` });
   const wrap = document.createElement("div"); wrap.className = "diagram"; wrap.appendChild(svg); box.appendChild(wrap);
   const defs = el("defs", {}, svg);
