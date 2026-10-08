@@ -221,7 +221,7 @@ def test_virginia_coop_rates_approved_by_the_scc_not_its_board():
         a = build.who_sets(edges, "residential", comp)
         assert a["setter"] == "state_puc" and a["mode"] == "approves", comp
     assert not [e for e in edges if e["type"] == "sets_rate" and e["from"] == "coop_board"]
-    for name in ("NOVEC", "Rappahannock Electric Cooperative"):
+    for name in ("Rappahannock Electric Cooperative",):   # NOVEC left ODEC; out until its supply is researched
         u = MARKETS["pjm"][1]["utilities"][name]
         assert u["area"] == "VA" and u["archetypes"] == ["coop"], name
 
@@ -277,7 +277,7 @@ def test_pjm_capacity_price_comes_from_rpm_and_ferc_only_approves_it():
 
 
 def test_large_customers_on_pjm_default_service_pay_hourly_market_prices():
-    """Above 100 kW, default service is spot-priced: PJM's energy price reaches the customer, not an auction price."""
+    """Above a size threshold (PECO 100 kW, NJ BGS-CIEP about 500 kW), default service is spot-priced: PJM's energy price reaches the customer, not an auction price."""
     for arch in ("restructured_choice", "default_service_ipa"):
         _, edges = g("pjm", arch)
         assert build.who_sets(edges, "large_ci", "generation")["setter"] == "pjm", arch
@@ -359,12 +359,15 @@ def test_cca_and_direct_access_customers_pay_the_pcia_exit_fee():
     assert not [e for e in edges if e.get("subcomponent") == "Exit fee (PCIA)"]
 
 
-def test_a_city_utility_inside_caiso_keeps_retail_rates_but_ferc_approves_transmission():
-    """Anaheim and Riverside turned their transmission over to CAISO as participating transmission owners."""
+def test_a_city_utility_inside_caiso_sets_every_retail_rate_and_ferc_only_reviews_its_wholesale_transmission():
+    """Anaheim and Riverside turned their transmission over to CAISO as participating transmission owners. FERC
+    reviews their transmission revenue requirement for CAISO's Transmission Access Charge, but has no authority
+    over a city's retail rates (FPA 201(f)), so the council sets the retail transmission line too."""
     nodes, edges = g("caiso", "muni_in_caiso")
     assert nodes["pou"]["kind"] == "muni"
-    assert build.who_sets(edges, "residential", "transmission")["setter"] == "ferc"
-    for comp in ("generation", "distribution", "riders_public_purpose"):
+    assert any(e["from"] == "ferc" and e["to"] == "pou" and e["type"] == "regulates" for e in edges)
+    assert not [e for e in edges if e["from"] == "ferc" and e["type"] == "sets_rate"]
+    for comp in ("transmission", "generation", "distribution", "riders_public_purpose"):
         assert build.who_sets(edges, "residential", comp)["setter"] == "governing_body", comp
     assert any(e["type"] == "operates" and e["from"] == "caiso" and e["to"] == "pou" for e in edges)
     for name in ("Anaheim Public Utilities", "Riverside Public Utilities"):
@@ -375,7 +378,27 @@ def test_caiso_cca_sets_generation_rate():
     nodes, edges = g("caiso", "iou_cca")
     assert by_kind(nodes, "cca")
     ans = build.who_sets(edges, "residential", "generation")
-    assert ans and nodes[ans["setter"]]["kind"] == "cca"
+    assert ans and ans["setter"] == "cca_board" and ans["mode"] == "sets"   # the aggregator's board, not the CPUC
+    path_from = {e["id"]: e["from"] for e in edges}
+    assert [path_from[x] for x in ans["path"]] == ["iou", "cca", "cca_board"]   # the IOU bills it
+
+
+def test_cca_and_direct_access_customers_pay_the_cost_allocation_mechanism():
+    """IOU-procured resource adequacy (CAM, and central procurement of local RA) is non-bypassable."""
+    for arch in ("iou_cca", "iou_direct_access"):
+        _, edges = g("caiso", arch)
+        items = [i["subcomponent"] for i in build.answer(edges, "small_commercial", "riders_public_purpose")["items"]]
+        assert "Cost Allocation Mechanism (CAM)" in items, arch
+
+
+def test_bundled_retail_transmission_in_pjm_is_set_by_the_state_not_ferc():
+    """Order 888 (upheld in New York v. FERC, 2002): transmission inside a bundled retail rate is state-jurisdictional.
+    FERC regulates the wholesale transmission rate in PJM's tariff only."""
+    for arch in ("vertically_integrated", "limited_choice", "coop"):
+        _, edges = g("pjm", arch)
+        a = build.who_sets(edges, "residential", "transmission")
+        assert a["setter"] == "state_puc", arch
+        assert not [e for e in edges if e["from"] == "ferc" and e["type"] == "sets_rate" and e.get("rate_component") == "transmission"], arch
 
 
 def test_smud_is_not_a_balancing_authority():

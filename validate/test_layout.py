@@ -208,7 +208,7 @@ def test_two_up_and_three_up_compare(page, view, cols):
     assert page.locator(".col svg").count() >= cols, f"{view}: {cols} diagrams expected"
     for i in range(cols):
         assert page.locator(f"#col{i} svg").count() == 1, f"{view}: column {i} empty"
-    flagged = page.evaluate("""() => [...document.querySelectorAll('.col text.u')].map(t => t.textContent)""")
+    flagged = page.evaluate("""() => [...document.querySelectorAll('.col text.u')].map(t => t.firstChild.nodeValue)""")
     assert all(f == "only here" for f in flagged), flagged
     if "caiso/iou_cca" in view:   # a CCA exists in no other column on screen
         kinds = page.evaluate("""() => [...document.querySelectorAll('#col2 g.node')]

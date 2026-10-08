@@ -35,6 +35,7 @@
   .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
+  .cols.n3 .diagram svg { min-width:0; }
   svg { width:100%; height:auto; display:block; }
   .lane-bg { fill:var(--lane); }
   .lane-title { fill:var(--fg); font-size:10.5px; font-weight:600; letter-spacing:.04em; }
@@ -145,7 +146,7 @@ try {
 } catch (e) {}
 function saveHash() {
   const q = { lens: S.lens, comp: S.comp };
-  S.cols.forEach((c, i) => { q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
+  S.cols.forEach((c, i) => { if (i && !c.mid) return; q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
   const p = new URLSearchParams(q);
   // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
   try { history.replaceState(null, "", "#" + p); } catch (e) { try { location.replace("#" + p); } catch (e2) {} }
@@ -160,6 +161,11 @@ function resolve(mid, arch) {
 }
 const country = mid => D.countries[D.markets[mid].country];
 const label = (map, key) => (map && map[key]) || key.replace(/_/g, " ");
+function ownerOf(col, n) {   // a utility's fill can name the owner of the box it fills (ODEC, SMUD, LADWP)
+  const u = col.util && D.markets[col.mid].utilities[col.util];
+  const f = u && u.fills && n.slot && u.fills[n.slot];
+  return (f && typeof f === "object" && f.owner) || n.owner;
+}
 function displayName(col, n) {
   const u = col.util && D.markets[col.mid].utilities[col.util];
   const f = u && u.fills && n.slot && u.fills[n.slot];
@@ -460,12 +466,16 @@ function renderCol(i) {
     const lines = twoLines(g, name, NODE_W - 16);
     lines.forEach((ln, k) => fit(el("text", { x: 8, y: lines.length > 1 ? 13 + 11 * k : 16 }, g), ln, NODE_W - 16));
     fit(el("text", { x: 8, y: lines.length > 1 ? 36 : 30, class: "k" }, g), label(C.kind_labels, n.kind), NODE_W - 16);
-    if (kindsElsewhere && !kindsElsewhere.has(n.kind)) el("text", { x: NODE_W, y: NODE_H + 11, class: "u", "text-anchor": "end" }, g).textContent = "only here";
+    if (kindsElsewhere && !kindsElsewhere.has(n.kind)) {
+      const u = el("text", { x: NODE_W, y: -3, class: "u", "text-anchor": "end" }, g); u.textContent = "only here";
+      el("title", {}, u).textContent = "Unique to this market: no other market on screen has a " + label(C.kind_labels, n.kind).toLowerCase();
+    }
     if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
       el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
       el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ");
     }
-    if (S.lens === "owner" && n.owner) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + n.owner.name.replace(/^Secretary of State for /, "SoS ");
+    const own = ownerOf(col, n);
+    if (S.lens === "owner" && own) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + own.name.replace(/^Secretary of State for /, "SoS ");
     g.onclick = () => { col.sel = { node: n.id }; render(); };
     g.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); g.onclick(); } };
   }
@@ -481,7 +491,7 @@ function renderCol(i) {
 }
 
 /* ---------- answer table: the question first, the diagram second ---------- */
-const GROUP_TEXT = { "regulates|rates": "Sets or approves rates", "regulates|market_rules": "Writes market rules", "regulates|reliability": "Enforces reliability standards",
+const GROUP_TEXT = { "regulates|rates": "Regulates rates", "regulates|market_rules": "Writes market rules", "regulates|reliability": "Enforces reliability standards",
   "regulates|licensing": "Licenses / certifies", "regulates|governance": "Oversees governance", "regulates|policy_standard": "Sets policy standards",
   "dispatches|": "Dispatches power plants", "operates|": "Operates grid or market", "settles|": "Settles payments", "plans_procures|": "Plans / procures capacity" };
 const groupKey = e => `${e.type}|${e.type === "regulates" ? e.domain || "" : ""}`;
@@ -500,6 +510,7 @@ function answers(col, C, nodes, edges, byId) {
   const names = ids => [...new Set(ids)].map(nm).join(", ");
   if (S.lens === "bill") {
     t.innerHTML = `<caption>Who sets each part of a ${esc(S.cls.replace(/_/g, " "))} bill</caption><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr>`;
+    if (!byId[S.cls]) { t.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers</td></tr>`); return t; }
     for (const c of componentsFor(col.mid)) {
       const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`], cl = esc(label(C.component_labels, c));
       // one row per line item; a bill line with several setters gets one row per setter
@@ -527,7 +538,7 @@ function answers(col, C, nodes, edges, byId) {
     for (const k of Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
       const es = groups[k], tr = document.createElement("tr");
       tr.className = "row" + (col.sel && col.sel.group === k ? " cur" : "");
-      if (!es.length) { tr.className = ""; tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td class="muted">none entered</td><td></td>`; t.appendChild(tr); continue; }
+      if (!es.length) { tr.className = ""; tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td class="muted">—</td><td></td>`; t.appendChild(tr); continue; }
       tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td>${names(es.map(e => e.from))}</td><td class="lim">${names(es.map(e => e.to))}</td>`;
       tr.onclick = () => { col.sel = col.sel && col.sel.group === k ? null : { group: k }; render(); };
       t.appendChild(tr);
@@ -535,9 +546,10 @@ function answers(col, C, nodes, edges, byId) {
     return t;
   }
   t.innerHTML = `<caption>Who owns which part of the grid</caption><tr><th>Who</th><th>Owns</th><th>Owned by</th></tr>`;
-  for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || n.owner)) {
+  for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || ownerOf(col, n))) {
+    const own = ownerOf(col, n);
     const tr = document.createElement("tr"); tr.className = "row" + (col.sel && col.sel.node === n.id ? " cur" : "");
-    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${n.owner ? esc(n.owner.name) + " (" + esc(n.owner.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
+    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${own ? esc(own.name) + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
     tr.onclick = () => { col.sel = { node: n.id }; render(); };
     t.appendChild(tr);
   }
@@ -585,6 +597,7 @@ function panel(col, C, byId, edges, ans) {
   if (S.lens === "bill") {
     const cl = label(C.component_labels, S.comp);
     if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
+    else if (!byId[S.cls]) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers.</p>`;
     else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
     else {
       const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
@@ -596,7 +609,7 @@ function panel(col, C, byId, edges, ans) {
         <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${[...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
       };
       p.innerHTML = `<h3>${esc(cl)}</h3>${ans.items.map(item).join("")}${whole.length ? `<dl><dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd></dl>` : ""}`;
     }
@@ -626,7 +639,7 @@ function panel(col, C, byId, edges, ans) {
       <dt>What it does</dt><dd>${esc(n.description)}</dd>
       ${g ? `<dt>Term</dt><dd>${esc(g)}</dd>` : ""}
       <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
-      ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
+      ${ownerOf(col, n) ? `<dt>Owned by</dt><dd>${esc(ownerOf(col, n).name)} (${esc(ownerOf(col, n).type.replace(/_/g, " "))}) · ${srcLink(ownerOf(col, n).source)}</dd>` : ""}
       ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}
       ${da ? `<dt>Domain source</dt><dd>${srcLink(da.source)}</dd>` : ""}
       ${lines.length ? `<dt>Lines</dt><dd>${lines.map(e => `${e.from === n.id ? "→ " + nm(e.to) : "← " + nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd>` : ""}</dl>${dm}</div>`;
@@ -671,6 +684,7 @@ function renderLegend() {
     ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat([[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
   items.push([swatch("var(--muted)", "arrow", true), "needs verification"]);
+  if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 34 10"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
   const n = Object.values(D.markets).flatMap(m => [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])]);
   $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`
@@ -697,6 +711,7 @@ function render() {
     c.prev = { mid: c.mid, arch: c.arch, util: c.util };
   });
   const shownCols = S.cols.filter((c, i) => i < 2 || S.cols[i - 1].mid);   // the third column appears once the second is picked
+  $("#cols").className = "cols" + (S.cols.filter(c => c.mid).length === 3 ? " n3" : "");
   $("#cols").innerHTML = shownCols.map((c, i) => `<div class="col" id="col${i}"></div>`).join("");
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
     const nodes = resolve(c.mid, c.arch).nodes;
