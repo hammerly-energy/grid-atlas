@@ -66,6 +66,11 @@ base:
       description: NERC's regional entity for most of the PJM footprint and PJM's lead regional entity.
       source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
       status: needs_verification
+      domain_area:
+        full: [re_rf]
+        note: Counties whose utilities report ReliabilityFirst to EIA-861 (county-level approximation)
+        source: {title: EIA-861 2025 NERC region by utility, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-08"}
+        status: needs_verification
   edges:
     # reliability (FPA s.215): FERC approves NERC standards; the regional entity enforces them
     - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
@@ -155,6 +160,11 @@ archetypes:
         description: NERC's regional entity for the southeastern US, including Virginia.
         source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
         status: needs_verification
+        domain_area:
+          full: [re_serc]
+          note: Counties whose utilities report SERC to EIA-861, including Florida (county-level approximation)
+          source: {title: EIA-861 2025 NERC region by utility, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-08"}
+          status: needs_verification
       - id: viu
         name: Vertically integrated utility
         slot: viu

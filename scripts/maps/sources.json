@@ -88,5 +88,14 @@
     "accessed": "2026-10-08",
     "credit": "HIFLD (US DHS)",
     "licence": "Public domain (US government work)"
+  },
+  "county_re": {
+    "file": "derived/county_re.csv",
+    "sha256": "0258524a00f8509f7781191afb609ba84790436f65ac3e50938d6d805a6c496d",
+    "title": "County to NERC regional entity table derived from EIA-861 2025 by eia861_counties.py",
+    "url": "https://www.eia.gov/electricity/data/eia861/",
+    "accessed": "2026-10-08",
+    "credit": "US EIA",
+    "licence": "Public domain (US government work)"
   }
 }

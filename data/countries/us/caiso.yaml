@@ -73,6 +73,11 @@ base:
       description: Western Electricity Coordinating Council; NERC's regional entity for the Western Interconnection, including all of California.
       source: {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-08"}
       status: needs_verification
+      domain_area:
+        full: [re_wecc]
+        note: "US part of the Western Interconnection by county (EIA-861); WECC also covers parts of Canada and Baja California"
+        source: {title: EIA-861 2025 NERC region by utility, url: "https://www.eia.gov/electricity/data/eia861/", accessed: "2026-10-08"}
+        status: needs_verification
   edges:
     # reliability (FPA s.215): FERC approves NERC standards; the regional entity enforces them
     - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,

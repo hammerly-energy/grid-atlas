@@ -32,9 +32,10 @@ function read(key) {
 }
 const input = key => JSON.parse(read(key));
 
-// ISO/RTO footprints: counties listed in derived/county_rto.csv (from EIA-861 by eia861_counties.py), one copy per RTO
-function rtoCounties() {
-  const rows = read('county_rto').toString().trim().split('\n').slice(1).map(l => l.split(','));
+// ISO/RTO footprints and NERC regional entities: counties listed in derived/county_rto.csv and county_re.csv
+// (from EIA-861 by eia861_counties.py), one copy per area
+function rtoCounties(key = 'county_rto') {
+  const rows = read(key).toString().trim().split('\n').slice(1).map(l => l.split(','));
   const t = structuredClone(input('census_counties'));
   const geoms = t.objects.counties.geometries;
   t.objects = { counties: { type: 'GeometryCollection', geometries: rows.map(([fips, rto]) =>
@@ -131,6 +132,7 @@ const MAPS = {
       { id: 'states', src: 'census_states',
         topo: pick(input('census_states'), 'states', g => POSTAL[g.id] && POSTAL[g.id].toLowerCase()) },
       { id: 'iso', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties()) },
+      { id: 'nerc_re', src: 'eia861', overlay: true, approximate: 'county-level approximation from EIA-861', topo: await dissolveEach(rtoCounties('county_re')) },
       { id: 'utility', src: 'cec_utilities', overlay: true, topo: await utilityAreas('cec_utilities'), interval: 3000 },   // drawn zoomed in on the state
       { id: 'utility_hifld', src: 'hifld_utilities', overlay: true, topo: await utilityAreas('hifld_utilities'), interval: 3000 },
     ],
