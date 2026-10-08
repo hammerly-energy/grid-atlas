@@ -110,35 +110,35 @@ archetypes:
       - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center, usually served at transmission or sub-transmission voltage on the IOU's bundled rates."}
     edges:
       # regulation and planning
-      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates retail rates and procurement, status: needs_verification,
+      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates retail rates and procurement, status: verified,
          source: &ratecase {title: CPUC general rate case, url: "https://www.cpuc.ca.gov/generalratecase", accessed: "2026-10-08"}}
-      - {id: cpuc_ra, from: cpuc, to: iou, type: plans_procures, label: sets the resource adequacy obligation, status: needs_verification,
+      - {id: cpuc_ra, from: cpuc, to: iou, type: plans_procures, label: sets the resource adequacy obligation, status: verified,
          source: &ra {title: CPUC resource adequacy, url: "https://www.cpuc.ca.gov/RA", accessed: "2026-10-07"}}
-      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: needs_verification, source: *tca}
+      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: verified, source: *tca}
       # bill: the generation rate holds two line items, energy procurement and resource adequacy
       - {id: cpuc_iou_gen, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, subcomponent: Energy procurement, label: sets the generation rate that recovers procurement cost, status: needs_verification,
          source: &erra {title: "PG&E 2026 Energy Resource Recovery Account (ERRA) forecast, CPUC A.25-05-011", url: "https://docs.cpuc.ca.gov/PublishedDocs/SupDoc/A2505011/8416/577061825.pdf", accessed: "2026-10-08"}}
       - {id: cpuc_iou_ra, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, subcomponent: Resource adequacy, label: sets the rate that recovers resource adequacy capacity bought to meet the obligation, status: needs_verification, source: *ra}
       - {id: iou_caiso_as, from: iou, to: caiso, type: pays, mode: market, rate_component: generation, label: pays CAISO energy and ancillary service charges, status: needs_verification, source: *caisomkt}
-      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: needs_verification,
+      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified,
          source: &ferctx {title: CPUC — electric transmission rates and FERC proceedings, url: "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-costs/electric-transmission-rates-and-ferc-proceedings", accessed: "2026-10-08"}}
-      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: needs_verification, source: *ratecase}
+      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iou_res_gen, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *ratecase}
       - {id: iou_res_tx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iou_res_dx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iou_res_dx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iou_res_rider, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iou_sc_gen, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *ratecase}
       - {id: iou_sc_tx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iou_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iou_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iou_sc_rider, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iou_lci_gen, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *ratecase}
       - {id: iou_lci_tx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iou_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iou_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iou_lci_rider, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iou_ll_gen, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *ratecase}
       - {id: iou_ll_tx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iou_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iou_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iou_ll_rider, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
 
   # Community choice aggregation: a city or county joint powers authority buys the power, its board sets the
@@ -153,7 +153,7 @@ archetypes:
         kind: cca
         jurisdiction: local
         description: Community choice aggregator (e.g. Clean Power Alliance, Peninsula Clean Energy, San Diego Community Power). A city, county or joint powers authority that buys power for everyone in its area by default; its board sets the generation rate and the CPUC does not.
-        source: &cca3662 {title: "California Public Utilities Code § 366.2 (community choice aggregation)", url: "https://california.public.law/codes/public_utilities_code_section_366.2", accessed: "2026-10-08"}
+        source: &cca3662 {title: "California Public Utilities Code § 366.2 (community choice aggregation)", url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=PUC&sectionNum=366.2", accessed: "2026-10-08"}
         status: needs_verification
       - id: cca_board
         name: CCA board
@@ -178,37 +178,37 @@ archetypes:
       - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: "Large commercial or industrial customer enrolled in the community choice aggregator."}
       - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center enrolled in the community choice aggregator."}
     edges:
-      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates the IOU's delivery rates and the exit fee, status: needs_verification, source: *ratecase}
+      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates the IOU's delivery rates and the exit fee, status: verified, source: *ratecase}
       - {id: cpuc_cca_reg, from: cpuc, to: cca, type: regulates, domain: policy_standard, label: registers the aggregator and enforces the renewables portfolio and resource adequacy rules; does not set its rates, status: needs_verification, source: *cca3662}
       - {id: board_cca_gov, from: cca_board, to: cca, type: regulates, domain: governance, label: governs the aggregator and approves its budget, status: needs_verification, source: *cca3662}
-      - {id: cpuc_ra_cca, from: cpuc, to: cca, type: plans_procures, label: sets the resource adequacy obligation the aggregator must meet, status: needs_verification, source: *ra}
-      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: needs_verification, source: *tca}
+      - {id: cpuc_ra_cca, from: cpuc, to: cca, type: plans_procures, label: sets the resource adequacy obligation the aggregator must meet, status: verified, source: *ra}
+      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: verified, source: *tca}
       - {id: cca_caiso_energy, from: cca, to: caiso, type: pays, mode: market, rate_component: generation, label: buys and sells energy in CAISO's markets as a load-serving entity, status: needs_verification, source: *caisomkt}
       # bill: the CCA board sets generation; the IOU bills delivery and the PCIA, both set by the CPUC
       - {id: board_cca_gen, from: cca_board, to: cca, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *cca3662}
-      - {id: cca_iou_bill, from: cca, to: iou, type: sets_rate, mode: passes_through, rate_component: generation, label: "sends its generation charge to the IOU, which bills it", status: needs_verification, source: *cca3662}
-      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: needs_verification, source: *ferctx}
-      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: needs_verification, source: *ratecase}
+      - {id: cca_iou_bill, from: cca, to: iou, type: sets_rate, mode: passes_through, rate_component: generation, label: "sends its generation charge to the IOU, which bills it", status: verified, source: *cca3662}
+      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified, source: *ferctx}
+      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
-      - {id: cpuc_iou_cam, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Cost Allocation Mechanism (CAM)", label: sets the non-bypassable charge for resource adequacy the IOU buys for all customers in its area, status: needs_verification,
+      - {id: cpuc_iou_cam, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Cost Allocation Mechanism (CAM)", label: sets the non-bypassable charge for resource adequacy the IOU buys for all customers in its area, status: verified,
          source: &cam {title: "CPUC Report on the 2021-2023 Central Procurement Entity Framework", url: "https://www.cpuc.ca.gov/-/media/cpuc-website/divisions/energy-division/documents/resource-adequacy-homepage/resource-adequacy-compliance-materials/useful-resources/final-report-on-the-2021-2023-cpe-framework.pdf", accessed: "2026-10-08"}}
-      - {id: cpuc_iou_pcia, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Exit fee (PCIA)", label: sets the Power Charge Indifference Adjustment that recovers the cost of power the IOU bought before the customer left, status: needs_verification,
+      - {id: cpuc_iou_pcia, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Exit fee (PCIA)", label: sets the Power Charge Indifference Adjustment that recovers the cost of power the IOU bought before the customer left, status: verified,
          source: &pcia {title: CPUC — Power Charge Indifference Adjustment (PCIA), url: "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/power-charge-indifference-adjustment", accessed: "2026-10-08"}}
-      - {id: ioucca_res_gen, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: needs_verification, source: *cca3662}
-      - {id: ioucca_sc_gen, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: needs_verification, source: *cca3662}
-      - {id: ioucca_lci_gen, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: needs_verification, source: *cca3662}
-      - {id: ioucca_ll_gen, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: needs_verification, source: *cca3662}
+      - {id: ioucca_res_gen, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: verified, source: *cca3662}
+      - {id: ioucca_sc_gen, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: verified, source: *cca3662}
+      - {id: ioucca_lci_gen, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: verified, source: *cca3662}
+      - {id: ioucca_ll_gen, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the aggregator's generation charge on its consolidated bill, status: verified, source: *cca3662}
       - {id: ioucca_res_tx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: ioucca_res_dx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: ioucca_res_dx, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: ioucca_res_rider, from: iou, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: ioucca_sc_tx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: ioucca_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: ioucca_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: ioucca_sc_rider, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: ioucca_lci_tx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: ioucca_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: ioucca_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: ioucca_lci_rider, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: ioucca_ll_tx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: ioucca_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: ioucca_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: ioucca_ll_rider, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
 
   # Direct Access: a non-residential customer buys from an Electric Service Provider. The program is capped by
@@ -238,27 +238,27 @@ archetypes:
       - {id: large_ci, name: Large commercial & industrial, lane: consumers, kind: consumer, jurisdiction: private, description: "Large commercial or industrial customer on Direct Access."}
       - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center on Direct Access."}
     edges:
-      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates the IOU's delivery rates and the exit fee, status: needs_verification, source: *ratecase}
-      - {id: cpuc_esp_lic, from: cpuc, to: esp, type: regulates, domain: licensing, label: registers Electric Service Providers and holds the statewide Direct Access cap, status: needs_verification, source: *da}
-      - {id: cpuc_ra_esp, from: cpuc, to: esp, type: plans_procures, label: sets the resource adequacy obligation the provider must meet, status: needs_verification, source: *ra}
-      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: needs_verification, source: *tca}
+      - {id: cpuc_iou, from: cpuc, to: iou, type: regulates, domain: rates, label: regulates the IOU's delivery rates and the exit fee, status: verified, source: *ratecase}
+      - {id: cpuc_esp_lic, from: cpuc, to: esp, type: regulates, domain: licensing, label: registers Electric Service Providers and holds the statewide Direct Access cap, status: verified, source: *da}
+      - {id: cpuc_ra_esp, from: cpuc, to: esp, type: plans_procures, label: sets the resource adequacy obligation the provider must meet, status: verified, source: *ra}
+      - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: verified, source: *tca}
       - {id: esp_caiso_energy, from: esp, to: caiso, type: pays, mode: market, rate_component: generation, label: buys energy in CAISO's markets as a load-serving entity, status: needs_verification, source: *caisomkt}
-      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: needs_verification, source: *ferctx}
-      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: needs_verification, source: *ratecase}
+      - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified, source: *ferctx}
+      - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
-      - {id: cpuc_iou_cam, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Cost Allocation Mechanism (CAM)", label: sets the non-bypassable charge for resource adequacy the IOU buys for all customers in its area, status: needs_verification, source: *cam}
-      - {id: cpuc_iou_pcia, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Exit fee (PCIA)", label: sets the Power Charge Indifference Adjustment that recovers the cost of power the IOU bought before the customer left, status: needs_verification, source: *pcia}
+      - {id: cpuc_iou_cam, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Cost Allocation Mechanism (CAM)", label: sets the non-bypassable charge for resource adequacy the IOU buys for all customers in its area, status: verified, source: *cam}
+      - {id: cpuc_iou_pcia, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, subcomponent: "Exit fee (PCIA)", label: sets the Power Charge Indifference Adjustment that recovers the cost of power the IOU bought before the customer left, status: verified, source: *pcia}
       - {id: esp_sc_gen, from: esp, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation price in its contract, status: needs_verification, source: *da}
       - {id: esp_lci_gen, from: esp, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation price in its contract, status: needs_verification, source: *da}
       - {id: esp_ll_gen, from: esp, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation price in its contract, status: needs_verification, source: *da}
       - {id: iouda_sc_tx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iouda_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iouda_sc_dx, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iouda_sc_rider, from: iou, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iouda_lci_tx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iouda_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iouda_lci_dx, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iouda_lci_rider, from: iou, to: large_ci, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
       - {id: iouda_ll_tx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *tca}
-      - {id: iouda_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *ratecase}
+      - {id: iouda_ll_dx, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *ratecase}
       - {id: iouda_ll_rider, from: iou, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
 
   # A publicly owned utility inside CAISO's balancing area. Anaheim and Riverside turned their transmission over to
@@ -292,16 +292,16 @@ archetypes:
       - {id: large_load, name: Large load, lane: consumers, kind: consumer, jurisdiction: private, description: "Very large site such as a data center served by the city utility."}
     edges:
       - {id: wecc_pou_rel, from: wecc, to: pou, type: regulates, domain: reliability, label: enforces reliability standards on the utility's transmission, status: needs_verification, source: *nerc}
-      - {id: gov_pou_gov, from: governing_body, to: pou, type: regulates, domain: governance, label: governs the utility and approves its budget, status: needs_verification, source: *pourates}
-      - {id: cpuc_pou_safety, from: cpuc, to: pou, type: regulates, domain: policy_standard, label: safety oversight only; does not set rates, status: needs_verification, source: *pourates}
-      - {id: caiso_operates_tx_pou, from: caiso, to: pou, type: operates, asset: transmission, label: operates the transmission the utility turned over to its control, status: needs_verification, source: *ptoagr}
+      - {id: gov_pou_gov, from: governing_body, to: pou, type: regulates, domain: governance, label: governs the utility and approves its budget, status: verified, source: *pourates}
+      - {id: cpuc_pou_safety, from: cpuc, to: pou, type: regulates, domain: policy_standard, label: safety oversight only; does not set rates, status: verified, source: *pourates}
+      - {id: caiso_operates_tx_pou, from: caiso, to: pou, type: operates, asset: transmission, label: operates the transmission the utility turned over to its control, status: verified, source: *ptoagr}
       - {id: pou_caiso_energy, from: pou, to: caiso, type: pays, mode: market, rate_component: generation, label: buys and sells energy in CAISO's markets as a load-serving entity, status: needs_verification, source: *caisomkt}
       - {id: ferc_pou_tx, from: ferc, to: pou, type: regulates, domain: rates, label: reviews the transmission revenue requirement used in CAISO's Transmission Access Charge, status: needs_verification, source: *ptoagr}
       - {id: gov_pou_tx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: transmission, label: sets the retail transmission charge, status: needs_verification, source: *pourates}
       # bill: the council sets every retail component; the utility bills them
       - {id: gov_pou_gen, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *pourates}
       - {id: gov_pou_dx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution charges, status: needs_verification, source: *pourates}
-      - {id: gov_pou_rider, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets the public goods charge, status: needs_verification,
+      - {id: gov_pou_rider, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets the public goods charge, status: verified,
          source: &pgc {title: "California Public Utilities Code §385 (POU public goods charge)", url: "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=PUC&sectionNum=385", accessed: "2026-10-08"}}
       - {id: mpou_res_gen, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *pourates}
       - {id: mpou_res_tx, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *ptoagr}
@@ -368,16 +368,16 @@ archetypes:
     edges:
       - {id: wecc_ba_rel, from: wecc, to: banc, type: regulates, domain: reliability, label: enforces reliability standards on the balancing authority, status: needs_verification, source: *nerc}
       # regulation and operations
-      - {id: caiso_operates_weim, from: caiso, to: weim, type: operates, label: runs the real-time market, status: needs_verification, source: *weim}
+      - {id: caiso_operates_weim, from: caiso, to: weim, type: operates, label: runs the real-time market, status: verified, source: *weim}
       - {id: caiso_settles_ba, from: caiso, to: banc, type: settles, label: settles the balancing authority's real-time imbalance trades, status: needs_verification, source: *weim}
       - {id: ba_balances_pou, from: banc, to: pou, type: dispatches, mechanism: balancing_redispatch, label: balances load and generation in the utility's area, status: needs_verification, source: *weim}
-      - {id: cpuc_pou_safety, from: cpuc, to: pou, type: regulates, domain: policy_standard, label: safety oversight only; does not set rates, status: needs_verification, source: *pourates}
-      - {id: gov_pou_gov, from: governing_body, to: pou, type: regulates, domain: governance, label: governs the utility and approves its budget, status: needs_verification, source: *pourates}
+      - {id: cpuc_pou_safety, from: cpuc, to: pou, type: regulates, domain: policy_standard, label: safety oversight only; does not set rates, status: verified, source: *pourates}
+      - {id: gov_pou_gov, from: governing_body, to: pou, type: regulates, domain: governance, label: governs the utility and approves its budget, status: verified, source: *pourates}
       # bill: the governing body sets every component; the utility bills it
       - {id: gov_pou_gen, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *pourates}
       - {id: gov_pou_tx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: transmission, label: sets transmission charges, status: needs_verification, source: *pourates}
       - {id: gov_pou_dx, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution charges, status: needs_verification, source: *pourates}
-      - {id: gov_pou_rider, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets the public goods charge, status: needs_verification, source: *pgc}
+      - {id: gov_pou_rider, from: governing_body, to: pou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets the public goods charge, status: verified, source: *pgc}
       - {id: pou_res_gen, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: generation, label: bills the generation rate, status: needs_verification, source: *pourates}
       - {id: pou_res_tx, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges, status: needs_verification, source: *pourates}
       - {id: pou_res_dx, from: pou, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *pourates}

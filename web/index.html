@@ -51,7 +51,7 @@
   .node .asset { fill:none; stroke:var(--t-operates); }
   .node .asset-t { fill:var(--t-operates); font-size:9.5px; }
   .edge { fill:none; stroke-width:1.4; cursor:pointer; }
-  .edge.nv { stroke-dasharray:4 3; }
+  .edge.nv { stroke-dasharray:6 4; }
   .edge.on { stroke:var(--accent) !important; stroke-width:2.2; }
   .edge.off { opacity:var(--dim); }
   .edge-hit { fill:none; stroke:transparent; stroke-width:10; cursor:pointer; }
@@ -90,7 +90,7 @@
   .ans .mode.m-caps, .ans .mode.m-approves { border-color:var(--accent); color:var(--accent); }
   .ans .lim { color:var(--muted); font-size:12px; }
   .ans .item { display:block; color:var(--muted); font-size:12px; }
-  .edge.faint { opacity:.14; }
+  .edge.faint { opacity:.24; }
   footer { color:var(--muted); font-size:12px; margin-top:16px; }
 </style>
 </head>
@@ -450,7 +450,7 @@ function renderCol(i) {
     const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on && S.lens === "bill" ? " on" : ""}${off ? " off" : ""}${faint ? " faint" : ""}`, stroke: color,
       "marker-end": marker(defs, shape, hl ? "var(--accent)" : color, hl ? "on" : e.type) }, svg);
     const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
-    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "verified" : "needs verification"})`;
+    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "checked against a primary source" : "needs verification"})`;
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
     p.onclick = hit.onclick;
   }
@@ -625,7 +625,7 @@ function panel(col, C, byId, edges, ans) {
     if (e) p.innerHTML = `<h3>${nm(e.from)} → ${nm(e.to)}</h3><dl>
       <dt>Relation</dt><dd>${esc(e.label)}</dd>
       <dt>Type</dt><dd>${esc(e.type.replace(/_/g, " "))}${e.domain ? " · " + esc(e.domain.replace(/_/g, " ")) : ""}${e.mechanism ? " · " + esc(e.mechanism.replace(/_/g, " ")) : ""}${e.asset ? " · " + esc(e.asset) : ""}</dd>
-      <dt>Status</dt><dd>${e.status === "verified" ? "verified" : "needs verification"}</dd>
+      <dt>Status</dt><dd>${e.status === "verified" ? "verified: two Claude reviewers checked it against a primary source" : "needs verification"}</dd>
       <dt>Source</dt><dd>${srcLink(e.source)}</dd></dl>`;
     return p;
   }
@@ -677,14 +677,14 @@ function renderBar() {
 function swatch(stroke, shape, dashed) {
   return `<svg viewBox="0 0 34 10"><defs><marker id="lg-${shape}${stroke.length}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
     <path d="${MARKERS[shape]}" fill="${shape === "hollow" ? "var(--bg)" : stroke}" stroke="${stroke}"/></marker></defs>
-    <path d="M1,5 H30" stroke="${stroke}" stroke-width="1.4" ${dashed ? 'stroke-dasharray="4 3"' : ""} marker-end="url(#lg-${shape}${stroke.length})"/></svg>`;
+    <path d="M1,5 H30" stroke="${stroke}" stroke-width="1.4" ${dashed ? 'stroke-dasharray="6 4"' : ""} marker-end="url(#lg-${shape}${stroke.length})"/></svg>`;
 }
 function renderLegend() {
   const items = S.lens === "bill"
     ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat([[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
-  items.push([swatch("var(--muted)", "arrow", true), "needs verification"]);
-  if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 34 10"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
+  items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
+  if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
   const n = Object.values(D.markets).flatMap(m => [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])]);
   $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`

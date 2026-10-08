@@ -129,40 +129,40 @@ archetypes:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification,
          source: &fercercot {title: FERC — ERCOT, url: "https://www.ferc.gov/industries-data/electric/electric-power-markets/ercot", accessed: "2026-10-07"}}
-      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification,
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: verified,
          source: &nerc {title: NERC key players, url: "https://www.nerc.com/AboutNERC/keyplayers/Pages/default.aspx", accessed: "2026-10-07"}}
-      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
-      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: needs_verification,
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: verified, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: verified,
          source: &pura39 {title: "PURA § 39.151 (PUCT oversight of ERCOT)", url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.39.htm#39.151", accessed: "2026-10-08"}}
-      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: needs_verification, source: *pura39}
-      - {id: puct_rep_lic, from: puct, to: rep, type: regulates, domain: licensing, label: certifies retail electric providers, status: needs_verification, source: {title: "PURA § 39.352 (REP certification)", url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.39.htm#39.352", accessed: "2026-10-08"}}
-      - {id: puct_polr_lic, from: puct, to: polr, type: regulates, domain: licensing, label: designates large-service POLR providers by market share and lists volunteer REPs, status: needs_verification, source: *polr}
-      - {id: puct_polr_cap, from: puct, to: polr, type: sets_rate, mode: caps, label: "caps large-service POLR rates by formula (120-125% of the real-time price plus charges); volunteer REPs set market prices", status: needs_verification, source: *polr}
+      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: verified, source: *pura39}
+      - {id: puct_rep_lic, from: puct, to: rep, type: regulates, domain: licensing, label: certifies retail electric providers, status: verified, source: {title: "PURA § 39.352 (REP certification)", url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.39.htm#39.352", accessed: "2026-10-08"}}
+      - {id: puct_polr_lic, from: puct, to: polr, type: regulates, domain: licensing, label: designates large-service POLR providers by market share and lists volunteer REPs, status: verified, source: *polr}
+      - {id: puct_polr_cap, from: puct, to: polr, type: sets_rate, mode: caps, label: "caps large-service POLR rates by formula (120-125% of the real-time price plus charges); volunteer REPs set market prices", status: verified, source: *polr}
       # operations
       - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification,
          source: &ercotops {title: ERCOT Retail 101, url: "https://www.ercot.com/files/docs/2026/03/06/2026_07-Retail-101.pdf", accessed: "2026-10-07"}}
       - {id: ercot_operates_tx, from: ercot, to: tdsp, type: operates, asset: transmission, label: directs operation of the transmission grid, status: needs_verification, source: *ercotops}
       # bill: generation (the REP buys at ERCOT prices under a PUCT offer cap, then sets its retail price)
       - {id: rep_ercot_energy, from: rep, to: ercot, type: pays, mode: market, rate_component: generation, label: buys energy at ERCOT settlement point prices, status: needs_verification, source: *ercotops}
-      - {id: puct_ercot_cap, from: puct, to: ercot, type: sets_rate, mode: caps, rate_component: generation, label: sets the system-wide offer cap, status: needs_verification,
+      - {id: puct_ercot_cap, from: puct, to: ercot, type: sets_rate, mode: caps, rate_component: generation, label: sets the system-wide offer cap, status: verified,
          source: &offercap {title: "16 TAC § 25.505 Resource adequacy in ERCOT (system-wide offer cap)", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-505", accessed: "2026-10-08"}}
       - {id: rep_res_gen, from: rep, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail offer, status: needs_verification, source: *ercotops}
       # bill: transmission
       - {id: puct_tdsp_tx, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: transmission, label: sets transmission rates, status: needs_verification,
          source: &tcos {title: 16 TAC 25.192 transmission rates, url: "https://ftp.puc.texas.gov/public/puct-info/agency/rulesnlaws/subrules/electric/25.192/21080pub.pdf", accessed: "2026-10-07"}}
-      - {id: tdsp_rep_tx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges to the REP, status: needs_verification, source: &delivery {title: "16 TAC § 25.214 Terms and conditions of retail delivery service", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-214", accessed: "2026-10-08"}}
+      - {id: tdsp_rep_tx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission charges to the REP, status: verified, source: &delivery {title: "16 TAC § 25.214 Terms and conditions of retail delivery service", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-214", accessed: "2026-10-08"}}
       - {id: rep_res_tx, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: passes TDSP transmission charges to the customer, status: needs_verification, source: *ercotops}
       # bill: distribution
-      - {id: puct_tdsp_dx, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: {title: PURA chapter 36 (rates), url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.36.htm", accessed: "2026-10-08"}}
-      - {id: tdsp_rep_dx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges to the REP, status: needs_verification, source: *delivery}
+      - {id: puct_tdsp_dx, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: verified, source: {title: PURA chapter 36 (rates), url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.36.htm", accessed: "2026-10-08"}}
+      - {id: tdsp_rep_dx, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills delivery charges to the REP, status: verified, source: *delivery}
       - {id: rep_res_dx, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: passes TDSP delivery charges to the customer, status: needs_verification, source: *ercotops}
       # bill: ancillary services
       - {id: ercot_rep_as, from: ercot, to: rep, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary service costs to the REP's scheduling entity by load ratio share, status: needs_verification, source: *ercotops}
       - {id: rep_res_as, from: rep, to: residential, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: bundles ancillary costs into its retail price, status: needs_verification, source: *ercotops}
-      - {id: puct_ercot_fee, from: puct, to: ercot, type: sets_rate, mode: approves, rate_component: ancillary_uplift, subcomponent: ERCOT administration fee, label: approves the ERCOT system administration fee, status: needs_verification, source: *pura39}
+      - {id: puct_ercot_fee, from: puct, to: ercot, type: sets_rate, mode: approves, rate_component: ancillary_uplift, subcomponent: ERCOT administration fee, label: approves the ERCOT system administration fee, status: verified, source: *pura39}
       # bill: riders
-      - {id: puct_tdsp_rider, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency cost recovery), status: needs_verification, source: {title: "16 TAC § 25.182 Energy efficiency cost recovery factor", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-182", accessed: "2026-10-08"}}
-      - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: needs_verification, source: *delivery}
+      - {id: puct_tdsp_rider, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency cost recovery), status: verified, source: {title: "16 TAC § 25.182 Energy efficiency cost recovery factor", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-182", accessed: "2026-10-08"}}
+      - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: verified, source: *delivery}
       - {id: rep_res_rider, from: rep, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
       # bill: small commercial, large commercial & industrial, large load (same setters as residential; last hop per class)
       - {id: rep_sc_gen, from: rep, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail contract, status: needs_verification, source: *ercotops}
@@ -181,8 +181,8 @@ archetypes:
       - {id: rep_ll_as, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: passes ERCOT ancillary charges through (index contracts), status: needs_verification, source: *ercotops}
       - {id: rep_ll_rider, from: rep, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: passes riders to the customer, status: needs_verification, source: *ercotops}
       # large loads (75 MW or more): SB 6 (2025)
-      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: reliability, label: "sets interconnection, disclosure and curtailment rules for loads of 75 MW or more, and approves co-location with existing generation (SB 6)", status: needs_verification, source: *sb6}
-      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: "under PUCT rules, can order backup generation (sites with 50% or more) or curtailment of loads connected after 2025 in an energy emergency (SB 6)", status: needs_verification, source: *sb6}
+      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: reliability, label: "sets interconnection, disclosure and curtailment rules for loads of 75 MW or more, and approves co-location with existing generation (SB 6)", status: verified, source: *sb6}
+      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: "under PUCT rules, can order backup generation (sites with 50% or more) or curtailment of loads connected after 2025 in an energy emergency (SB 6)", status: verified, source: *sb6}
 
 
   # Non-opt-in entity: a city-owned utility (or co-op) that has not opted in to retail competition. Its own governing
@@ -236,14 +236,14 @@ archetypes:
     edges:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
-      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
-      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
-      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: needs_verification, source: *pura39}
-      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: needs_verification, source: *pura39}
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: verified, source: *nerc}
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: verified, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: verified, source: *pura39}
+      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: verified, source: *pura39}
       - {id: gov_noie_gov, from: governing_body, to: noie, type: regulates, domain: governance, label: governs the utility and approves its rates, status: needs_verification, source: *cpsrates}
-      - {id: puct_noie_appeal, from: puct, to: governing_body, type: regulates, domain: rates, label: hears rate appeals by ratepayers outside the city (PURA 33.101), status: needs_verification,
+      - {id: puct_noie_appeal, from: puct, to: governing_body, type: regulates, domain: rates, label: hears rate appeals by ratepayers outside the city (PURA 33.101), status: verified,
          source: {title: "PURA § 33.101 (appeal of municipal rate decisions)", url: "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.33.htm#33.101", accessed: "2026-10-08"}}
-      - {id: puct_noie_cert, from: puct, to: noie, type: regulates, domain: licensing, label: certificates the utility's service area, status: needs_verification, source: *pura40}
+      - {id: puct_noie_cert, from: puct, to: noie, type: regulates, domain: licensing, label: certificates the utility's service area, status: verified, source: *pura40}
       # operations
       - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *ercotops}
       - {id: ercot_operates_tx_noie, from: ercot, to: noie, type: operates, asset: transmission, label: directs operation of the transmission the utility owns, status: needs_verification, source: *ercotops}
@@ -256,7 +256,7 @@ archetypes:
       - {id: gov_noie_rider, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders and program charges, status: needs_verification, source: *cpsrates}
       - {id: noie_res_rider, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
       # bill: the PUCT still sets wholesale transmission rates; ERCOT prices ancillary services
-      - {id: puct_noie_tx, from: puct, to: noie, type: sets_rate, mode: sets, rate_component: transmission, label: sets the wholesale transmission rate the utility pays and the rate for its own transmission, status: needs_verification, source: *pura40}
+      - {id: puct_noie_tx, from: puct, to: noie, type: sets_rate, mode: sets, rate_component: transmission, label: sets the wholesale transmission rate the utility pays and the rate for its own transmission, status: verified, source: *pura40}
       - {id: noie_res_tx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
       - {id: noie_ercot_as, from: noie, to: ercot, type: pays, mode: market, rate_component: ancillary_uplift, label: pays ERCOT ancillary service charges at market prices, status: needs_verification, source: *ercotops}
       - {id: gov_noie_as, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: approves recovery of ancillary costs in retail rates, status: needs_verification, source: *cpsrates}
@@ -278,9 +278,9 @@ archetypes:
       - {id: noie_ll_as, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
       - {id: noie_ll_rider, from: noie, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
       # large loads (75 MW or more): SB 6 (2025)
-      - {id: gov_ll_sb6, from: governing_body, to: large_load, type: regulates, domain: policy_standard, label: may add its own interconnection requirements (SB 6), status: needs_verification, source: *sb6}
-      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: reliability, label: "sets interconnection, disclosure and curtailment rules for loads of 75 MW or more, and approves co-location with existing generation (SB 6)", status: needs_verification, source: *sb6}
-      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: "under PUCT rules, can order backup generation (sites with 50% or more) or curtailment of loads connected after 2025 in an energy emergency (SB 6)", status: needs_verification, source: *sb6}
+      - {id: gov_ll_sb6, from: governing_body, to: large_load, type: regulates, domain: policy_standard, label: may add its own interconnection requirements (SB 6), status: verified, source: *sb6}
+      - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: reliability, label: "sets interconnection, disclosure and curtailment rules for loads of 75 MW or more, and approves co-location with existing generation (SB 6)", status: verified, source: *sb6}
+      - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: "under PUCT rules, can order backup generation (sites with 50% or more) or curtailment of loads connected after 2025 in an energy emergency (SB 6)", status: verified, source: *sb6}
 
   # Electric cooperative outside retail competition (almost all ERCOT co-ops; Nueces EC opted in). Owned by its members,
   # who elect the board; the board sets retail rates. The PUCT's jurisdiction over a co-op is limited to wholesale
@@ -334,12 +334,12 @@ archetypes:
     edges:
       # regulation
       - {id: ferc_nerc_rel, from: ferc, to: nerc, type: regulates, domain: reliability, label: approves reliability standards, status: needs_verification, source: *fercercot}
-      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: needs_verification, source: *nerc}
-      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: needs_verification, source: *nerc}
-      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: needs_verification, source: *pura39}
-      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: needs_verification, source: *pura39}
-      - {id: board_coop_gov, from: coop_board, to: coop, type: regulates, domain: governance, label: governs the co-op and approves its rates, status: needs_verification, source: *pecrates}
-      - {id: puct_coop_cert, from: puct, to: coop, type: regulates, domain: licensing, label: certificates the co-op's service area, status: needs_verification, source: *pura41}
+      - {id: nerc_texasre_rel, from: nerc, to: texas_re, type: regulates, domain: reliability, label: delegates enforcement, status: verified, source: *nerc}
+      - {id: texasre_ercot_rel, from: texas_re, to: ercot, type: regulates, domain: reliability, label: enforces reliability standards, status: verified, source: *nerc}
+      - {id: puct_ercot, from: puct, to: ercot, type: regulates, domain: market_rules, label: approves ERCOT's rules and protocols, status: verified, source: *pura39}
+      - {id: puct_ercot_gov, from: puct, to: ercot, type: regulates, domain: governance, label: certifies ERCOT and approves its budget and administration fee, status: verified, source: *pura39}
+      - {id: board_coop_gov, from: coop_board, to: coop, type: regulates, domain: governance, label: governs the co-op and approves its rates, status: verified, source: *pecrates}
+      - {id: puct_coop_cert, from: puct, to: coop, type: regulates, domain: licensing, label: certificates the co-op's service area, status: verified, source: *pura41}
       # operations
       - {id: ercot_dispatch, from: ercot, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *ercotops}
       # bill: the board sets generation, distribution and riders
@@ -372,7 +372,7 @@ archetypes:
       - {id: coop_ll_as, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
       - {id: coop_ll_rider, from: coop, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
       # large loads (75 MW or more): SB 6 (2025)
-      - {id: board_ll_sb6, from: coop_board, to: large_load, type: regulates, domain: policy_standard, label: may add its own interconnection requirements (SB 6), status: needs_verification, source: *sb6}
+      - {id: board_ll_sb6, from: coop_board, to: large_load, type: regulates, domain: policy_standard, label: may add its own interconnection requirements (SB 6), status: verified, source: *sb6}
       - {id: puct_ll_sb6, from: puct, to: large_load, type: regulates, domain: reliability, label: "sets interconnection, disclosure and curtailment rules for loads of 75 MW or more, and approves co-location with existing generation (SB 6)", status: needs_verification, source: *sb6}
       - {id: ercot_ll_sb6, from: ercot, to: large_load, type: regulates, domain: reliability, label: "under PUCT rules, can order backup generation (sites with 50% or more) or curtailment of loads connected after 2025 in an energy emergency (SB 6)", status: needs_verification, source: *sb6}
 

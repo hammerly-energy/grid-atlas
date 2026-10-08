@@ -116,37 +116,37 @@ archetypes:
       # regulation
       - {id: ofgem_neso, from: ofgem, to: neso, type: regulates, domain: licensing, label: licenses NESO, status: needs_verification,
          source: &ofgemlic {title: Ofgem licences and licence conditions, url: "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions", accessed: "2026-10-07"}}
-      - {id: ofgem_dno, from: ofgem, to: dno, type: regulates, domain: rates, label: sets the DNO price control, status: needs_verification, source: *ed2}
-      - {id: ofgem_supplier, from: ofgem, to: supplier, type: regulates, domain: licensing, label: licenses suppliers, status: needs_verification, source: *ofgemlic}
+      - {id: ofgem_dno, from: ofgem, to: dno, type: regulates, domain: rates, label: sets the DNO price control, status: verified, source: *ed2}
+      - {id: ofgem_supplier, from: ofgem, to: supplier, type: regulates, domain: licensing, label: licenses suppliers, status: verified, source: *ofgemlic}
       # operations
       - {id: neso_bm, from: neso, to: generators, type: dispatches, mechanism: balancing_redispatch, label: accepts bids and offers in the Balancing Mechanism, status: needs_verification,
          source: &tnuos {title: NESO TNUoS, url: "https://www.neso.energy/tnuos-10-minutes-0", accessed: "2026-10-07"}}
-      - {id: elexon_settles, from: elexon, to: supplier, type: settles, label: settles imbalances under the BSC, status: needs_verification,
+      - {id: elexon_settles, from: elexon, to: supplier, type: settles, label: settles imbalances under the BSC, status: verified,
          source: &bsc {title: Elexon BSC, url: "https://www.elexon.co.uk/bsc/", accessed: "2026-10-07"}}
       # the cap: a ceiling on the whole bill, not a set price
-      - {id: ofgem_cap, from: ofgem, to: supplier, type: sets_rate, mode: caps, applies_to: [residential], label: caps default tariffs each quarter, status: needs_verification,
+      - {id: ofgem_cap, from: ofgem, to: supplier, type: sets_rate, mode: caps, applies_to: [residential], label: caps default tariffs each quarter, status: verified,
          source: &cap {title: Ofgem energy price cap, url: "https://www.ofgem.gov.uk/energy-price-cap", accessed: "2026-10-07"}}
       # bill
-      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the tariff at or below the cap, status: needs_verification, source: *cap}
+      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the tariff at or below the cap, status: verified, source: *cap}
       - {id: ofgem_neso_tx, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: transmission, subcomponent: TNUoS, label: approves the transmission owners' revenues (RIIO-T3) that NESO recovers through TNUoS, status: needs_verification, source: *tnuos}
-      - {id: neso_sup_tx, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: sets TNUoS tariffs, status: needs_verification, source: *tnuos}
-      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: needs_verification, source: *cap}
-      - {id: ofgem_dno_dx, from: ofgem, to: dno, type: sets_rate, mode: approves, rate_component: distribution, subcomponent: DUoS, label: sets DNO allowed revenue (RIIO-ED2), status: needs_verification, source: *ed2}
+      - {id: neso_sup_tx, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: sets TNUoS tariffs, status: verified, source: *tnuos}
+      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: verified, source: *cap}
+      - {id: ofgem_dno_dx, from: ofgem, to: dno, type: sets_rate, mode: approves, rate_component: distribution, subcomponent: DUoS, label: sets DNO allowed revenue (RIIO-ED2), status: verified, source: *ed2}
       - {id: dno_sup_dx, from: dno, to: supplier, type: sets_rate, mode: sets, rate_component: distribution, subcomponent: DUoS, label: sets DUoS tariffs, status: needs_verification, source: *ed2}
-      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the tariff, status: needs_verification, source: *cap}
-      - {id: neso_sup_bal, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: balancing, subcomponent: BSUoS, label: sets BSUoS (charged to demand only), status: needs_verification,
+      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the tariff, status: verified, source: *cap}
+      - {id: neso_sup_bal, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: balancing, subcomponent: BSUoS, label: sets BSUoS (charged to demand only), status: verified,
          source: &bsuos {title: NESO BSUoS charges, url: "https://neso.energy/charging/balancing-services-use-system-bsuos-charges", accessed: "2026-10-07"}}
-      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: needs_verification, source: *cap}
+      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: verified, source: *cap}
       - {id: esc_sup_cap, from: esc, to: supplier, type: sets_rate, mode: levies, rate_component: capacity, label: levies the Capacity Market supplier charge, status: needs_verification,
          source: &cm {title: Capacity Market collection, url: "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market", accessed: "2026-10-07"}}
-      - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: needs_verification, source: *cap}
+      - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: verified, source: *cap}
       - {id: desnz_sup_levy, from: desnz, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, label: "sets the schemes whose costs suppliers pay: CfD and nuclear RAB levies collected by LCCC; RO, FiT and WHD administered by Ofgem", status: needs_verification,
          source: &ea2013 {title: Energy Act 2013, url: "https://www.legislation.gov.uk/ukpga/2013/32/contents", accessed: "2026-10-07"}}
-      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: needs_verification, source: *cap}
-      - {id: hmt_sup_vat, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, label: "VAT on domestic electricity: 0% from 1 Oct 2026 to 31 Mar 2027, normally 5%", status: needs_verification,
+      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: verified, source: *cap}
+      - {id: hmt_sup_vat, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, label: "VAT on domestic electricity: 0% from 1 Oct 2026 to 31 Mar 2027, normally 5%", status: verified,
          source: &vat0 {title: Temporary zero rate of VAT for domestic electricity in GB, url: "https://www.gov.uk/government/publications/temporary-zero-rate-of-vat-for-domestic-electricity-in-great-britain/temporary-zero-rate-of-vat-in-great-britain-for-domestic-electricity", accessed: "2026-10-07"}}
-      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: needs_verification, source: *vat0}
-      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin within the cap, status: needs_verification, source: *cap}
+      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: verified, source: *vat0}
+      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin within the cap, status: verified, source: *cap}
 
 utilities:
   UK Power Networks (London):
