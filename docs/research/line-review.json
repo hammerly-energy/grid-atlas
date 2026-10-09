@@ -7311,6 +7311,233 @@
      "reason": "Hop is real, but CPUC rates page does not address POU billing of components; cite the POU rate schedule."
     }
    ]
+  },
+  "ercot/base/ercot_pays_gen": {
+   "status": "verified",
+   "source_url": "https://www.ercot.com/mktrules/nprotocols/current",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Nodal Protocols Sec 4.6 (DAM settlement) and 6.6 (real-time energy settlement at SPPs) pay resources via their QSE. Landing page fetched; lists Sections 4 and 6. Generation/market correct."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Nodal Protocols (ERCOT's own rules) settle resource energy at DAM and RT Settlement Point Prices (4.6, 6.6). Payment runs via QSEs; acceptable simplification. Cited URL is the index page, not the section."
+    }
+   ]
+  },
+  "ercot/base/ercot_pays_gen_as": {
+   "status": "verified",
+   "source_url": "https://www.ercot.com/mktrules/nprotocols/current",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Protocols 4.6.4 (DAM AS payments at MCPC) and 6.7 (real-time AS settlement after RTC+B) pay AS providers via QSEs. ancillary_uplift/market correct."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Protocols settle Ancillary Service awards at MCPC in DAM (4.6.4) and RT (6.7, RTC+B since Dec 2025). Market mode and ancillary_uplift correct. URL is index page."
+    }
+   ]
+  },
+  "ercot/competitive_area/rep_ercot_as": {
+   "status": "verified",
+   "source_url": "https://www.ercot.com/mktrules/nprotocols/current",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "AS costs are charged to QSEs by load-ratio share (Protocols 4.6.4.2, 6.7); REP pays through its QSE. Acceptable simplification; component and mode right."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "AS costs are charged to load by load-ratio share (Protocols 4.6.4.2, 6.7.x). Strictly the REP's QSE is the ERCOT counterparty; fine given no QSE node. Index URL only."
+    }
+   ]
+  },
+  "pjm/base/pjm_pays_gen": {
+   "status": "verified",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 Section 3 Spot Market Energy Accounting: energy sold into the spot market is credited at LMP. Fetched and confirmed."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Manual 28 Section 3 (Spot Market Energy Accounting) credits energy delivered to the spot market at LMP. PJM's own publication; type, mode, component correct."
+    }
+   ]
+  },
+  "pjm/base/pjm_pays_gen_as": {
+   "status": "verified",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 Sections 4 (Regulation Credits) and 6 (Credits for Synchronized Reserve) pay resources at clearing prices. Fetched and confirmed."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Manual 28 Sections 4 (Regulation Credits, clearing price credit) and 6 (Credits for Synchronized Reserve) pay resources at clearing prices."
+    }
+   ]
+  },
+  "pjm/base/rpm_pays_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m18.ashx",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "Relationship correct, but the RPM landing page (fetched) does not state committed resources are paid the clearing price. Cite Manual 18 settlement section or RAA/Tariff Attachment DD."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Relationship is real, but the cited RPM landing page only describes the market and links auction results; it never states cleared resources are paid the clearing price. Needs settlement document."
+    }
+   ],
+   "note": "source changed to PJM Manual 18 after review; needs a second pass"
+  },
+  "pjm/restructured_choice/def_sup_pjm_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 Section 3.8 spot market energy charges to load at LMP; full-requirements default suppliers take on PJM LSE obligations. 'Bilateral contracts' wording slightly loose but mode market fine."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Wholesale default-service suppliers are PJM LSEs for their tranches; M28 Section 3 Spot Market Energy Charges bills load at LMP net of bilateral schedules. Label's bilateral caveat consistent."
+    }
+   ],
+   "note": "label changed after review (dropped 'or through bilateral contracts', adversarial review); needs a second pass"
+  },
+  "pjm/restructured_choice/def_sup_pjm_as": {
+   "status": "verified",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 Sections 4.3 and 6.3 charge regulation and synchronized reserve to LSEs by load ratio share; default supplier is the LSE."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "M28 Sections 4.3 and 6.3 charge regulation and synchronized reserve costs to LSEs by load ratio. ancillary_uplift correct."
+    }
+   ]
+  },
+  "pjm/competitive_supplier/sup_pjm_as": {
+   "status": "verified",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 regulation/reserve charges to LSEs; retail supplier is the LSE (directly or via a PJM-member agent). Component and mode right."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Competitive suppliers act as PJM LSEs (or via one); M28 regulation and reserve charges fall on LSE load."
+    }
+   ]
+  },
+  "pjm/municipal_aggregation/agg_pjm_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Aggregation supplier is a licensed retail supplier acting as PJM LSE; M28 Section 3 spot energy charges at LMP support the payment."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Aggregation supplier is a retail supplier acting as PJM LSE; M28 spot market energy charges apply to its load at LMP."
+    }
+   ],
+   "note": "label changed after review (dropped 'or through bilateral contracts', adversarial review); needs a second pass"
+  },
+  "pjm/municipal_aggregation/agg_pjm_as": {
+   "status": "verified",
+   "source_url": "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "M28 Sections 4.3/6.3 allocate regulation and reserve charges to LSEs; aggregation supplier is the LSE."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Same LSE ancillary charges in M28 Sections 4 and 6 apply to aggregation supplier's load."
+    }
+   ]
+  },
+  "pjm/coop/ws_pjm_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000885568&type=10-K",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "Fact is right (ODEC buys PJM market energy beyond owned plants), but the link is an EDGAR listing, robots-blocked; cite a specific 10-K document or M28 for the payment."
+    },
+    {
+     "verdict": "unsure",
+     "reason": "Fact is right (ODEC, CIK 885568, buys PJM market energy beyond own plants), but cited URL is an EDGAR search index (robots-blocked), not a document supporting the claim."
+    }
+   ]
+  },
+  "caiso/base/caiso_pays_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.caiso.com/market-operations",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "Label bundles ancillary services under rate_component generation (AS should be ancillary_uplift); market-operations landing page (fetched) does not mention generator payments. Cite CAISO Tariff Section 11."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Generic market-operations landing page; does not mention generators, energy or ancillary payments. Label also lumps ancillary services into generation component, unlike PJM/ERCOT split."
+    }
+   ]
+  },
+  "caiso/iou_bundled/iou_gen_ra": {
+   "status": "needs_verification",
+   "source_url": "https://www.cpuc.ca.gov/RA",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "Relationship and subcomponent right, but CPUC RA page (fetched) states the LSE obligation, not bilateral contracts with generators. CPUC 2023 RA Report states LSEs contract with generating facilities."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "CPUC RA page (regulator's own) states LSEs including IOUs must procure capacity; no central auction, so bilateral procurement from resource owners. Page doesn't say 'bilateral' explicitly."
+    }
+   ]
+  },
+  "caiso/iou_cca/cca_gen_ra": {
+   "status": "needs_verification",
+   "source_url": "https://www.cpuc.ca.gov/RA",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "Right for system/flex RA, but since 2023 PG&E/SCE as Central Procurement Entity buy local RA for CCAs. Cited page lacks bilateral-contract claim; use 2023 RA Report."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "CPUC RA page names CCAs among LSEs that must procure RA capacity. Resource adequacy subcomponent of generation matches repo convention."
+    }
+   ]
+  },
+  "caiso/iou_direct_access/esp_gen_ra": {
+   "status": "needs_verification",
+   "source_url": "https://www.cpuc.ca.gov/RA",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "ESPs are RA-obligated LSEs (page fetched confirms), but the page does not support bilateral purchases from generators; local RA is via CPE. Use 2023 RA Report."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "CPUC RA page names ESPs among LSEs that must procure RA capacity. Bilateral wording not on page but not contradicted."
+    }
+   ]
   }
  }
 }

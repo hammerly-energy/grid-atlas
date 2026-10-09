@@ -93,7 +93,7 @@ CONSUMERS                  residential · small commercial · large C&I · large
 
 Lanes are fixed top-to-bottom. Differences between markets must show up as **missing, extra, or rewired nodes and edges**, never as a different layout. A node whose `kind` exists in only one of the columns on screen gets a visible "unique to this market" marker (match on `kind`, plus `slot`, across countries; on `id` within a country). Same kind, different scope (NESO vs PJM) gets a "≈ differs" marker.
 
-One global **lens** switch: Roles · Bill · Ownership. Only one colour meaning is active at a time. Price-setting `mode` is drawn with arrowheads and dash styles, not new colours. The GB price cap is a bracket around the whole bill bar.
+One global **lens** switch: Roles · Bill · Ownership. Only one colour meaning is active at a time, except the Bill lens, which draws the price path (who sets it, accent colour) and the money path (who gets paid, blue) in two colours (Christian, 2026-10-09). Price-setting `mode` is drawn with arrowheads and dash styles, not new colours. The GB price cap is a bracket around the whole bill bar.
 
 ## Data model (schema v2)
 

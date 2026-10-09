@@ -7,13 +7,13 @@
 <style>
   :root {
     --bg:#fff; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2e2e2; --lane:#f6f6f4; --node:#fff; --node-line:#c9c9c9;
-    --accent:#c2410c; --dim:.18;
+    --accent:#c2410c; --money:#2563eb; --dim:.18;
     --t-regulates:#2563eb; --t-dispatches:#0f766e; --t-operates:#7c3aed; --t-settles:#b45309; --t-plans_procures:#be185d;
     --t-owns:#7c3aed; --t-sets_rate:#6b6b6b; --t-pays:#6b6b6b; --t-delivers:#6b6b6b;
   }
   @media (prefers-color-scheme: dark) { :root {
     --bg:#121212; --fg:#ececec; --muted:#9c9c9c; --line:#2c2c2c; --lane:#1a1a1a; --node:#202020; --node-line:#3a3a3a;
-    --accent:#fb923c;
+    --accent:#fb923c; --money:#60a5fa;
     --t-regulates:#60a5fa; --t-dispatches:#2dd4bf; --t-operates:#a78bfa; --t-settles:#fbbf24; --t-plans_procures:#f472b6;
     --t-owns:#a78bfa; --t-sets_rate:#9c9c9c; --t-pays:#9c9c9c; --t-delivers:#9c9c9c;
   } }
@@ -47,11 +47,13 @@
   .node { cursor:pointer; }
   .node.sel rect { stroke:var(--fg); stroke-width:1.6; }
   .node.on rect { stroke:var(--accent); stroke-width:1.6; }
+  .node.on.paid rect { stroke:var(--money); }
   .node.off { opacity:var(--dim); }
   .node .asset { fill:none; stroke:var(--t-operates); }
   .node .asset-t { fill:var(--t-operates); font-size:9.5px; }
   .edge { fill:none; stroke-width:1.4; cursor:pointer; }
   .edge.nv { stroke-dasharray:6 4; }
+  .edge.money { stroke:var(--money) !important; stroke-width:1.8; }
   .edge.on { stroke:var(--accent) !important; stroke-width:2.2; }
   .edge.off { opacity:var(--dim); }
   .edge-hit { fill:none; stroke:transparent; stroke-width:10; cursor:pointer; }
@@ -74,6 +76,7 @@
   .dmap .full { fill:var(--accent); }
   .dmap .hatch-line { stroke:var(--accent); stroke-width:1.2; }
   .dfig figcaption { color:var(--muted); font-size:12px; margin-top:4px; }
+  .panel dt .sw { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
   .dfig .sw { display:inline-block; width:10px; height:10px; vertical-align:-1px; margin:0 4px 0 0; }
   .muted { color:var(--muted); }
   .legend { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--muted); font-size:12px; margin:12px 0; }
@@ -219,6 +222,40 @@ function carrySel(col, old) {
   if (was && old.sel.node === was) return now ? { node: now } : null;
   return byId[old.sel.node] ? old.sel : null;
 }
+// where the money for one line item goes. Every hop of the price path below the regulators is paid the other way
+// (you pay PG&E, PG&E pays the CCA, the EDC pays the default service supplier), unless the paying box has its own
+// payment lines for this part of the bill (a supplier pays PJM for transmission, not the EDC); then the pays lines
+// are followed from every box on the path (REP pays ERCOT, ERCOT pays generators). The reversed hops are drawn from
+// the price lines, so they count as needing verification.
+function moneyChain(edges, it, comp, cls, byId) {
+  const pays = e => e.type === "pays" && e.rate_component === comp && (!e.applies_to || e.applies_to.includes(cls))
+    && (!e.subcomponent || !it.subcomponent || e.subcomponent === it.subcomponent);
+  const hops = it.path.map(id => edges.find(e => e.id === id));
+  const out = hops.filter(e => byId[e.from].lane !== "regulators" && !edges.some(x => pays(x) && x.from === e.to))
+    .map(e => ({ ...e, id: e.id + "~paid", type: "pays", mode: undefined, from: e.to, to: e.from, status: "needs_verification",
+      label: `pays ${byId[e.from].name} for this charge (drawn from the price line: ${e.label})` }));
+  const start = hops.flatMap(e => [e.to, e.from]);
+  const seen = new Set(start), todo = [...seen];
+  while (todo.length) {
+    const n = todo.shift();
+    for (const e of edges) if (pays(e) && e.from === n && !out.includes(e)) {
+      out.push(e); if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); }
+    }
+  }
+  return out;
+}
+// payments as chains of names (REP → ERCOT → Generators); each arrow carries its line's label on hover
+function moneyText(money, nm) {
+  const used = new Set(), chains = [];
+  for (const e of money) {
+    if (used.has(e) || money.some(x => x.to === e.from && !used.has(x) && x !== e)) continue;
+    let c = `${nm(e.from)}`, cur = e;
+    while (cur) { used.add(cur); c += ` <span title="${esc(cur.label)}">→</span> ${nm(cur.to)}`; const nx = money.find(x => x.from === cur.to && !used.has(x)); cur = nx; }
+    chains.push(c);
+  }
+  money.filter(e => !used.has(e)).forEach(e => chains.push(`${nm(e.from)} <span title="${esc(e.label)}">→</span> ${nm(e.to)}`));
+  return chains.join("<br>");
+}
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
 // Full text, never truncated: shrink the font until the text fits the box (the diagram is in the page, so it can measure)
@@ -361,7 +398,7 @@ function route(shown, pos) {
 
 /* ---------- markers: arrowhead shape encodes mode ---------- */
 const MARKERS = {
-  arrow: "M0,0 L8,4 L0,8 z", hollow: "M0,0 L8,4 L0,8 z", diamond: "M0,4 L4,0 L8,4 L4,8 z", square: "M1,1 L7,1 L7,7 L1,7 z", dot: "M4,1.5 A2.5,2.5 0 1 1 3.99,1.5 z",
+  arrow: "M0,0 L8,4 L0,8 z", small: "M2,2 L7,4 L2,6 z", hollow: "M0,0 L8,4 L0,8 z", diamond: "M0,4 L4,0 L8,4 L4,8 z", square: "M1,1 L7,1 L7,7 L1,7 z", dot: "M4,1.5 A2.5,2.5 0 1 1 3.99,1.5 z",
 };
 const MODE_SHAPE = { sets: "arrow", approves: "hollow", levies: "square", market: "diamond", passes_through: "dot" };
 function marker(defs, shape, color, key) {
@@ -444,18 +481,35 @@ function renderCol(i) {
   });
 
   // which edges and nodes this lens shows
-  let shown, path = new Set(), active = new Set(), ans = null, caps = [];
+  let shown, priced = new Set(), merged = new Map(), path = new Set(), money = new Set(), active = new Set(), ans = null, caps = [];
   if (S.lens === "roles") shown = edges.filter(e => ROLE_TYPES.includes(e.type));
   else if (S.lens === "owner") shown = edges.filter(e => OWNER_TYPES.includes(e.type));
   else {
     shown = edges.filter(e => (e.type === "sets_rate" || e.type === "pays") && e.rate_component === S.comp && e.mode !== "caps"
       && (!e.applies_to || e.applies_to.includes(S.cls)));
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
-    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); });
-    edges.filter(e => path.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
+    const paidOn = [];   // the customer's and pass-through payments, drawn in place of the pass-through price lines
+    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); moneyChain(edges, it, S.comp, S.cls, byId).forEach(e => { money.add(e.id); if (e.id.endsWith("~paid") && !paidOn.some(x => x.id === e.id)) paidOn.push(e); }); });
+    edges.filter(e => path.has(e.id) || money.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
+    edges.filter(e => path.has(e.id) && byId[e.from].lane === "regulators").forEach(e => { priced.add(e.from); priced.add(e.to); });
+    if (ans) ans.items.forEach(it => priced.add(it.setter));
     caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
       && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
-    shown = shown.concat(edges.filter(e => path.has(e.id) && !shown.includes(e)));
+    shown = shown.concat(edges.filter(e => (path.has(e.id) || money.has(e.id)) && !shown.includes(e)));
+    // a payment running against a rate line between the same two boxes (REP pays ERCOT, ERCOT prices the REP) is
+    // left to the panel: drawn, the two lines would cross
+    // orange runs only from a regulator, council or board to the box whose price it sets, approves or limits; every
+    // other hop is drawn as the payment (blue)
+    shown = shown.filter(e => !(path.has(e.id) && e.type === "sets_rate" && byId[e.from].lane !== "regulators")).concat(paidOn);
+    shown = shown.filter(e => e.type !== "pays" || e.id.endsWith("~paid") || !shown.some(x => x.type !== "pays" && x.from === e.to && x.to === e.from));
+    // two line items priced the same way between the same two boxes (CPUC sets PG&E's energy and its resource
+    // adequacy) are one line on the diagram; the table and panel keep them apart
+    const first = new Map();
+    shown = shown.filter(e => {
+      const k = `${e.type}|${e.from}|${e.to}|${e.mode || "sets"}`, f = first.get(k);
+      if (!f) { first.set(k, e); return true; }
+      merged.set(f.id, [...(merged.get(f.id) || [f]), e]); return false;
+    });
   }
 
   // edges
@@ -464,14 +518,16 @@ function renderCol(i) {
     const d = paths[e.id];
     if (!d) continue;
     const color = S.lens === "bill" ? "var(--t-sets_rate)" : `var(--t-${e.type})`;
-    const on = path.has(e.id) || (focus && focus.has(e.id)), off = S.lens === "bill" && ans && !on;
+    const paid = S.lens === "bill" && e.type === "pays";   // money lines: their own colour, plain arrowhead, running the other way
+    const all = merged.get(e.id) || [e], any = set => all.some(x => set.has(x.id)), inMoney = any(money);
+    const on = any(path) || (focus && focus.has(e.id)), off = S.lens === "bill" && ans && !on && !inMoney;
     const faint = S.lens !== "bill" && !(focus && focus.has(e.id));
-    const shape = S.lens === "bill" ? (MODE_SHAPE[e.mode || "sets"] || "arrow") : "arrow";
-    const hl = on && S.lens === "bill";
-    const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on && S.lens === "bill" ? " on" : ""}${off ? " off" : ""}${faint ? " faint" : ""}`, stroke: color,
-      "marker-end": marker(defs, shape, hl ? "var(--accent)" : color, hl ? "on" : e.type) }, svg);
+    const shape = paid ? "small" : S.lens === "bill" ? (MODE_SHAPE[e.mode || "sets"] || "arrow") : "arrow";
+    const hl = on && S.lens === "bill" && !paid;
+    const p = el("path", { d, class: `edge${all.every(x => x.status === "verified") ? "" : " nv"}${hl ? " on" : ""}${paid && inMoney ? " money" : ""}${off ? " off" : ""}${faint ? " faint" : ""}`, stroke: color,
+      "marker-end": marker(defs, shape, hl ? "var(--accent)" : paid && inMoney ? "var(--money)" : color, hl ? "on" : paid && inMoney ? "money" : e.type) }, svg);
     const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
-    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "checked against a primary source" : "needs verification"})`;
+    const t = el("title", {}, hit); t.textContent = (merged.get(e.id) || [e]).map(x => `${byId[x.from].name} → ${byId[x.to].name}${x.subcomponent ? ` (${x.subcomponent})` : ""}: ${x.label}\nSource: ${x.source.title} (${x.status === "verified" ? "checked against a primary source" : "needs verification"})`).join("\n\n");
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
     p.onclick = hit.onclick;
   }
@@ -481,7 +537,7 @@ function renderCol(i) {
   for (const n of nodes) {
     const p = pos[n.id], name = displayName(col, n);
     const sel = col.sel && col.sel.node === n.id;
-    const g = el("g", { class: `node${sel ? " sel" : ""}${(active.has(n.id) || (focus && focus.nodes.has(n.id) && !(col.sel && col.sel.node === n.id))) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}`,
+    const g = el("g", { class: `node${sel ? " sel" : ""}${(active.has(n.id) || (focus && focus.nodes.has(n.id) && !(col.sel && col.sel.node === n.id))) ? " on" : ""}${S.lens === "bill" && ans && !active.has(n.id) ? " off" : ""}${S.lens === "bill" && active.has(n.id) && !priced.has(n.id) ? " paid" : ""}`,
       transform: `translate(${p.x},${p.y})`, "data-id": n.id, tabindex: 0, role: "button", "aria-label": name }, svg);
     el("rect", { width: NODE_W, height: NODE_H, rx: 5 }, g);
     const lines = twoLines(g, name, NODE_W - 16);
@@ -651,14 +707,12 @@ function panel(col, C, byId, edges, ans) {
     else {
       const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
       const item = it => {   // one block per line item
-        const hops = it.path.slice().reverse().map(id => edges.find(e => e.id === id));   // setter first, consumer last
-        const chain = `${nm(it.setter)}` + hops.map(e => ` <span class="mode m-${e.mode || "sets"}">${esc(MODE_TEXT[e.mode || "sets"])}</span> → ${nm(e.to)}`).join("");
-        const lim = it.limits.map(id => edges.find(e => e.id === id));
+        const lim = it.limits.map(id => edges.find(e => e.id === id)), money = moneyChain(edges, it, S.comp, S.cls, byId);
         return `${ans.items.length > 1 || it.subcomponent ? `<h4>${esc(it.subcomponent || cl)}</h4>` : ""}<dl>
-        <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
-        <dt>Path</dt><dd class="hops">${chain}</dd>
+        <dt><span class="sw" style="background:var(--accent)"></span>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+        ${money.length ? `<dt><span class="sw" style="background:var(--money)"></span>Money path</dt><dd>${moneyText(money, nm)}</dd>` : ""}
+        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim, ...money].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
       };
       p.innerHTML = `<h3>${esc(cl)}</h3>${ans.items.map(item).join("")}${whole.length ? `<dl><dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd></dl>` : ""}`;
     }
@@ -733,8 +787,9 @@ function swatch(stroke, shape, dashed) {
 }
 function renderLegend() {
   const items = S.lens === "bill"
-    ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat(!document.querySelector(".capped") ? [] : [[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
+    ? Object.entries(MODE_SHAPE).filter(([m]) => ["sets", "approves", "levies"].includes(m)).map(([m, s]) => [swatch("var(--accent)", s), MODE_TEXT[m]]).concat(!document.querySelector(".capped") ? [] : [[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
+  if (S.lens === "bill" && document.querySelector(".edge.money")) items.unshift([swatch("var(--money)", "small"), "pays"]);
   items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
   if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");

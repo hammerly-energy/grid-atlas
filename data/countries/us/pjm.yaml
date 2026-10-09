@@ -45,7 +45,7 @@ base:
       lane: wholesale
       kind: generator
       jurisdiction: private
-      description: Sell energy and capacity into PJM's markets.
+      description: Sell energy and capacity into PJM's markets, or under bilateral contracts that net out of PJM's settlement.
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
@@ -86,6 +86,12 @@ base:
     - {id: pjm_operates_rpm, from: pjm, to: rpm, type: operates, label: runs the RPM capacity auction, status: verified,
        source: &rpm {title: PJM capacity market (RPM), url: "https://www.pjm.com/markets-and-operations/rpm", accessed: "2026-10-07"}}
     - {id: ferc_rpm_cap, from: ferc, to: rpm, type: sets_rate, mode: approves, rate_component: capacity, label: "approves RPM's rules, demand curve and price limits", status: needs_verification, source: *rpm}
+    # money: PJM settles energy and ancillary markets and pays generators; RPM pays committed capacity
+    - {id: pjm_pays_gen, from: pjm, to: generators, type: pays, mode: market, rate_component: generation, label: pays generators the locational marginal price for energy, status: verified,
+       source: &m28 {title: "PJM Manual 28: Operating Agreement Accounting", url: "https://www.pjm.com/-/media/DotCom/documents/manuals/m28.ashx", accessed: "2026-10-09"}}
+    - {id: pjm_pays_gen_as, from: pjm, to: generators, type: pays, mode: market, rate_component: ancillary_uplift, label: pays generators for regulation and reserves at market clearing prices, status: verified, source: *m28}
+    - {id: rpm_pays_gen, from: rpm, to: generators, type: pays, mode: market, rate_component: capacity, label: "pays committed capacity resources (generators, demand response) their clearing price", status: needs_verification,
+       source: &m18 {title: "PJM Manual 18: PJM Capacity Market", url: "https://www.pjm.com/-/media/DotCom/documents/manuals/m18.ashx", accessed: "2026-10-09"}}
 
 archetypes:
   # Default service (PA, NJ, MD, DE, DC, OH): a customer who has not picked a supplier gets supply that wholesale
@@ -136,6 +142,8 @@ archetypes:
       - {id: puc_sup_cap, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: capacity, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
       - {id: rpm_edc_cap, from: rpm, to: edc, type: sets_rate, mode: market, rate_component: capacity, applies_to: [large_ci, large_load], label: capacity at the RPM clearing price on hourly-priced service, status: needs_verification, source: *rpm}
       - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: verified, source: *rpm}
+      - {id: def_sup_pjm_gen, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for its share of default load's energy at locational marginal prices, status: needs_verification, source: *m28}
+      - {id: def_sup_pjm_as, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges as the load-serving entity, status: verified, source: *m28}
       - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: ancillary cost priced into auction bids, status: needs_verification, source: *njbgs}
       - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: ancillary services at PJM market prices on hourly-priced service, status: needs_verification, source: *pecodsp}
       # bill: wires and riders
@@ -290,9 +298,12 @@ archetypes:
       - {id: pjm_operates_tx, from: pjm, to: edc, type: operates, asset: transmission, label: operates the transmission the EDC owns, status: verified, source: *oatt}
       - {id: sup_pjm_gen, from: supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: buys energy at PJM prices or through bilateral contracts, status: verified, source: *oatt}
       - {id: sup_rpm_cap, from: supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price for its customers' load, status: verified, source: *rpm}
+      - {id: sup_pjm_as, from: supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: "pays PJM ancillary charges for its customers' load", status: verified, source: *m28}
       # bill: transmission is part of supply in PA and IL: the supplier pays the zonal network rate and recovers it
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: edc_sup_tx, from: edc, to: supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
+      - {id: sup_pjm_tx, from: supplier, to: pjm, type: pays, mode: market, rate_component: transmission, label: pays PJM network transmission service for its customers' load at the zonal rate, status: needs_verification, source: *oatt}
+      - {id: pjm_pays_edc_tx, from: pjm, to: edc, type: pays, mode: market, rate_component: transmission, label: passes network transmission revenue to the zone's transmission owner, status: needs_verification, source: *oatt}
       - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *pa2807}
       - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *pa2807}
       - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
@@ -367,8 +378,12 @@ archetypes:
       - {id: agg_sup_cap_ok, from: aggregator, to: agg_supplier, type: sets_rate, mode: approves, rate_component: capacity, label: approves the contract price, status: verified, source: *il192}
       - {id: agg_sup_as_ok, from: aggregator, to: agg_supplier, type: sets_rate, mode: approves, rate_component: ancillary_uplift, label: approves the contract price, status: verified, source: *il192}
       - {id: sup_rpm_cap, from: agg_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price for the aggregation's load, status: verified, source: *rpm}
+      - {id: agg_pjm_gen, from: agg_supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for the aggregation's energy at locational marginal prices, status: needs_verification, source: *m28}
+      - {id: agg_pjm_as, from: agg_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges for the aggregation, status: verified, source: *m28}
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: edc_sup_tx, from: edc, to: agg_supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
+      - {id: agg_pjm_tx, from: agg_supplier, to: pjm, type: pays, mode: market, rate_component: transmission, label: pays PJM network transmission service for its customers' load at the zonal rate, status: needs_verification, source: *oatt}
+      - {id: pjm_pays_edc_tx, from: pjm, to: edc, type: pays, mode: market, rate_component: transmission, label: passes network transmission revenue to the zone's transmission owner, status: needs_verification, source: *oatt}
       - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: verified, source: *il16108}
       - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *il16108}
       - {id: agg_res_gen, from: agg_supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in the aggregation contract, status: verified, source: *il192}
@@ -419,6 +434,7 @@ archetypes:
       - {id: puc_viu_gen, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: generation, label: sets generation and fuel rates, status: verified, source: *wv}
       - {id: puc_viu_cap, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: capacity, label: sets base rates that recover the utility's own generating capacity, status: verified, source: *wv}
       - {id: pjm_viu_as, from: pjm, to: viu, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: viu_pjm_gen, from: viu, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for its load's energy at locational marginal prices; PJM pays its plants for their output, status: needs_verification, source: *m28}
       - {id: ferc_viu_tx, from: ferc, to: viu, type: regulates, domain: rates, label: approves the utility's wholesale transmission revenue requirement in PJM's tariff, status: verified, source: *oatt}
       - {id: puc_viu_tx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: transmission, label: sets the retail transmission rate that recovers PJM network charges, status: verified, source: *wv}
       - {id: puc_viu_dx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates, status: verified, source: *wv}
@@ -499,6 +515,7 @@ archetypes:
       - {id: puc_viu_gen, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: generation, label: sets generation and fuel rates, status: needs_verification, source: *va585}
       - {id: puc_viu_cap, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: capacity, label: sets base rates that recover the utility's own generating capacity, status: verified, source: *va585}
       - {id: pjm_viu_as, from: pjm, to: viu, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary services at PJM market prices, status: needs_verification, source: *oatt}
+      - {id: viu_pjm_gen, from: viu, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for its load's energy at locational marginal prices; PJM pays its plants for their output, status: needs_verification, source: *m28}
       - {id: ferc_viu_tx, from: ferc, to: viu, type: regulates, domain: rates, label: approves the utility's wholesale transmission revenue requirement in PJM's tariff, status: verified, source: *oatt}
       - {id: puc_viu_tx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: transmission, label: sets the retail transmission rate that recovers PJM network charges, status: verified, source: *va585}
       - {id: puc_viu_dx, from: state_puc, to: viu, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates, status: verified, source: *va585}
@@ -584,6 +601,7 @@ archetypes:
       - {id: pjm_operates_tx_ws, from: pjm, to: wholesale_supplier, type: operates, asset: transmission, label: operates the transmission the wholesale supplier owns, status: needs_verification, source: *odec}
       - {id: ws_rpm_cap, from: wholesale_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: buys part of its capacity obligation in RPM, status: verified, source: *odec}
       - {id: ws_pjm_as, from: wholesale_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges as the load-serving entity, status: verified, source: *odec}
+      - {id: ws_pjm_gen, from: wholesale_supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: buys energy in PJM's markets to supplement its own plants, status: needs_verification, source: *odec}
       # bill: supply comes from the wholesale supplier's FERC-accepted rate, passed through by the co-op; wires and riders
       # are approved by the SCC
       - {id: ws_coop_gen, from: wholesale_supplier, to: coop, type: sets_rate, mode: sets, rate_component: generation, label: sets the wholesale energy charge under its formula rate, status: verified, source: *odec}

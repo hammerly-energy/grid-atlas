@@ -49,3 +49,7 @@ The source changes below would make the most dashed lines eligible for a second 
 - **PJM competitive supply transmission:** PJM, not the EDC, bills network transmission to the supplier. In OH, NJ and MD a non-bypassable EDC charge is used instead.
 - **ERCOT admin fee:** the ancillary hop with `mode: market` also carries the PUCT-approved admin fee item.
 - **CAISO city utility balancing:** `balancing_redispatch` is a GB mechanism term.
+
+## Money lines (2026-10-09)
+
+18 `pays` lines added so the Bill lens can follow money to the generators (17 reviewed; `ercot/coop/coop_ercot_energy` was dropped because Texas co-ops mostly buy from G&T co-ops under contract, not yet researched, and `caiso/iou_bundled/iou_gen_ppa` was added after review). Two independent reviewers confirmed 8 against ERCOT Nodal Protocols and PJM Manual 28; they are solid. Dashed: `caiso_pays_gen` (landing page; cite CAISO Tariff Section 11), `rpm_pays_gen` (now cites Manual 18, needs a second pass), `def_sup_pjm_gen` and `agg_pjm_gen` (label narrowed after the adversarial review), `ws_pjm_gen` (EDGAR search page; cite ODEC's 10-K), the three CAISO resource adequacy lines (cite Pub. Util. Code 380 or the CPUC RA report), `viu_pjm_gen`, `iou_gen_ppa`.
