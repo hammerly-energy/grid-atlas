@@ -128,3 +128,27 @@ def test_utility_fill_domains_exist_in_map():
                     if da:
                         missing = (set(da["full"]) | set(da.get("partial", []))) - ids
                         assert not missing, f"{mid}/{name}:{slot} names unknown areas {missing}"
+
+
+# Source-backed verification (CLAUDE.md): a line is `verified` only when two independent reviewers confirmed it
+# against a primary source. Press releases, news and third-party summaries never verify a line.
+SECONDARY_HOSTS = {"newsroom.cpsenergy.com"}
+REVIEW = __import__("pathlib").Path(__file__).resolve().parents[1] / "docs" / "research" / "line-review.json"
+
+def test_verified_lines_cite_a_primary_source():
+    import json, urllib.parse
+    verdicts = json.loads(REVIEW.read_text())["lines"] if REVIEW.exists() else {}
+    bad = []
+    for cc, c in DATA.items():
+        for mid, m in c["markets"].items():
+            for arch, layer in [("base", m["base"]), *m["archetypes"].items()]:
+                for e in layer.get("edges", []):
+                    if e.get("status") != "verified":
+                        continue
+                    key = f"{mid}/{arch}/{e['id']}"
+                    v = verdicts.get(key, {})
+                    if urllib.parse.urlparse(e["source"]["url"]).netloc in SECONDARY_HOSTS:
+                        bad.append(f"{key}: secondary source")
+                    elif [r.get("verdict") for r in v.get("reviews", [])] != ["confirm", "confirm"] or v.get("source_url") != e["source"]["url"]:
+                        bad.append(f"{key}: not confirmed by both reviewers against this source")
+    assert not bad, bad

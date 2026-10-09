@@ -31,10 +31,11 @@
   .chip[aria-pressed="true"] { border-color:var(--accent); color:var(--accent); }
   select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:3px 6px; max-width:100%; }
   .cols { display:flex; flex-wrap:wrap; gap:16px; }
-  .col { flex:1 1 420px; min-width:0; }
+  .col { flex:1 1 360px; min-width:0; }
   .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
+  .cols.n3 .diagram svg { min-width:0; }
   svg { width:100%; height:auto; display:block; }
   .lane-bg { fill:var(--lane); }
   .lane-title { fill:var(--fg); font-size:10.5px; font-weight:600; letter-spacing:.04em; }
@@ -50,7 +51,7 @@
   .node .asset { fill:none; stroke:var(--t-operates); }
   .node .asset-t { fill:var(--t-operates); font-size:9.5px; }
   .edge { fill:none; stroke-width:1.4; cursor:pointer; }
-  .edge.nv { stroke-dasharray:4 3; }
+  .edge.nv { stroke-dasharray:6 4; }
   .edge.on { stroke:var(--accent) !important; stroke-width:2.2; }
   .edge.off { opacity:var(--dim); }
   .edge-hit { fill:none; stroke:transparent; stroke-width:10; cursor:pointer; }
@@ -89,7 +90,7 @@
   .ans .mode.m-caps, .ans .mode.m-approves { border-color:var(--accent); color:var(--accent); }
   .ans .lim { color:var(--muted); font-size:12px; }
   .ans .item { display:block; color:var(--muted); font-size:12px; }
-  .edge.faint { opacity:.14; }
+  .edge.faint { opacity:.24; }
   footer { color:var(--muted); font-size:12px; margin-top:16px; }
 </style>
 </head>
@@ -131,18 +132,22 @@ if (!D) {
 
 /* ---------- state (mirrored in the URL hash) ---------- */
 const firstArch = mid => Object.keys(D.markets[mid].archetypes)[0] || "";
+const COLS = ["a", "b", "c"];   // up to three markets side by side; the third opens once the second is picked
 const S = { lens: "roles", cls: "residential", comp: "generation", cols: [
   { mid: "ercot", arch: "competitive_area", util: "", sel: null },
+  { mid: "", arch: "", util: "", sel: null },
   { mid: "", arch: "", util: "", sel: null },
 ] };
 try {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
-  ["a", "b"].forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
+  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
 function saveHash() {
-  const p = new URLSearchParams({ lens: S.lens, comp: S.comp, a: [S.cols[0].mid, S.cols[0].arch, S.cols[0].util].filter(Boolean).join("/"), b: `${S.cols[1].mid}/${S.cols[1].arch}${S.cols[1].util ? "/" + S.cols[1].util : ""}` });
+  const q = { lens: S.lens, comp: S.comp };
+  S.cols.forEach((c, i) => { if (i && !c.mid) return; q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
+  const p = new URLSearchParams(q);
   // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
   try { history.replaceState(null, "", "#" + p); } catch (e) { try { location.replace("#" + p); } catch (e2) {} }
 }
@@ -156,6 +161,11 @@ function resolve(mid, arch) {
 }
 const country = mid => D.countries[D.markets[mid].country];
 const label = (map, key) => (map && map[key]) || key.replace(/_/g, " ");
+function ownerOf(col, n) {   // a utility's fill can name the owner of the box it fills (ODEC, SMUD, LADWP)
+  const u = col.util && D.markets[col.mid].utilities[col.util];
+  const f = u && u.fills && n.slot && u.fills[n.slot];
+  return (f && typeof f === "object" && f.owner) || n.owner;
+}
 function displayName(col, n) {
   const u = col.util && D.markets[col.mid].utilities[col.util];
   const f = u && u.fills && n.slot && u.fills[n.slot];
@@ -343,28 +353,35 @@ function marker(defs, shape, color, key) {
 }
 
 /* ---------- column render ---------- */
-function otherKinds(i) {
-  const o = S.cols[1 - i];
-  if (!o.mid || !S.cols[i].mid) return null;
-  return new Set(resolve(o.mid, o.arch).nodes.map(n => n.kind));
+function otherCols(col) { return S.cols.filter(c => c !== col && c.mid && c.arch); }
+// the "only here" marker: a kind that none of the other markets on screen has (match on kind, per CLAUDE.md)
+function otherKinds(col) {
+  const others = otherCols(col);
+  if (!others.length || !col.mid) return null;
+  return new Set(others.flatMap(o => resolve(o.mid, o.arch).nodes.map(n => n.kind)));
 }
 
 function renderCol(i) {
   const col = S.cols[i], box = $(`#col${i}`);
+  if (!box) return;
   const markets = Object.entries(D.markets);
   box.innerHTML = "";
   const chain = document.createElement("div"); chain.className = "chain"; box.appendChild(chain);
 
   const mSel = document.createElement("select");
   mSel.setAttribute("aria-label", "Market");
-  if (i === 1) mSel.add(new Option("Compare with…", ""));
+  if (i > 0) mSel.add(new Option("Compare with…", ""));
   for (const cc of Object.keys(D.countries)) {
     const g = document.createElement("optgroup"); g.label = D.countries[cc].name;
     markets.filter(([, m]) => m.country === cc).forEach(([mid, m]) => g.appendChild(new Option(m.name, mid)));
     mSel.appendChild(g);
   }
   mSel.value = col.mid;
-  mSel.onchange = () => { col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col); render(); };   // render picks the first utility
+  mSel.onchange = () => {
+    col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col);
+    if (!col.mid) S.cols.slice(i + 1).forEach(c => { c.mid = ""; c.arch = ""; c.util = ""; c.sel = null; });   // no gaps between columns
+    render();
+  };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return;
 
@@ -382,7 +399,7 @@ function renderCol(i) {
   if (archs.length !== 1) {   // a supply choice only when the utility offers more than one setup
     const aSel = document.createElement("select"); aSel.setAttribute("aria-label", C.chain[2] || "Setup");
     if (!archs.length) aSel.add(new Option("No setups entered", ""));
-    archs.forEach(a => aSel.add(new Option(a.replace(/_/g, " "), a)));
+    archs.forEach(a => aSel.add(new Option((m.archetypes[a] && m.archetypes[a].label) || a.replace(/_/g, " "), a)));
     aSel.value = col.arch;
     aSel.onchange = () => { col.arch = aSel.value; hold(col); render(); };
     chain.appendChild(aSel);
@@ -433,13 +450,13 @@ function renderCol(i) {
     const p = el("path", { d, class: `edge${e.status === "verified" ? "" : " nv"}${on && S.lens === "bill" ? " on" : ""}${off ? " off" : ""}${faint ? " faint" : ""}`, stroke: color,
       "marker-end": marker(defs, shape, hl ? "var(--accent)" : color, hl ? "on" : e.type) }, svg);
     const hit = el("path", { d, class: "edge-hit", "data-edge": e.id, "data-from": e.from, "data-to": e.to }, svg);
-    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "verified" : "needs verification"})`;
+    const t = el("title", {}, hit); t.textContent = `${byId[e.from].name} → ${byId[e.to].name}: ${e.label}\nSource: ${e.source.title} (${e.status === "verified" ? "checked against a primary source" : "needs verification"})`;
     hit.onclick = () => { col.sel = { edge: e.id }; render(); };
     p.onclick = hit.onclick;
   }
 
   // nodes
-  const kindsElsewhere = otherKinds(i);
+  const kindsElsewhere = otherKinds(col);
   for (const n of nodes) {
     const p = pos[n.id], name = displayName(col, n);
     const sel = col.sel && col.sel.node === n.id;
@@ -449,12 +466,16 @@ function renderCol(i) {
     const lines = twoLines(g, name, NODE_W - 16);
     lines.forEach((ln, k) => fit(el("text", { x: 8, y: lines.length > 1 ? 13 + 11 * k : 16 }, g), ln, NODE_W - 16));
     fit(el("text", { x: 8, y: lines.length > 1 ? 36 : 30, class: "k" }, g), label(C.kind_labels, n.kind), NODE_W - 16);
-    if (kindsElsewhere && !kindsElsewhere.has(n.kind)) el("text", { x: NODE_W, y: NODE_H + 11, class: "u", "text-anchor": "end" }, g).textContent = "only here";
+    if (kindsElsewhere && !kindsElsewhere.has(n.kind)) {
+      const u = el("text", { x: NODE_W, y: -3, class: "u", "text-anchor": "end" }, g); u.textContent = "only here";
+      el("title", {}, u).textContent = "Unique to this market: no other market on screen has a " + label(C.kind_labels, n.kind).toLowerCase();
+    }
     if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
       el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
       el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ");
     }
-    if (S.lens === "owner" && n.owner) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + n.owner.name.replace(/^Secretary of State for /, "SoS ");
+    const own = ownerOf(col, n);
+    if (S.lens === "owner" && own) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + own.name.replace(/^Secretary of State for /, "SoS ");
     g.onclick = () => { col.sel = { node: n.id }; render(); };
     g.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); g.onclick(); } };
   }
@@ -470,7 +491,7 @@ function renderCol(i) {
 }
 
 /* ---------- answer table: the question first, the diagram second ---------- */
-const GROUP_TEXT = { "regulates|rates": "Sets or approves rates", "regulates|market_rules": "Writes market rules", "regulates|reliability": "Enforces reliability standards",
+const GROUP_TEXT = { "regulates|rates": "Regulates rates", "regulates|market_rules": "Writes market rules", "regulates|reliability": "Enforces reliability standards",
   "regulates|licensing": "Licenses / certifies", "regulates|governance": "Oversees governance", "regulates|policy_standard": "Sets policy standards",
   "dispatches|": "Dispatches power plants", "operates|": "Operates grid or market", "settles|": "Settles payments", "plans_procures|": "Plans / procures capacity" };
 const groupKey = e => `${e.type}|${e.type === "regulates" ? e.domain || "" : ""}`;
@@ -489,6 +510,7 @@ function answers(col, C, nodes, edges, byId) {
   const names = ids => [...new Set(ids)].map(nm).join(", ");
   if (S.lens === "bill") {
     t.innerHTML = `<caption>Who sets each part of a ${esc(S.cls.replace(/_/g, " "))} bill</caption><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr>`;
+    if (!byId[S.cls]) { t.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers</td></tr>`); return t; }
     for (const c of componentsFor(col.mid)) {
       const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`], cl = esc(label(C.component_labels, c));
       // one row per line item; a bill line with several setters gets one row per setter
@@ -510,12 +532,13 @@ function answers(col, C, nodes, edges, byId) {
     t.innerHTML = `<tr><th>Role</th><th>Who</th><th>Over</th></tr>`;
     const groups = {};
     edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => (groups[groupKey(e)] ||= []).push(e));
-    const order = Object.keys(GROUP_TEXT), o = S.cols[1 - S.cols.indexOf(col)];
-    if (o.mid && o.arch) resolve(o.mid, o.arch).edges.filter(e => ROLE_TYPES.includes(e.type)).forEach(e => { groups[groupKey(e)] ||= []; });   // rows line up across columns; a missing role reads "none entered"
+    const order = Object.keys(GROUP_TEXT);
+    otherCols(col).forEach(o => resolve(o.mid, o.arch).edges.filter(e => ROLE_TYPES.includes(e.type))
+      .forEach(e => { groups[groupKey(e)] ||= []; }));   // rows line up across columns; a missing role reads "none entered"
     for (const k of Object.keys(groups).sort((a, b) => order.indexOf(a) - order.indexOf(b))) {
       const es = groups[k], tr = document.createElement("tr");
       tr.className = "row" + (col.sel && col.sel.group === k ? " cur" : "");
-      if (!es.length) { tr.className = ""; tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td class="muted">none entered</td><td></td>`; t.appendChild(tr); continue; }
+      if (!es.length) { tr.className = ""; tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td class="muted">—</td><td></td>`; t.appendChild(tr); continue; }
       tr.innerHTML = `<td>${esc(groupLabel(k))}</td><td>${names(es.map(e => e.from))}</td><td class="lim">${names(es.map(e => e.to))}</td>`;
       tr.onclick = () => { col.sel = col.sel && col.sel.group === k ? null : { group: k }; render(); };
       t.appendChild(tr);
@@ -523,9 +546,10 @@ function answers(col, C, nodes, edges, byId) {
     return t;
   }
   t.innerHTML = `<caption>Who owns which part of the grid</caption><tr><th>Who</th><th>Owns</th><th>Owned by</th></tr>`;
-  for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || n.owner)) {
+  for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || ownerOf(col, n))) {
+    const own = ownerOf(col, n);
     const tr = document.createElement("tr"); tr.className = "row" + (col.sel && col.sel.node === n.id ? " cur" : "");
-    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${n.owner ? esc(n.owner.name) + " (" + esc(n.owner.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
+    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${own ? esc(own.name) + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
     tr.onclick = () => { col.sel = { node: n.id }; render(); };
     t.appendChild(tr);
   }
@@ -573,6 +597,7 @@ function panel(col, C, byId, edges, ans) {
   if (S.lens === "bill") {
     const cl = label(C.component_labels, S.comp);
     if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
+    else if (!byId[S.cls]) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers.</p>`;
     else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
     else {
       const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
@@ -584,7 +609,7 @@ function panel(col, C, byId, edges, ans) {
         <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${[...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
       };
       p.innerHTML = `<h3>${esc(cl)}</h3>${ans.items.map(item).join("")}${whole.length ? `<dl><dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd></dl>` : ""}`;
     }
@@ -600,7 +625,7 @@ function panel(col, C, byId, edges, ans) {
     if (e) p.innerHTML = `<h3>${nm(e.from)} → ${nm(e.to)}</h3><dl>
       <dt>Relation</dt><dd>${esc(e.label)}</dd>
       <dt>Type</dt><dd>${esc(e.type.replace(/_/g, " "))}${e.domain ? " · " + esc(e.domain.replace(/_/g, " ")) : ""}${e.mechanism ? " · " + esc(e.mechanism.replace(/_/g, " ")) : ""}${e.asset ? " · " + esc(e.asset) : ""}</dd>
-      <dt>Status</dt><dd>${e.status === "verified" ? "verified" : "needs verification"}</dd>
+      <dt>Status</dt><dd>${e.status === "verified" ? "verified: two Claude reviewers checked it against a primary source" : "needs verification"}</dd>
       <dt>Source</dt><dd>${srcLink(e.source)}</dd></dl>`;
     return p;
   }
@@ -614,7 +639,7 @@ function panel(col, C, byId, edges, ans) {
       <dt>What it does</dt><dd>${esc(n.description)}</dd>
       ${g ? `<dt>Term</dt><dd>${esc(g)}</dd>` : ""}
       <dt>Owns</dt><dd>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "no grid assets entered"}</dd>
-      ${n.owner ? `<dt>Owned by</dt><dd>${esc(n.owner.name)} (${esc(n.owner.type.replace(/_/g, " "))}) · ${srcLink(n.owner.source)}</dd>` : ""}
+      ${ownerOf(col, n) ? `<dt>Owned by</dt><dd>${esc(ownerOf(col, n).name)} (${esc(ownerOf(col, n).type.replace(/_/g, " "))}) · ${srcLink(ownerOf(col, n).source)}</dd>` : ""}
       ${n.source ? `<dt>Source</dt><dd>${srcLink(n.source)}</dd>` : ""}
       ${da ? `<dt>Domain source</dt><dd>${srcLink(da.source)}</dd>` : ""}
       ${lines.length ? `<dt>Lines</dt><dd>${lines.map(e => `${e.from === n.id ? "→ " + nm(e.to) : "← " + nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd>` : ""}</dl>${dm}</div>`;
@@ -632,7 +657,10 @@ function renderBar() {
   const mids = S.cols.map(c => c.mid).filter(Boolean);
   const comps = [...new Set(mids.flatMap(componentsFor))];
   if (!comps.includes(S.comp)) S.comp = comps[0];
-  const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))];
+  // only the classes the setups on screen serve: Direct Access, for instance, is closed to households
+  const served = new Set(S.cols.filter(c => c.mid && c.arch).flatMap(c => resolve(c.mid, c.arch).nodes.filter(n => n.kind === "consumer").map(n => n.id)));
+  const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))].filter(c => served.has(c));
+  if (!classes.includes(S.cls)) S.cls = classes[0] || S.cls;
   const cs = $("#cls"); cs.innerHTML = "";
   classes.forEach(c => cs.add(new Option(c.replace(/_/g, " "), c)));
   cs.value = S.cls; cs.onchange = () => { S.cls = cs.value; render(); };
@@ -640,7 +668,8 @@ function renderBar() {
   const C0 = country(mids[0]);
   for (const c of comps) {
     const b = document.createElement("button"); b.className = "chip"; b.textContent = label((mids.map(country).find(C => C.component_labels[c]) || C0).component_labels, c);
-    if (mids.length > 1 && D.markets[mids[1]].country !== D.markets[mids[0]].country) b.title = label(country(mids[1]).component_labels, c);
+    const abroad = mids.slice(1).find(mid => D.markets[mid].country !== D.markets[mids[0]].country);
+    if (abroad) b.title = label(country(abroad).component_labels, c);
     b.setAttribute("aria-pressed", c === S.comp); b.onclick = () => { S.comp = c; render(); };
     box.appendChild(b);
   }
@@ -648,13 +677,14 @@ function renderBar() {
 function swatch(stroke, shape, dashed) {
   return `<svg viewBox="0 0 34 10"><defs><marker id="lg-${shape}${stroke.length}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
     <path d="${MARKERS[shape]}" fill="${shape === "hollow" ? "var(--bg)" : stroke}" stroke="${stroke}"/></marker></defs>
-    <path d="M1,5 H30" stroke="${stroke}" stroke-width="1.4" ${dashed ? 'stroke-dasharray="4 3"' : ""} marker-end="url(#lg-${shape}${stroke.length})"/></svg>`;
+    <path d="M1,5 H30" stroke="${stroke}" stroke-width="1.4" ${dashed ? 'stroke-dasharray="6 4"' : ""} marker-end="url(#lg-${shape}${stroke.length})"/></svg>`;
 }
 function renderLegend() {
   const items = S.lens === "bill"
     ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat([[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
-  items.push([swatch("var(--muted)", "arrow", true), "needs verification"]);
+  items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
+  if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
   const n = Object.values(D.markets).flatMap(m => [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])]);
   $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`
@@ -680,12 +710,14 @@ function render() {
     if (c.carry) { c.sel = carrySel(c, c.carry); delete c.carry; }
     c.prev = { mid: c.mid, arch: c.arch, util: c.util };
   });
-  $("#cols").innerHTML = '<div class="col" id="col0"></div><div class="col" id="col1"></div>';
+  const shownCols = S.cols.filter((c, i) => i < 2 || S.cols[i - 1].mid);   // the third column appears once the second is picked
+  $("#cols").className = "cols" + (S.cols.filter(c => c.mid).length === 3 ? " n3" : "");
+  $("#cols").innerHTML = shownCols.map((c, i) => `<div class="col" id="col${i}"></div>`).join("");
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
     const nodes = resolve(c.mid, c.arch).nodes;
     return Math.max(...LANES.map(l => nodes.filter(n => n.lane === l).length)) * (NODE_W + MIN_GAP) + MIN_GAP;
   }));
-  renderBar(); renderCol(0); renderCol(1); renderLegend(); saveHash();
+  renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash();
   document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
   scrollTo(keep.x, keep.y);
 }

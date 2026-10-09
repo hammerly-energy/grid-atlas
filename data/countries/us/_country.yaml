@@ -19,6 +19,9 @@ kind_labels:
   coop: Electric cooperative (Co-op)
   system_operator: Balancing authority (BA)
   legislature: Elected governing body
+  cca: Aggregator (CCA)
+  policy_maker: State procurement agency
+  lse: Load-serving entity (LSE)
 component_labels:
   generation: Generation
   transmission: Transmission
@@ -50,6 +53,11 @@ glossary:
   CCA: {term: CCA, meaning: Community Choice Aggregation; a city or county buys power for residents by default while the IOU keeps wires and billing.}
   PCIA: {term: PCIA, meaning: Power Charge Indifference Adjustment; California exit fee paid by CCA and Direct Access customers.}
   DA / ESP: {term: DA / ESP, meaning: Direct Access / Electric Service Provider (California).}
+  CAM: {term: CAM, meaning: "Cost Allocation Mechanism; California non-bypassable charge for resource adequacy an IOU buys on behalf of all customers in its area."}
+  RPM: {term: RPM, meaning: "Reliability Pricing Model; PJM's capacity auction, run under rules FERC approves."}
+  ODEC: {term: ODEC, meaning: "Old Dominion Electric Cooperative; generation and transmission co-op owned by 11 member co-ops, selling wholesale power under a FERC-accepted formula rate."}
+  PSC: {term: PSC, meaning: "Public Service Commission; the state utility commission in states such as West Virginia and Kentucky."}
+  RFP: {term: RFP, meaning: "Request for proposals; a competitive solicitation for supply."}
   RA: {term: RA, meaning: "Resource adequacy; California's capacity obligation on LSEs, set by the CPUC and munis (no central auction)."}
   Default service: {term: Default service, meaning: Supply for customers who don't pick a retailer in restructured states., equivalent: {GB: Default tariff (price-capped)}}
   POU: {term: POU, meaning: "Publicly owned utility: a city department, utility district or irrigation district. Its elected board or council sets its rates, not the state PUC."}
