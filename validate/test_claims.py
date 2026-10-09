@@ -572,37 +572,52 @@ def test_each_gb_dno_fill_is_one_licence_area():
             assert len(full) == 1 and full[0].startswith("dno_"), name
 
 
-# where the money goes: the setups whose utility owns its own plants buy little or nothing from the ISO for these lines
-OWN_PLANTS = {("pjm", "vertically_integrated"), ("pjm", "limited_choice"), ("caiso", "muni_own_ba")}
+# where the money goes. Not traced yet: an ERCOT co-op's supply comes from G&T contracts not yet researched; RPM
+# capacity for PJM's vertically integrated utilities (some use the fixed resource requirement); a CAISO city utility
+# with its own balancing authority serves load mostly from its own plants and contracts.
+UNTRACED = {("ercot", "coop"): {"generation"}, ("pjm", "vertically_integrated"): {"capacity"},
+            ("pjm", "limited_choice"): {"capacity"}, ("caiso", "muni_own_ba"): {"generation"}}
 
 
-def _money_reaches_generators(edges, item, comp):
-    """Follow `pays` lines for `comp` from every box on the item's path, as the page does."""
+def _money(edges, item, comp):
+    """The boxes reached by following `pays` lines for `comp` from every box on the item's path, as the page does
+    (a line labelled with a line item only follows that item)."""
     on = {x for e in edges if e["id"] in item["path"] for x in (e["from"], e["to"])}
     todo = list(on)
     while todo:
         n = todo.pop()
         for e in edges:
-            if e["type"] == "pays" and e["from"] == n and e.get("rate_component") == comp and e["to"] not in on:
+            if e["type"] == "pays" and e["from"] == n and e.get("rate_component") == comp and e["to"] not in on \
+                    and (not e.get("subcomponent") or not item["subcomponent"] or e["subcomponent"] == item["subcomponent"]):
                 on.add(e["to"]); todo.append(e["to"])
-    return "generators" in on
+    return on
 
 
 def test_us_iso_pays_generators_and_the_money_traces_back_to_them():
     """ERCOT, PJM and CAISO settle their markets and pay generators; each buyer pays the ISO (or RPM) for its load.
     So for every market-bought part of a US bill, the money can be followed from the customer to the generators."""
     for mid, comps in (("ercot", ["generation", "ancillary_uplift"]), ("pjm", ["generation", "capacity", "ancillary_uplift"]), ("caiso", ["generation"])):
-        payer = {"ercot": "ercot", "pjm": "pjm", "caiso": "caiso"}[mid]
         _, base = g(mid, next(iter(MARKETS[mid][1]["archetypes"])))
-        assert any(e["type"] == "pays" and e["from"] == payer and e["to"] == "generators" for e in base), mid
+        assert any(e["type"] == "pays" and e["from"] == mid and e["to"] == "generators" for e in base), mid
         for arch in MARKETS[mid][1]["archetypes"]:
-            if (mid, arch) in OWN_PLANTS:
-                continue
             _, edges = g(mid, arch)
             for comp in comps:
+                if comp in UNTRACED.get((mid, arch), ()):
+                    continue
                 a = build.answer(edges, "residential", comp) or build.answer(edges, "large_ci", comp)
                 assert a, (mid, arch, comp)
-                assert any(_money_reaches_generators(edges, it, comp) for it in a["items"]), f"{mid}/{arch}/{comp}: money stops before the generators"
+                assert any("generators" in _money(edges, it, comp) for it in a["items"]), f"{mid}/{arch}/{comp}: money stops before the generators"
+
+
+def test_resource_adequacy_money_bypasses_caiso():
+    """RA capacity is bought bilaterally from generators; none of it is paid through CAISO's markets."""
+    for arch in ("iou_bundled", "iou_cca", "iou_direct_access"):
+        _, edges = g("caiso", arch)
+        a = build.answer(edges, "large_ci", "generation")
+        for it in a["items"]:
+            if it["subcomponent"] == "Resource adequacy":
+                reach = _money(edges, it, "generation")
+                assert "generators" in reach and "caiso" not in reach, arch
 
 
 def test_iso_pays_generators_but_owns_none():

@@ -51,7 +51,7 @@ base:
       lane: wholesale
       kind: generator
       jurisdiction: private
-      description: Sell energy and ancillary services into CAISO's markets; sell resource adequacy capacity to load-serving entities bilaterally.
+      description: Sell energy and ancillary services into CAISO's markets; sell resource adequacy capacity and long-term energy contracts to load-serving entities bilaterally.
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
@@ -122,7 +122,8 @@ archetypes:
          source: &erra {title: "PG&E 2026 Energy Resource Recovery Account (ERRA) forecast, CPUC A.25-05-011", url: "https://docs.cpuc.ca.gov/PublishedDocs/SupDoc/A2505011/8416/577061825.pdf", accessed: "2026-10-08"}}
       - {id: cpuc_iou_ra, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, subcomponent: Resource adequacy, label: sets the rate that recovers resource adequacy capacity bought to meet the obligation, status: needs_verification, source: *ra}
       - {id: iou_gen_ra, from: iou, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Resource adequacy, label: buys resource adequacy capacity from generators under bilateral contracts, status: needs_verification, source: *ra}
-      - {id: iou_caiso_as, from: iou, to: caiso, type: pays, mode: market, rate_component: generation, label: pays CAISO energy and ancillary service charges, status: needs_verification, source: *caisomkt}
+      - {id: iou_gen_ppa, from: iou, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Energy procurement, label: pays generators under power purchase contracts recovered in the generation rate, status: needs_verification, source: *erra}
+      - {id: iou_caiso_as, from: iou, to: caiso, type: pays, mode: market, rate_component: generation, subcomponent: Energy procurement, label: pays CAISO energy and ancillary service charges, status: needs_verification, source: *caisomkt}
       - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified,
          source: &ferctx {title: CPUC — electric transmission rates and FERC proceedings, url: "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-costs/electric-transmission-rates-and-ferc-proceedings", accessed: "2026-10-08"}}
       - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
