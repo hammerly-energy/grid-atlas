@@ -44,7 +44,7 @@ The source changes below would make the most dashed lines eligible for a second 
 
 ## Modelling points raised (not yet changed)
 
-- **ERCOT NOIE transmission:** the city council sets retail transmission recovery, and the PUCT sets only the wholesale transmission rate. PJM's bundled setups have now been changed to this pattern. The ERCOT `noie` setup in CLAUDE.md says "PUCT still sets their transmission rates" and needs Christian's call.
+- **ERCOT NOIE transmission:** resolved 2026-10-09 (Christian): the council sets the retail transmission charge and the PUCT regulates only the wholesale rate. `puct_noie_tx` is now `regulates` and was reset to `needs_verification`. ERCOT co-ops still show the PUCT as setter (`puct_coop_tx`); not decided.
 - **PJM vertically integrated ancillary costs:** retail recovery goes through a commission-approved clause (WV fuel clause, VA rider), so the commission belongs on the path.
 - **PJM competitive supply transmission:** PJM, not the EDC, bills network transmission to the supplier. In OH, NJ and MD a non-bypassable EDC charge is used instead.
 - **ERCOT admin fee:** the ancillary hop with `mode: market` also carries the PUCT-approved admin fee item.

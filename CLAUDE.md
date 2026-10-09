@@ -155,7 +155,7 @@ Each edge type gets its own color and can be toggled on/off in the UI.
 
 **ERCOT (3)**
 1. `competitive_area` — customer picks a REP; REP sets energy price; TDSP (e.g. Oncor, CenterPoint) wires rates set by PUCT
-2. `noie` — non-opt-in entity: munis (Austin Energy, CPS Energy) and co-ops that haven't opted in; city council/board sets retail rates, **PUCT still sets their transmission rates**. Some have opted in (Nueces EC, Lubbock P&L) and belong in `competitive_area`
+2. `noie` — non-opt-in entity: munis (Austin Energy, CPS Energy) and co-ops that haven't opted in; city council/board sets every retail rate, transmission included; the PUCT sets only their wholesale transmission rate. Some have opted in (Nueces EC, Lubbock P&L) and belong in `competitive_area`
 3. `coop` — member-owned; board elected by members sets retail rates; PUCT keeps only wholesale transmission rates, certification and a few other items (PURA 41.004). Utilities: Pedernales EC, CoServ
 
 Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has no rate or market-rule jurisdiction. PUCT oversees ERCOT.
@@ -176,7 +176,7 @@ Reliability: FERC → NERC → Texas RE → ERCOT applies even though FERC has n
 4. `muni_in_caiso` — munis inside CAISO's BA: Anaheim and Riverside turned their transmission over to CAISO as participating transmission owners, so FERC reviews their transmission revenue requirement for CAISO's Transmission Access Charge, while the council sets every retail rate, transmission included. Metered Subsystems are not modelled yet
 5. `muni_own_ba` — LADWP, BANC (SMUD is a member and its operator; **SMUD is not itself a BA**), IID, TID: own balancing authorities, but they trade in CAISO's real-time market (WEIM). EDAM went live 1 May 2026
 
-PCIA note (open): the exit fee is entered as a `subcomponent` line item of `riders_public_purpose` (the non-bypassable charges the IOU bills) rather than as the `exit_fee` component, because a market-level component would read as a missing bill line for bundled and muni customers. Worth a decision before GB.
+PCIA note: the exit fee is entered as a `subcomponent` line item of `riders_public_purpose` (the non-bypassable charges the IOU bills) rather than as the `exit_fee` component, because a market-level component would read as a missing bill line for bundled and muni customers. Decided 2026-10-09 (Christian): keep it as a line item.
 
 **GB (4)** — research and sources in `docs/research/policy.md`
 1. `domestic_default_capped` — SVT/deemed tariff under Ofgem's default tariff cap (`caps` edge on the whole bill); supplier sets the actual price

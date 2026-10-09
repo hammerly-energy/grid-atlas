@@ -187,10 +187,14 @@ def test_puct_oversees_ercot():
     assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "ercot" for e in edges)
 
 
-def test_ercot_noie_transmission_rate_still_set_by_puct():
+def test_ercot_noie_retail_transmission_is_set_by_its_council_and_puct_sets_only_the_wholesale_rate():
+    """Christian, 2026-10-09: the council recovers transmission cost in retail rates; PURA 40.004 gives the PUCT the
+    wholesale transmission rate."""
     _, edges = g("ercot", "noie")
-    assert any(e["type"] == "sets_rate" and e["from"] == "puct" and e.get("rate_component") == "transmission"
+    assert build.who_sets(edges, "residential", "transmission")["setter"] == "governing_body"
+    assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "noie" and e.get("domain") == "rates"
                for e in edges)
+    assert not [e for e in edges if e["from"] == "puct" and e["type"] == "sets_rate"]
 
 
 def test_ercot_noie_retail_rates_set_by_its_governing_body():
