@@ -73,6 +73,11 @@ base:
       description: Sell energy into ERCOT's day-ahead and real-time markets.
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
+  edges:
+    # money: ERCOT settles the market and pays generators; every buyer pays ERCOT for its load
+    - {id: ercot_pays_gen, from: ercot, to: generators, type: pays, mode: market, rate_component: generation, label: pays generators for energy at day-ahead and real-time settlement point prices, status: needs_verification,
+       source: &nprot {title: "ERCOT Nodal Protocols, Sections 4 and 6 (day-ahead and real-time settlement)", url: "https://www.ercot.com/mktrules/nprotocols/current", accessed: "2026-10-09"}}
+    - {id: ercot_pays_gen_as, from: ercot, to: generators, type: pays, mode: market, rate_component: ancillary_uplift, label: pays generators for ancillary services at market clearing prices, status: needs_verification, source: *nprot}
 
 archetypes:
   competitive_area:
@@ -144,6 +149,7 @@ archetypes:
       - {id: ercot_operates_tx, from: ercot, to: tdsp, type: operates, asset: transmission, label: directs operation of the transmission grid, status: needs_verification, source: *ercotops}
       # bill: generation (the REP buys at ERCOT prices under a PUCT offer cap, then sets its retail price)
       - {id: rep_ercot_energy, from: rep, to: ercot, type: pays, mode: market, rate_component: generation, label: buys energy at ERCOT settlement point prices, status: needs_verification, source: *ercotops}
+      - {id: rep_ercot_as, from: rep, to: ercot, type: pays, mode: market, rate_component: ancillary_uplift, label: "pays its load's share of ERCOT ancillary service costs", status: needs_verification, source: *nprot}
       - {id: puct_ercot_cap, from: puct, to: ercot, type: sets_rate, mode: caps, rate_component: generation, label: sets the system-wide offer cap, status: verified,
          source: &offercap {title: "16 TAC § 25.505 Resource adequacy in ERCOT (system-wide offer cap)", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-505", accessed: "2026-10-08"}}
       - {id: rep_res_gen, from: rep, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the energy price in its retail offer, status: needs_verification, source: *ercotops}
@@ -354,6 +360,7 @@ archetypes:
       - {id: puct_coop_tx, from: puct, to: coop, type: sets_rate, mode: sets, rate_component: transmission, label: sets the wholesale transmission rate the co-op pays, status: needs_verification, source: *tcos}
       - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
       - {id: coop_ercot_as, from: coop, to: ercot, type: pays, mode: market, rate_component: ancillary_uplift, label: bears ERCOT ancillary service charges at market prices (directly or through its wholesale supplier), status: needs_verification, source: *ercotops}
+      - {id: coop_ercot_energy, from: coop, to: ercot, type: pays, mode: market, rate_component: generation, label: buys wholesale power at ERCOT prices (directly or through its supplier), status: needs_verification, source: *nprot}
       - {id: board_coop_as, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: approves recovery of ancillary costs in retail rates, status: needs_verification, source: *pecrates}
       - {id: coop_res_as, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: ancillary_uplift, label: recovers ancillary costs in retail rates, status: needs_verification, source: *ercotops}
       # bill: small commercial, large commercial & industrial, large load (same setters as residential; last hop per class)

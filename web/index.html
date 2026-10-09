@@ -219,6 +219,20 @@ function carrySel(col, old) {
   if (was && old.sel.node === was) return now ? { node: now } : null;
   return byId[old.sel.node] ? old.sel : null;
 }
+// where the money for one line item goes past the setter: the pays lines for that part of the bill, followed
+// from every box on the item's path (REP pays ERCOT, ERCOT pays generators)
+function moneyChain(edges, it, comp, cls) {
+  const ids = new Set(it.path), out = [];
+  const seen = new Set(edges.filter(e => ids.has(e.id)).flatMap(e => [e.from, e.to])), todo = [...seen];
+  while (todo.length) {
+    const n = todo.shift();
+    for (const e of edges) if (e.type === "pays" && e.from === n && e.rate_component === comp && (!e.applies_to || e.applies_to.includes(cls))
+      && (!e.subcomponent || !it.subcomponent || e.subcomponent === it.subcomponent) && !out.includes(e)) {
+      out.push(e); if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); }
+    }
+  }
+  return out;
+}
 function componentsFor(mid) { return D.markets[mid].bill_components || country(mid).bill_components; }
 
 // Full text, never truncated: shrink the font until the text fits the box (the diagram is in the page, so it can measure)
@@ -451,7 +465,7 @@ function renderCol(i) {
     shown = edges.filter(e => (e.type === "sets_rate" || e.type === "pays") && e.rate_component === S.comp && e.mode !== "caps"
       && (!e.applies_to || e.applies_to.includes(S.cls)));
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
-    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); });
+    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); moneyChain(edges, it, S.comp, S.cls).forEach(e => path.add(e.id)); });
     edges.filter(e => path.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
     caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
       && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
@@ -653,12 +667,13 @@ function panel(col, C, byId, edges, ans) {
       const item = it => {   // one block per line item
         const hops = it.path.slice().reverse().map(id => edges.find(e => e.id === id));   // setter first, consumer last
         const chain = `${nm(it.setter)}` + hops.map(e => ` <span class="mode m-${e.mode || "sets"}">${esc(MODE_TEXT[e.mode || "sets"])}</span> → ${nm(e.to)}`).join("");
-        const lim = it.limits.map(id => edges.find(e => e.id === id));
+        const lim = it.limits.map(id => edges.find(e => e.id === id)), money = moneyChain(edges, it, S.comp, S.cls);
         return `${ans.items.length > 1 || it.subcomponent ? `<h4>${esc(it.subcomponent || cl)}</h4>` : ""}<dl>
         <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Path</dt><dd class="hops">${chain}</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
-        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
+        ${money.length ? `<dt>Money goes to</dt><dd>${money.map(e => `${nm(e.from)} → ${nm(e.to)}: ${esc(e.label)}`).join("<br>")}</dd>` : ""}
+        <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim, ...money].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
       };
       p.innerHTML = `<h3>${esc(cl)}</h3>${ans.items.map(item).join("")}${whole.length ? `<dl><dt>Whole bill</dt><dd>${whole.map(e => `${nm(e.from)}: ${esc(e.label)} · ${srcLink(e.source)}`).join("<br>")}</dd></dl>` : ""}`;
     }

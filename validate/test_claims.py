@@ -570,3 +570,43 @@ def test_each_gb_dno_fill_is_one_licence_area():
         if isinstance(f, dict) and "domain_area" in f:
             full = f["domain_area"]["full"]
             assert len(full) == 1 and full[0].startswith("dno_"), name
+
+
+# where the money goes: the setups whose utility owns its own plants buy little or nothing from the ISO for these lines
+OWN_PLANTS = {("pjm", "vertically_integrated"), ("pjm", "limited_choice"), ("caiso", "muni_own_ba")}
+
+
+def _money_reaches_generators(edges, item, comp):
+    """Follow `pays` lines for `comp` from every box on the item's path, as the page does."""
+    on = {x for e in edges if e["id"] in item["path"] for x in (e["from"], e["to"])}
+    todo = list(on)
+    while todo:
+        n = todo.pop()
+        for e in edges:
+            if e["type"] == "pays" and e["from"] == n and e.get("rate_component") == comp and e["to"] not in on:
+                on.add(e["to"]); todo.append(e["to"])
+    return "generators" in on
+
+
+def test_us_iso_pays_generators_and_the_money_traces_back_to_them():
+    """ERCOT, PJM and CAISO settle their markets and pay generators; each buyer pays the ISO (or RPM) for its load.
+    So for every market-bought part of a US bill, the money can be followed from the customer to the generators."""
+    for mid, comps in (("ercot", ["generation", "ancillary_uplift"]), ("pjm", ["generation", "capacity", "ancillary_uplift"]), ("caiso", ["generation"])):
+        payer = {"ercot": "ercot", "pjm": "pjm", "caiso": "caiso"}[mid]
+        _, base = g(mid, next(iter(MARKETS[mid][1]["archetypes"])))
+        assert any(e["type"] == "pays" and e["from"] == payer and e["to"] == "generators" for e in base), mid
+        for arch in MARKETS[mid][1]["archetypes"]:
+            if (mid, arch) in OWN_PLANTS:
+                continue
+            _, edges = g(mid, arch)
+            for comp in comps:
+                a = build.answer(edges, "residential", comp) or build.answer(edges, "large_ci", comp)
+                assert a, (mid, arch, comp)
+                assert any(_money_reaches_generators(edges, it, comp) for it in a["items"]), f"{mid}/{arch}/{comp}: money stops before the generators"
+
+
+def test_iso_pays_generators_but_owns_none():
+    for mid in ("ercot", "pjm", "caiso"):
+        nodes, edges = g(mid, next(iter(MARKETS[mid][1]["archetypes"])))
+        assert not nodes[mid].get("holds_assets")
+        assert not [e for e in edges if e["from"] == mid and e["type"] == "owns"]
