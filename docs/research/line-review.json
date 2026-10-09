@@ -829,7 +829,7 @@
    ]
   },
   "ercot/noie/puct_noie_tx": {
-   "status": "verified",
+   "status": "needs_verification",
    "source_url": "https://statutes.capitol.texas.gov/Docs/UT/htm/UT.40.htm#40.004",
    "reviews": [
     {
@@ -840,7 +840,8 @@
      "verdict": "confirm",
      "reason": "PURA 40.004(1): PUCT regulates MOU wholesale transmission rates and service."
     }
-   ]
+   ],
+   "note": "meaning changed 2026-10-09 (regulates rates instead of sets_rate; council sets retail transmission): reset, needs re-review"
   },
   "ercot/noie/noie_res_tx": {
    "status": "needs_verification",

@@ -255,8 +255,9 @@ archetypes:
       - {id: noie_res_dx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: needs_verification, source: *cpsrates}
       - {id: gov_noie_rider, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders and program charges, status: needs_verification, source: *cpsrates}
       - {id: noie_res_rider, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *cpsrates}
-      # bill: the PUCT still sets wholesale transmission rates; ERCOT prices ancillary services
-      - {id: puct_noie_tx, from: puct, to: noie, type: sets_rate, mode: sets, rate_component: transmission, label: sets the wholesale transmission rate the utility pays and the rate for its own transmission, status: verified, source: *pura40}
+      # bill: the governing body sets the retail transmission charge (the PUCT sets only the wholesale rate); ERCOT prices ancillary services
+      - {id: puct_noie_tx, from: puct, to: noie, type: regulates, domain: rates, label: sets the wholesale transmission rate the utility pays and the rate for its own transmission, status: needs_verification, source: *pura40}
+      - {id: gov_noie_tx, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: transmission, label: sets the retail charge that recovers transmission cost, status: needs_verification, source: *cpsrates}
       - {id: noie_res_tx, from: noie, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *cpsrates}
       - {id: noie_ercot_as, from: noie, to: ercot, type: pays, mode: market, rate_component: ancillary_uplift, label: pays ERCOT ancillary service charges at market prices, status: needs_verification, source: *ercotops}
       - {id: gov_noie_as, from: governing_body, to: noie, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: approves recovery of ancillary costs in retail rates, status: needs_verification, source: *cpsrates}
