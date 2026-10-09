@@ -302,6 +302,8 @@ archetypes:
       # bill: transmission is part of supply in PA and IL: the supplier pays the zonal network rate and recovers it
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: edc_sup_tx, from: edc, to: supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
+      - {id: sup_pjm_tx, from: supplier, to: pjm, type: pays, mode: market, rate_component: transmission, label: pays PJM network transmission service for its customers' load at the zonal rate, status: needs_verification, source: *oatt}
+      - {id: pjm_pays_edc_tx, from: pjm, to: edc, type: pays, mode: market, rate_component: transmission, label: passes network transmission revenue to the zone's transmission owner, status: needs_verification, source: *oatt}
       - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *pa2807}
       - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *pa2807}
       - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
@@ -380,6 +382,8 @@ archetypes:
       - {id: agg_pjm_as, from: agg_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges for the aggregation, status: verified, source: *m28}
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: edc_sup_tx, from: edc, to: agg_supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
+      - {id: agg_pjm_tx, from: agg_supplier, to: pjm, type: pays, mode: market, rate_component: transmission, label: pays PJM network transmission service for its customers' load at the zonal rate, status: needs_verification, source: *oatt}
+      - {id: pjm_pays_edc_tx, from: pjm, to: edc, type: pays, mode: market, rate_component: transmission, label: passes network transmission revenue to the zone's transmission owner, status: needs_verification, source: *oatt}
       - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: verified, source: *il16108}
       - {id: puc_edc_rider, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency programs), status: needs_verification, source: *il16108}
       - {id: agg_res_gen, from: agg_supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in the aggregation contract, status: verified, source: *il192}

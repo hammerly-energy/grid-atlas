@@ -222,15 +222,23 @@ function carrySel(col, old) {
   if (was && old.sel.node === was) return now ? { node: now } : null;
   return byId[old.sel.node] ? old.sel : null;
 }
-// where the money for one line item goes past the setter: the pays lines for that part of the bill, followed
-// from every box on the item's path (REP pays ERCOT, ERCOT pays generators)
-function moneyChain(edges, it, comp, cls) {
-  const out = [], start = it.path.map(id => edges.find(e => e.id === id)).flatMap(e => [e.to, e.from]);
+// where the money for one line item goes. Every hop of the price path below the regulators is paid the other way
+// (you pay PG&E, PG&E pays the CCA, the EDC pays the default service supplier), unless the paying box has its own
+// payment lines for this part of the bill (a supplier pays PJM for transmission, not the EDC); then the pays lines
+// are followed from every box on the path (REP pays ERCOT, ERCOT pays generators). The reversed hops are drawn from
+// the price lines, so they count as needing verification.
+function moneyChain(edges, it, comp, cls, byId) {
+  const pays = e => e.type === "pays" && e.rate_component === comp && (!e.applies_to || e.applies_to.includes(cls))
+    && (!e.subcomponent || !it.subcomponent || e.subcomponent === it.subcomponent);
+  const hops = it.path.map(id => edges.find(e => e.id === id));
+  const out = hops.filter(e => byId[e.from].lane !== "regulators" && !edges.some(x => pays(x) && x.from === e.to))
+    .map(e => ({ ...e, id: e.id + "~paid", type: "pays", mode: undefined, from: e.to, to: e.from, status: "needs_verification",
+      label: `pays ${byId[e.from].name} for this charge (drawn from the price line: ${e.label})` }));
+  const start = hops.flatMap(e => [e.to, e.from]);
   const seen = new Set(start), todo = [...seen];
   while (todo.length) {
     const n = todo.shift();
-    for (const e of edges) if (e.type === "pays" && e.from === n && e.rate_component === comp && (!e.applies_to || e.applies_to.includes(cls))
-      && (!e.subcomponent || !it.subcomponent || e.subcomponent === it.subcomponent) && !out.includes(e)) {
+    for (const e of edges) if (pays(e) && e.from === n && !out.includes(e)) {
       out.push(e); if (!seen.has(e.to)) { seen.add(e.to); todo.push(e.to); }
     }
   }
@@ -480,15 +488,20 @@ function renderCol(i) {
     shown = edges.filter(e => (e.type === "sets_rate" || e.type === "pays") && e.rate_component === S.comp && e.mode !== "caps"
       && (!e.applies_to || e.applies_to.includes(S.cls)));
     ans = D.answers[`${col.mid}|${col.arch}|${S.cls}|${S.comp}`] || null;
-    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); moneyChain(edges, it, S.comp, S.cls).forEach(e => money.add(e.id)); });
+    const paidOn = [];   // the customer's and pass-through payments, drawn in place of the pass-through price lines
+    if (ans) ans.items.forEach(it => { it.path.forEach(id => path.add(id)); it.limits.forEach(id => path.add(id)); moneyChain(edges, it, S.comp, S.cls, byId).forEach(e => { money.add(e.id); if (e.id.endsWith("~paid") && !paidOn.some(x => x.id === e.id)) paidOn.push(e); }); });
     edges.filter(e => path.has(e.id) || money.has(e.id)).forEach(e => { active.add(e.from); active.add(e.to); });
-    edges.filter(e => path.has(e.id)).forEach(e => { priced.add(e.from); priced.add(e.to); });
+    edges.filter(e => path.has(e.id) && byId[e.from].lane === "regulators").forEach(e => { priced.add(e.from); priced.add(e.to); });
+    if (ans) ans.items.forEach(it => priced.add(it.setter));
     caps = edges.filter(e => e.mode === "caps" && (!e.applies_to || e.applies_to.includes(S.cls))
       && (!e.rate_component || e.rate_component === S.comp) && active.has(e.to));
     shown = shown.concat(edges.filter(e => (path.has(e.id) || money.has(e.id)) && !shown.includes(e)));
     // a payment running against a rate line between the same two boxes (REP pays ERCOT, ERCOT prices the REP) is
     // left to the panel: drawn, the two lines would cross
-    shown = shown.filter(e => e.type !== "pays" || !shown.some(x => x.type !== "pays" && x.from === e.to && x.to === e.from));
+    // orange runs only from a regulator, council or board to the box whose price it sets, approves or limits; every
+    // other hop is drawn as the payment (blue)
+    shown = shown.filter(e => !(path.has(e.id) && e.type === "sets_rate" && byId[e.from].lane !== "regulators")).concat(paidOn);
+    shown = shown.filter(e => e.type !== "pays" || e.id.endsWith("~paid") || !shown.some(x => x.type !== "pays" && x.from === e.to && x.to === e.from));
     // two line items priced the same way between the same two boxes (CPUC sets PG&E's energy and its resource
     // adequacy) are one line on the diagram; the table and panel keep them apart
     const first = new Map();
@@ -694,12 +707,9 @@ function panel(col, C, byId, edges, ans) {
     else {
       const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
       const item = it => {   // one block per line item
-        const hops = it.path.slice().reverse().map(id => edges.find(e => e.id === id));   // setter first, consumer last
-        const chain = `${nm(it.setter)}` + hops.map(e => ` <span class="mode m-${e.mode || "sets"}">${esc(MODE_TEXT[e.mode || "sets"])}</span> → ${nm(e.to)}`).join("");
-        const lim = it.limits.map(id => edges.find(e => e.id === id)), money = moneyChain(edges, it, S.comp, S.cls);
+        const lim = it.limits.map(id => edges.find(e => e.id === id)), money = moneyChain(edges, it, S.comp, S.cls, byId);
         return `${ans.items.length > 1 || it.subcomponent ? `<h4>${esc(it.subcomponent || cl)}</h4>` : ""}<dl>
-        <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
-        <dt><span class="sw" style="background:var(--accent)"></span>Price path</dt><dd class="hops">${chain}</dd>
+        <dt><span class="sw" style="background:var(--accent)"></span>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
         ${money.length ? `<dt><span class="sw" style="background:var(--money)"></span>Money path</dt><dd>${moneyText(money, nm)}</dd>` : ""}
         <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim, ...money].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
@@ -777,9 +787,9 @@ function swatch(stroke, shape, dashed) {
 }
 function renderLegend() {
   const items = S.lens === "bill"
-    ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--accent)", s), MODE_TEXT[m]]).concat(!document.querySelector(".capped") ? [] : [[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
+    ? Object.entries(MODE_SHAPE).filter(([m]) => ["sets", "approves", "levies"].includes(m)).map(([m, s]) => [swatch("var(--accent)", s), MODE_TEXT[m]]).concat(!document.querySelector(".capped") ? [] : [[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
-  if (S.lens === "bill") items.unshift([swatch("var(--accent)", "arrow"), "price path: who sets it"], ...(document.querySelector(".edge.money") ? [[swatch("var(--money)", "small"), "money path: who gets paid"]] : []));
+  if (S.lens === "bill" && document.querySelector(".edge.money")) items.unshift([swatch("var(--money)", "small"), "pays"]);
   items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
   if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
