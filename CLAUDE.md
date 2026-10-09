@@ -59,7 +59,9 @@ grid-atlas/
 ├── validate/
 │   ├── conftest.py
 │   ├── test_schema.py      # cross-file integrity: ids resolve, slots, ownership sources
-│   └── test_claims.py      # market facts as assertions
+│   ├── test_claims.py      # market facts as assertions
+│   ├── test_layout.py      # every line clickable, none through a box (Playwright)
+│   └── test_bill_panel.py  # Bill lens: a row per line item, limits and pass-throughs, aligned compare rows (Playwright)
 ├── web/
 │   ├── index.html
 │   ├── data.json           # generated — never hand-edit

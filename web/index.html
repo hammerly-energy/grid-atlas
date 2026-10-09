@@ -32,7 +32,7 @@
   select { font:inherit; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:3px 6px; max-width:100%; }
   .cols { display:flex; flex-wrap:wrap; gap:16px; }
   .col { flex:1 1 360px; min-width:0; }
-  .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; align-content:flex-start; align-items:flex-start; }
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
   .cols.n3 .diagram svg { min-width:0; }
@@ -80,16 +80,30 @@
   .legend svg { width:34px; height:10px; display:inline-block; vertical-align:middle; margin-right:4px; }
   .ans { width:100%; border-collapse:collapse; margin:4px 0 10px; font-size:13px; }
   .ans caption { text-align:left; font-weight:600; padding:4px 0; }
-  .ans th { text-align:left; color:var(--muted); font-weight:500; font-size:12px; padding:2px 8px 2px 0; border-bottom:1px solid var(--line); }
+  .ans th { vertical-align:bottom; text-align:left; color:var(--muted); font-weight:500; font-size:12px; padding:2px 8px 2px 0; border-bottom:1px solid var(--line); }
   .ans td { padding:5px 8px 5px 0; border-bottom:1px solid var(--line); vertical-align:top; }
   .ans tr.row { cursor:pointer; }
   .ans tr.row:hover td { background:var(--lane); }
   .ans tr.cur td { background:var(--lane); }
   .ans tr.cur td:first-child { box-shadow:inset 3px 0 0 var(--accent); padding-left:6px; }
   .ans .mode { display:inline-block; font-size:11px; padding:0 6px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
-  .ans .mode.m-caps, .ans .mode.m-approves { border-color:var(--accent); color:var(--accent); }
+  .ans .mode.m-caps { border-color:var(--accent); color:var(--accent); }
   .ans .lim { color:var(--muted); font-size:12px; }
   .ans .item { display:block; color:var(--muted); font-size:12px; }
+  .ans tr.row:focus { outline:none; }
+  .ans tr.row:focus-visible { outline:2px solid var(--fg); outline-offset:-2px; }
+  abbr[title] { text-decoration:underline dotted; text-underline-offset:2px; cursor:help; }
+  .ans tr.gap td { color:var(--muted); }
+  .ans .who { display:block; }
+  .ans caption .billed { display:block; font-weight:400; color:var(--muted); font-size:12px; }
+  .cols.stacked .ans tr.gap { display:none; }
+  .ans .who + .who { margin-top:3px; }
+  .capped { position:relative; padding:0 8px; border:solid var(--accent); border-width:0 1.6px; margin:4px 0 10px; }
+  .capped::before { content:""; position:absolute; inset:0; border:solid var(--accent); border-width:1.6px 0; pointer-events:none;
+    -webkit-mask:linear-gradient(90deg, #000 6px, transparent 6px calc(100% - 6px), #000 calc(100% - 6px)); mask:linear-gradient(90deg, #000 6px, transparent 6px calc(100% - 6px), #000 calc(100% - 6px)); }
+  .capped .ans { margin:0; }
+  .panel .mode { display:inline-block; font-size:11px; padding:0 6px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+  .panel .mode.m-caps { border-color:var(--accent); color:var(--accent); }
   .edge.faint { opacity:.24; }
   footer { color:var(--muted); font-size:12px; margin-top:16px; }
 </style>
@@ -142,10 +156,11 @@ try {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
+  if (h.get("cls")) S.cls = h.get("cls");
   COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
 function saveHash() {
-  const q = { lens: S.lens, comp: S.comp };
+  const q = S.lens === "bill" ? { lens: S.lens, cls: S.cls, comp: S.comp } : { lens: S.lens };
   S.cols.forEach((c, i) => { if (i && !c.mid) return; q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
   const p = new URLSearchParams(q);
   // Safari can refuse replaceState on file:// pages; fall back to a same-page hash change
@@ -160,6 +175,12 @@ function resolve(mid, arch) {
   return { m, nodes, edges, byId: Object.fromEntries(nodes.map(n => [n.id, n])) };
 }
 const country = mid => D.countries[D.markets[mid].country];
+// a consumer class's name as its market writes it (GB: Domestic), from the consumer box; falls back to the id
+function className(cls, mids) {
+  for (const mid of mids) { const n = [D.markets[mid].base, ...Object.values(D.markets[mid].archetypes)].flatMap(a => a.nodes || []).find(n => n.id === cls && n.kind === "consumer"); if (n) return n.name; }
+  return cls.replace(/_/g, " ");
+}
+const compLabel = c => { const mid = S.cols.map(x => x.mid).find(m => m && country(m).component_labels[c]); return mid ? country(mid).component_labels[c] : c.replace(/_/g, " "); };
 const label = (map, key) => (map && map[key]) || key.replace(/_/g, " ");
 function ownerOf(col, n) {   // a utility's fill can name the owner of the box it fills (ODEC, SMUD, LADWP)
   const u = col.util && D.markets[col.mid].utilities[col.util];
@@ -504,28 +525,54 @@ function focusEdges(col, edges) {
   else if (col.sel.edge) es = edges.filter(e => e.id === col.sel.edge);
   const s = new Set(es.map(e => e.id)); s.nodes = new Set(es.flatMap(e => [e.from, e.to])); return s;
 }
+// the parts of the bill across every column on screen, in one fixed order, so compare rows line up
+const RC_ORDER = ["generation", "transmission", "distribution", "capacity", "ancillary_uplift", "riders_public_purpose", "exit_fee",
+  "balancing", "policy_levy", "tax", "supplier_margin", "metering"];
+function billComps() {
+  const cols = S.cols.filter(c => c.mid && c.arch), mids = cols.map(c => c.mid), have = new Set(mids.flatMap(componentsFor));
+  return { mids, list: RC_ORDER.filter(k => have.has(k)).concat([...have].filter(k => !RC_ORDER.includes(k))) };
+}
 function answers(col, C, nodes, edges, byId) {
   const t = document.createElement("table"); t.className = "ans";
-  const nm = id => esc(displayName(col, byId[id]));
+  const nm = id => S.lens === "bill" ? term(C, displayName(col, byId[id])) : esc(displayName(col, byId[id]));
   const names = ids => [...new Set(ids)].map(nm).join(", ");
   if (S.lens === "bill") {
-    t.innerHTML = `<caption>Who sets each part of a ${esc(S.cls.replace(/_/g, " "))} bill</caption><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr>`;
-    if (!byId[S.cls]) { t.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers</td></tr>`); return t; }
-    for (const c of componentsFor(col.mid)) {
-      const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`], cl = esc(label(C.component_labels, c));
+    const cls = className(S.cls, [col.mid]).toLowerCase(), mname = esc(D.markets[col.mid].name);
+    t.innerHTML = `<caption>Who sets each part of a ${esc(cls)} bill</caption><thead data-k="head"><tr><th>Part of bill</th><th>Set by</th><th>Limited by</th></tr></thead>`;
+    if (!byId[S.cls]) { t.insertAdjacentHTML("beforeend", `<tr><td colspan="3" class="muted">Not offered to ${esc(cls)} customers</td></tr>`); return t; }
+    const own = componentsFor(col.mid), ans = c => D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`];
+    const edge = id => edges.find(e => e.id === id);
+    // who hands the customer the bill: the first box above the consumer on every path
+    const billers = [...new Set(own.flatMap(c => ((ans(c) || {}).items || []).map(it => edge(it.path[0]).from)))];
+    if (billers.length) t.querySelector("caption").insertAdjacentHTML("beforeend", `<span class="billed">Billed by ${billers.map(nm).join(", ")}</span>`);
+    const caps = [...new Set(own.flatMap(c => (ans(c) || {}).whole_bill_caps || []))].map(edge);
+    if (caps.length) {   // the GB default tariff cap limits the whole bill, not one part of it
+      const tb = document.createElement("tbody"); tb.dataset.k = "whole";
+      tb.innerHTML = `<tr><td>Whole bill</td><td colspan="2">${caps.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td></tr>`;
+      t.appendChild(tb);
+    }
+    // a part another column of the same country has gets a row here; parts only another country has get none
+    for (const c of billComps().list.filter(c => own.includes(c) || country(col.mid).bill_components.includes(c))) {
+      const tb = document.createElement("tbody"); tb.dataset.k = c; t.appendChild(tb);
+      const cl = term(C, label((own.includes(c) ? C : country(billComps().mids.find(mid => componentsFor(mid).includes(c)))).component_labels, c));
+      if (!own.includes(c)) {   // a part of the bill another column on screen has
+        tb.innerHTML = `<tr class="gap"><td>${cl}</td><td colspan="2" class="muted">No separate line in ${mname}</td></tr>`;
+        continue;
+      }
       // one row per line item; a bill line with several setters gets one row per setter
-      (a ? a.items : [null]).forEach((it, k) => {
+      (ans(c) ? ans(c).items : [null]).forEach((it, k) => {
         const tr = document.createElement("tr"); tr.className = "row" + (c === S.comp ? " cur" : "");
-        const lim = it ? it.limits.map(id => edges.find(e => e.id === id)).map(e => `${nm(e.from)} ${esc(MODE_TEXT[e.mode] || e.mode)}`) : [];
-        const sub = it && it.subcomponent ? `<span class="item">${k ? "↳ " : ""}${esc(it.subcomponent)}</span>` : "";
-        tr.innerHTML = `<td>${k ? "" : cl}${sub}</td><td>${it ? `${nm(it.setter)} <span class="mode m-${it.mode}">${esc(MODE_TEXT[it.mode])}</span>` : '<span class="muted">not entered</span>'}</td><td class="lim">${lim.join("<br>") || "—"}</td>`;
+        tr.tabIndex = 0; tr.dataset.key = `${c}|${k}`; tr.setAttribute("aria-label", `${label(C.component_labels, c)}${it && it.subcomponent ? ", " + it.subcomponent : ""}: show the path`);
+        const who = (id, mode) => `<span class="who">${nm(id)} <span class="mode m-${mode}">${esc(MODE_TEXT[mode] || mode)}</span></span>`;
+        const lim = it ? it.limits.map(edge).map(e => who(e.from, e.mode)) : [];
+        const sub = it && it.subcomponent && it.subcomponent !== label(C.component_labels, c) ? `<span class="item">${k ? "↳ " : ""}${term(C, it.subcomponent)}</span>` : "";
+        tr.innerHTML = `<td>${k ? "" : cl}${sub}</td><td>${it ? `${nm(it.setter)} <span class="mode m-${it.mode}">${esc(MODE_TEXT[it.mode])}</span>` : '<span class="muted">not entered</span>'}</td><td class="lim">${lim.join("") || "—"}</td>`;
         tr.onclick = () => { S.comp = c; render(); };
-        t.appendChild(tr);
+        tr.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); S.comp = c; refocus = [col, tr.dataset.key]; render(); } };
+        tb.appendChild(tr);
       });
     }
-    const onPath = new Set(componentsFor(col.mid).flatMap(c => { const a = D.answers[`${col.mid}|${col.arch}|${S.cls}|${c}`]; return a ? a.items.flatMap(it => it.path.flatMap(id => { const e = edges.find(x => x.id === id); return [e.from, e.to]; })) : []; }));
-    const whole = edges.filter(e => e.mode === "caps" && !e.rate_component && onPath.has(e.to) && (!e.applies_to || e.applies_to.includes(S.cls)));
-    if (whole.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>Whole bill</td><td colspan="2">${whole.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td>`; t.appendChild(tr); }
+    if (caps.length) { const w = document.createElement("div"); w.className = "capped"; w.appendChild(t); return w; }
     return t;
   }
   if (S.lens === "roles") {
@@ -591,23 +638,25 @@ function gloss(C, name) {
   const g = Object.values(C.glossary).find(g => g.term === name || g.term.split(" / ").includes(name));
   return g ? g.meaning : null;
 }
+// a term with a glossary entry gets its meaning on hover
+function term(C, text) { const g = gloss(C, text); return g ? `<abbr title="${esc(g)}">${esc(text)}</abbr>` : esc(text); }
 function panel(col, C, byId, edges, ans) {
   const p = document.createElement("div"); p.className = "panel";
   const nm = id => esc(displayName(col, byId[id]));
   if (S.lens === "bill") {
-    const cl = label(C.component_labels, S.comp);
+    const cl = componentsFor(col.mid).includes(S.comp) ? label(C.component_labels, S.comp) : compLabel(S.comp);
     if (!componentsFor(col.mid).includes(S.comp)) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not entered as a separate component in ${esc(D.markets[col.mid].name)}.</p>`;
-    else if (!byId[S.cls]) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not offered to ${esc(S.cls.replace(/_/g, " "))} customers.</p>`;
-    else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(S.cls.replace(/_/g, " "))}.</p>`;
+    else if (!byId[S.cls]) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">Not offered to ${esc(className(S.cls, [col.mid]).toLowerCase())} customers.</p>`;
+    else if (!ans) p.innerHTML = `<h3>${esc(cl)}</h3><p class="muted">No path entered for ${esc(className(S.cls, [col.mid]).toLowerCase())}.</p>`;
     else {
       const whole = (ans.whole_bill_caps || []).map(id => edges.find(e => e.id === id));
       const item = it => {   // one block per line item
-        const chain = [it.setter, ...it.path.slice().reverse().map(id => edges.find(e => e.id === id).to)];
-        const uniq = chain.filter((x, k) => chain.indexOf(x) === k);
+        const hops = it.path.slice().reverse().map(id => edges.find(e => e.id === id));   // setter first, consumer last
+        const chain = `${nm(it.setter)}` + hops.map(e => ` <span class="mode m-${e.mode || "sets"}">${esc(MODE_TEXT[e.mode || "sets"])}</span> → ${nm(e.to)}`).join("");
         const lim = it.limits.map(id => edges.find(e => e.id === id));
         return `${ans.items.length > 1 || it.subcomponent ? `<h4>${esc(it.subcomponent || cl)}</h4>` : ""}<dl>
         <dt>Set by</dt><dd>${nm(it.setter)} (${MODE_TEXT[it.mode]})</dd>
-        <dt>Path</dt><dd>${uniq.map(nm).join(" → ")}</dd>
+        <dt>Path</dt><dd class="hops">${chain}</dd>
         <dt>Limited by</dt><dd>${lim.map(e => `${nm(e.from)}: ${esc(e.label)}`).join("<br>") || "—"}</dd>
         <dt>Sources</dt><dd>${[...new Map([...it.path.map(id => edges.find(e => e.id === id)), ...lim].map(e => [e.source.url, e])).values()].map(e => srcLink(e.source)).join("<br>")}</dd></dl>`;
       };
@@ -655,14 +704,17 @@ function renderBar() {
   $("#billbar").hidden = S.lens !== "bill";
   if (S.lens !== "bill") return;
   const mids = S.cols.map(c => c.mid).filter(Boolean);
-  const comps = [...new Set(mids.flatMap(componentsFor))];
-  if (!comps.includes(S.comp)) S.comp = comps[0];
+  let comps = [...new Set(mids.flatMap(componentsFor))];
   // only the classes the setups on screen serve: Direct Access, for instance, is closed to households
   const served = new Set(S.cols.filter(c => c.mid && c.arch).flatMap(c => resolve(c.mid, c.arch).nodes.filter(n => n.kind === "consumer").map(n => n.id)));
   const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))].filter(c => served.has(c));
   if (!classes.includes(S.cls)) S.cls = classes[0] || S.cls;
+  // only parts of the bill some column on screen answers for this class
+  const answered = S.cols.filter(c => c.mid && c.arch);
+  comps = comps.filter(k => answered.some(c => D.answers[`${c.mid}|${c.arch}|${S.cls}|${k}`]));
+  if (!comps.includes(S.comp)) S.comp = comps[0];
   const cs = $("#cls"); cs.innerHTML = "";
-  classes.forEach(c => cs.add(new Option(c.replace(/_/g, " "), c)));
+  classes.forEach(c => cs.add(new Option(className(c, mids), c)));
   cs.value = S.cls; cs.onchange = () => { S.cls = cs.value; render(); };
   const box = $("#comps"); box.innerHTML = "";
   const C0 = country(mids[0]);
@@ -681,7 +733,7 @@ function swatch(stroke, shape, dashed) {
 }
 function renderLegend() {
   const items = S.lens === "bill"
-    ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat([[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
+    ? Object.entries(MODE_SHAPE).map(([m, s]) => [swatch("var(--muted)", s), MODE_TEXT[m]]).concat(!document.querySelector(".capped") ? [] : [[`<svg viewBox="0 0 34 10"><path d="M4,1 h-3 v8 h3 M30,1 h3 v8 h-3" stroke="var(--accent)" fill="none"/></svg>`, "price cap (ceiling)"]])
     : (S.lens === "roles" ? ROLE_TYPES : OWNER_TYPES).map(t => [swatch(`var(--t-${t})`, "arrow"), t.replace(/_/g, " ")]);
   items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
   if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
@@ -697,7 +749,31 @@ function pickUtility(col) {   // default: the first utility offering the current
   const [name, u] = utils.find(([, u]) => u.archetypes.includes(col.arch)) || utils[0];
   col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
 }
-let lastView = null;
+// columns side by side: give the dropdowns and each part of the bill the same height in every column, so rows line up
+function alignCols() {
+  const cols = [...document.querySelectorAll(".col")].filter(c => c.querySelector(".ans"));
+  const pads = [...document.querySelectorAll(".col > .chain, .ans caption, .ans thead tr, .ans tbody tr")];
+  pads.forEach(el => { el.style.height = ""; });
+  const stacked = cols.length > 1 && new Set(cols.map(c => Math.round(c.getBoundingClientRect().top))).size > 1;   // a phone
+  $("#cols").classList.toggle("stacked", stacked);
+  if (cols.length < 2 || stacked) return;
+  const same = els => { const max = Math.max(...els.map(el => el.getBoundingClientRect().height)); els.forEach(el => { el.style.height = max + "px"; }); };
+  same(cols.map(c => c.querySelector(".chain")));
+  same(cols.map(c => c.querySelector(".ans thead tr")));
+  // walk the parts in order; where a part starts lower in one column, stretch the row above it in the others
+  const keys = [...new Set([...document.querySelectorAll(".ans tbody[data-k]")].map(tb => tb.dataset.k))];
+  for (const k of keys) {
+    const tbs = cols.map(c => c.querySelector(`tbody[data-k="${k}"]`)).filter(Boolean);
+    if (tbs.length < 2) continue;
+    const top = Math.max(...tbs.map(tb => tb.getBoundingClientRect().top));
+    tbs.forEach(tb => {
+      const d = top - tb.getBoundingClientRect().top, prev = tb.previousElementSibling && tb.previousElementSibling.lastElementChild;
+      if (d > 0.5 && prev) prev.style.height = (prev.getBoundingClientRect().height + d) + "px";
+    });
+  }
+}
+let resizeT; addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(alignCols, 100); });
+let lastView = null, refocus = null;   // [column, row key]: keyboard focus survives the rebuild
 function render() {
   // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
   const keep = { x: scrollX, y: scrollY, h: Math.ceil($("#cols").getBoundingClientRect().height), side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
@@ -717,9 +793,10 @@ function render() {
     const nodes = resolve(c.mid, c.arch).nodes;
     return Math.max(...LANES.map(l => nodes.filter(n => n.lane === l).length)) * (NODE_W + MIN_GAP) + MIN_GAP;
   }));
-  renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash();
+  renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash(); alignCols();
   document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
   scrollTo(keep.x, keep.y);
+  if (refocus) { const i = S.cols.indexOf(refocus[0]), tr = $(`#col${i} tr[data-key="${refocus[1]}"]`); if (tr) tr.focus({ preventScroll: true }); refocus = null; }
 }
 document.querySelectorAll("#lens button").forEach(b => b.onclick = () => { S.lens = b.dataset.v; S.cols.forEach(c => c.sel = null); render(); });
 render();
