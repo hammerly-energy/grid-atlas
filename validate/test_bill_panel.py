@@ -67,9 +67,11 @@ def test_every_part_of_every_bill_has_a_row(page, mid, arch):
 
 ALIGN = """() => {
   const cols = [...document.querySelectorAll('.col')].filter(c => c.querySelector('.ans'));
-  const tops = k => cols.map(c => { const el = c.querySelector(`tbody[data-k="${k}"]`); return el && Math.round(el.getBoundingClientRect().top); });
+  const tops = k => cols.map(c => { const el = c.querySelector(`tbody[data-k="${k}"]`); return el && el.getBoundingClientRect().top; });
   const keys = [...new Set([...document.querySelectorAll('tbody[data-k]')].map(t => t.dataset.k))];
-  return { n: cols.length, off: keys.filter(k => new Set(tops(k).filter(x => x !== null)).size > 1).map(k => `${k}: ${tops(k).join(' / ')}`) };
+  // within 1px: row tops fall on subpixels, and rounding can split 562.5 into 562 and 563
+  const spread = t => { t = t.filter(x => x !== null); return Math.max(...t) - Math.min(...t); };
+  return { n: cols.length, off: keys.filter(k => spread(tops(k)) > 1).map(k => `${k}: ${tops(k).join(' / ')}`) };
 }"""
 
 

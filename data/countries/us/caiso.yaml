@@ -51,7 +51,7 @@ base:
       lane: wholesale
       kind: generator
       jurisdiction: private
-      description: Sell energy and ancillary services into CAISO's markets; sell resource adequacy capacity to load-serving entities bilaterally.
+      description: Sell energy and ancillary services into CAISO's markets; sell resource adequacy capacity and long-term energy contracts to load-serving entities bilaterally.
       holds_assets: [generation]
       source: {title: EIA-860 generator inventory, url: "https://www.eia.gov/electricity/data/eia860/", accessed: "2026-10-07"}
 
@@ -88,6 +88,8 @@ base:
     - {id: ferc_caiso, from: ferc, to: caiso, type: regulates, domain: market_rules, label: approves CAISO's tariff and market rules, status: needs_verification,
        source: &caisomkt {title: CAISO market operations, url: "https://www.caiso.com/market-operations", accessed: "2026-10-07"}}
     - {id: caiso_dispatch, from: caiso, to: generators, type: dispatches, mechanism: central_sced, label: dispatches by security-constrained economic dispatch, status: needs_verification, source: *caisomkt}
+    # money: CAISO settles its markets and pays generators
+    - {id: caiso_pays_gen, from: caiso, to: generators, type: pays, mode: market, rate_component: generation, label: pays generators for energy and ancillary services at market prices, status: needs_verification, source: *caisomkt}
 
 archetypes:
   # Bundled investor-owned utility service (PG&E, SCE, SDG&E): the utility procures generation and the CPUC sets
@@ -119,7 +121,9 @@ archetypes:
       - {id: cpuc_iou_gen, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, subcomponent: Energy procurement, label: sets the generation rate that recovers procurement cost, status: needs_verification,
          source: &erra {title: "PG&E 2026 Energy Resource Recovery Account (ERRA) forecast, CPUC A.25-05-011", url: "https://docs.cpuc.ca.gov/PublishedDocs/SupDoc/A2505011/8416/577061825.pdf", accessed: "2026-10-08"}}
       - {id: cpuc_iou_ra, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: generation, subcomponent: Resource adequacy, label: sets the rate that recovers resource adequacy capacity bought to meet the obligation, status: needs_verification, source: *ra}
-      - {id: iou_caiso_as, from: iou, to: caiso, type: pays, mode: market, rate_component: generation, label: pays CAISO energy and ancillary service charges, status: needs_verification, source: *caisomkt}
+      - {id: iou_gen_ra, from: iou, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Resource adequacy, label: buys resource adequacy capacity from generators under bilateral contracts, status: needs_verification, source: *ra}
+      - {id: iou_gen_ppa, from: iou, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Energy procurement, label: pays generators under power purchase contracts recovered in the generation rate, status: needs_verification, source: *erra}
+      - {id: iou_caiso_as, from: iou, to: caiso, type: pays, mode: market, rate_component: generation, subcomponent: Energy procurement, label: pays CAISO energy and ancillary service charges, status: needs_verification, source: *caisomkt}
       - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified,
          source: &ferctx {title: CPUC — electric transmission rates and FERC proceedings, url: "https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-costs/electric-transmission-rates-and-ferc-proceedings", accessed: "2026-10-08"}}
       - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
@@ -184,6 +188,7 @@ archetypes:
       - {id: cpuc_ra_cca, from: cpuc, to: cca, type: plans_procures, label: sets the resource adequacy obligation the aggregator must meet, status: verified, source: *ra}
       - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: verified, source: *tca}
       - {id: cca_caiso_energy, from: cca, to: caiso, type: pays, mode: market, rate_component: generation, label: buys and sells energy in CAISO's markets as a load-serving entity, status: needs_verification, source: *caisomkt}
+      - {id: cca_gen_ra, from: cca, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Resource adequacy, label: buys resource adequacy capacity from generators under bilateral contracts, status: needs_verification, source: *ra}
       # bill: the CCA board sets generation; the IOU bills delivery and the PCIA, both set by the CPUC
       - {id: board_cca_gen, from: cca_board, to: cca, type: sets_rate, mode: sets, rate_component: generation, label: sets the generation rate, status: needs_verification, source: *cca3662}
       - {id: cca_iou_bill, from: cca, to: iou, type: sets_rate, mode: passes_through, rate_component: generation, label: "sends its generation charge to the IOU, which bills it", status: verified, source: *cca3662}
@@ -243,6 +248,7 @@ archetypes:
       - {id: cpuc_ra_esp, from: cpuc, to: esp, type: plans_procures, label: sets the resource adequacy obligation the provider must meet, status: verified, source: *ra}
       - {id: caiso_operates_tx, from: caiso, to: iou, type: operates, asset: transmission, label: operates the transmission the IOU owns, status: verified, source: *tca}
       - {id: esp_caiso_energy, from: esp, to: caiso, type: pays, mode: market, rate_component: generation, label: buys energy in CAISO's markets as a load-serving entity, status: needs_verification, source: *caisomkt}
+      - {id: esp_gen_ra, from: esp, to: generators, type: pays, mode: market, rate_component: generation, subcomponent: Resource adequacy, label: buys resource adequacy capacity from generators under bilateral contracts, status: needs_verification, source: *ra}
       - {id: ferc_iou_tx, from: ferc, to: iou, type: sets_rate, mode: approves, rate_component: transmission, label: approves the transmission revenue requirement, status: verified, source: *ferctx}
       - {id: cpuc_iou_dx, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in general rate cases, status: verified, source: *ratecase}
       - {id: cpuc_iou_rider, from: cpuc, to: iou, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets public purpose and other non-bypassable charges, status: needs_verification, source: *ratecase}
