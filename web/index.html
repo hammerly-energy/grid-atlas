@@ -164,12 +164,12 @@ try {
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
   if (h.get("cls")) S.cls = h.get("cls");
-  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
+  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || (D.markets[mid] ? firstArch(mid) : ""); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
 S.cols = [S.cols[0], ...S.cols.slice(1).filter(c => c.mid)];   // a link opens the comparisons it names, without gaps
 S.open = S.cols.length;
 while (S.cols.length < COLS.length) S.cols.push({ mid: "", arch: "", util: "", sel: null });
-function addCol() { S.open++; refocusAdd = S.open - 1; render(); }
+function addCol() { S.open++; refocusAdd = S.open - 1; addedCol = true; render(); }
 function removeCol(i) { S.cols.splice(i, 1); S.cols.push({ mid: "", arch: "", util: "", sel: null }); S.open--; refocusAdd = -1; render(); }
 function saveHash() {
   const q = S.lens === "bill" ? { lens: S.lens, cls: S.cls, comp: S.comp } : { lens: S.lens };
@@ -460,7 +460,7 @@ function renderCol(i) {
   mSel.value = col.mid;
   mSel.onchange = () => {
     col.mid = mSel.value; col.arch = firstArch(col.mid); col.util = ""; hold(col);
-    render();
+    refocusAdd = i; render();
   };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return chainEnd(i, chain);
@@ -860,7 +860,7 @@ function alignRows() {
   }
 }
 let resizeT; addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(alignCols, 100); });
-let lastView = null, refocus = null, refocusAdd = null;   // refocusAdd: a column whose market list takes focus, or -1 for the add button   // [column, row key]: keyboard focus survives the rebuild
+let lastView = null, refocus = null, refocusAdd = null, addedCol = false;   // refocusAdd: a column whose market list takes focus, or -1 for the add button   // [column, row key]: keyboard focus survives the rebuild
 function render() {
   // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
   const keep = { x: scrollX, y: scrollY, h: Math.ceil($("#cols").getBoundingClientRect().height), side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
@@ -883,7 +883,14 @@ function render() {
   renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash(); alignCols();
   document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
   scrollTo(keep.x, keep.y);
-  if (refocusAdd !== null) { const el = refocusAdd < 0 ? $("#cols .add") || $("#col0 select") : $(`#col${refocusAdd} select`); if (el) el.focus({ preventScroll: true }); refocusAdd = null; }
+  if (refocusAdd !== null) {
+    const el = refocusAdd < 0 ? $("#cols .add") || $("#col0 select") : $(`#col${refocusAdd} select`);
+    // on a phone a new comparison opens below the first diagram; show it, since nothing else on screen changes
+    const below = refocusAdd > 0 && addedCol && $(`#col${refocusAdd}`).getBoundingClientRect().top > $("#col0").getBoundingClientRect().top + 1;
+    if (el) el.focus({ preventScroll: true });
+    if (below) $(`#col${refocusAdd}`).scrollIntoView({ block: "start" });
+    refocusAdd = null; addedCol = false;
+  }
   if (refocus) { const i = S.cols.indexOf(refocus[0]), tr = $(`#col${i} tr[data-key="${refocus[1]}"]`); if (tr) tr.focus({ preventScroll: true }); refocus = null; }
 }
 document.querySelectorAll("#lens button").forEach(b => b.onclick = () => { S.lens = b.dataset.v; S.cols.forEach(c => c.sel = null); render(); });

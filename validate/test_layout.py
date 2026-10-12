@@ -251,3 +251,19 @@ def test_compare_columns_are_optional(page):
     assert len(widths()) == 2, "a reload keeps the comparison in the link"
     page.click("#col1 .rm")
     assert len(widths()) == 1 and "b=" not in page.evaluate("location.hash")
+
+
+def test_link_with_empty_second_column_keeps_the_third(page):
+    page.goto(f"{PAGE}#a=ercot/competitive_area&b=&c=pjm/restructured_choice")
+    page.reload()
+    assert page.locator("#col1 select").first.input_value() == "pjm", "the third column moves left"
+
+
+def test_phone_add_compare_shows_the_new_column(page):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{PAGE}#lens=roles&a=ercot/competitive_area")
+    page.reload()
+    page.click(".add")
+    top = page.evaluate("() => document.querySelector('#col1').getBoundingClientRect().top")
+    assert 0 <= top < 844, f"new comparison off screen at {top}px"
+    page.set_viewport_size({"width": 1400, "height": 1600})
