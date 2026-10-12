@@ -125,8 +125,11 @@ def line_items(edges, cls, comp):
     return items, problems
 
 
-def whole_bill_caps(edges, cls, items):
-    """A cap with no component is a ceiling on the whole bill (GB default tariff cap), not a limit on each line item."""
+def whole_bill_caps(edges, cls, comp, items):
+    """A cap with no component is a ceiling on the whole bill (GB default tariff cap), not a limit on each line item.
+    Taxes sit outside it: the cap limits the seller's charges, and VAT is levied on top (GB cap levels exclude VAT)."""
+    if comp == "tax":
+        return []
     on_path = {x["from"] for x in edges for it in items if x["id"] in it["path"]}
     return [c["id"] for c in edges if c.get("mode") == "caps" and not c.get("rate_component")
             and c["to"] in on_path and _applies(c, cls)]
@@ -137,7 +140,7 @@ def answer(edges, cls, comp):
     items, problems = line_items(edges, cls, comp)
     if not items or problems:
         return None                          # gap or ambiguity: tests report it
-    return {"items": items, "whole_bill_caps": whole_bill_caps(edges, cls, items)}
+    return {"items": items, "whole_bill_caps": whole_bill_caps(edges, cls, comp, items)}
 
 
 def who_sets(edges, cls, comp):

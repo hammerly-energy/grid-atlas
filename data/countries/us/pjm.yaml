@@ -142,10 +142,17 @@ archetypes:
       - {id: puc_sup_cap, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: capacity, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
       - {id: rpm_edc_cap, from: rpm, to: edc, type: sets_rate, mode: market, rate_component: capacity, applies_to: [large_ci, large_load], label: capacity at the RPM clearing price on hourly-priced service, status: needs_verification, source: *rpm}
       - {id: sup_rpm_cap, from: default_supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price, status: verified, source: *rpm}
+      # hourly-priced default service (large classes): the price is PJM's, but a supplier that won the utility's RFP or
+      # auction (PECO, NJ BGS-CIEP) serves the load, so the EDC pays that supplier, not PJM
+      - {id: edc_sup_hourly_gen, from: edc, to: default_supplier, type: pays, mode: market, rate_component: generation, applies_to: [large_ci, large_load], label: pays the hourly default service supplier PJM's real-time energy price plus its auction or RFP price, status: needs_verification,
+         source: &pecohourly {title: "PA PUC Secretarial letter accepting PECO's default service RFP results, including large commercial and industrial hourly service (12 March 2026)", url: "https://www.puc.pa.gov/pcdocs/1917786.pdf", accessed: "2026-10-12"}}
+      - {id: edc_sup_hourly_cap, from: edc, to: default_supplier, type: pays, mode: market, rate_component: capacity, applies_to: [large_ci, large_load], label: pays the hourly default service supplier for capacity at the RPM price, status: needs_verification, source: *pecohourly}
+      - {id: edc_sup_hourly_as, from: edc, to: default_supplier, type: pays, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: pays the hourly default service supplier for PJM ancillary services, status: needs_verification, source: *pecohourly}
       - {id: def_sup_pjm_gen, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for its share of default load's energy at locational marginal prices, status: needs_verification, source: *m28}
       - {id: def_sup_pjm_as, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges as the load-serving entity, status: verified, source: *m28}
       - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: ancillary cost priced into auction bids, status: needs_verification, source: *njbgs}
-      - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: ancillary services at PJM market prices on hourly-priced service, status: needs_verification, source: *pecodsp}
+      - {id: puc_sup_as, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
+      - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: "ancillary services at PJM market prices on hourly-priced service (PECO; NJ BGS-CIEP charges a fixed BPU-approved rate)", status: needs_verification, source: *pecodsp}
       # bill: wires and riders
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: puc_edc_dx, from: state_puc, to: edc, type: sets_rate, mode: sets, rate_component: distribution, label: sets distribution rates in rate cases, status: needs_verification, source: *pa2807}
@@ -259,8 +266,9 @@ archetypes:
       - {id: comed_ll_dx, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *il16108}
       - {id: comed_ll_rider, from: edc, to: large_load, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *il16108}
 
-  # A customer in a restructured state who picked a competitive supplier (PA EGS, NJ TPS, IL ARES, OH CRES, MD).
-  # The supplier sets the supply price; the utility keeps the wires and usually bills the supplier's charges too.
+  # A customer in a restructured state who picked a competitive supplier (PA EGS, NJ TPS, IL ARES, MD). Ohio (CRES) is
+  # not drawn: there the utility, not the supplier, bills transmission. The supplier sets the supply price; the utility
+  # keeps the wires and usually bills the supplier's charges too (consolidated billing, not drawn: see the supplier's description).
   competitive_supplier:
     label: Competitive supplier
     nodes:
@@ -299,7 +307,9 @@ archetypes:
       - {id: sup_pjm_gen, from: supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: buys energy at PJM prices or through bilateral contracts, status: verified, source: *oatt}
       - {id: sup_rpm_cap, from: supplier, to: rpm, type: pays, mode: market, rate_component: capacity, label: pays the RPM capacity price for its customers' load, status: verified, source: *rpm}
       - {id: sup_pjm_as, from: supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: "pays PJM ancillary charges for its customers' load", status: verified, source: *m28}
-      # bill: transmission is part of supply in PA and IL: the supplier pays the zonal network rate and recovers it
+      # bill: network transmission is part of supply in PA, NJ, IL and MD: the supplier pays the zonal network rate and recovers it.
+      # Not drawn: Ohio utilities bill transmission to all customers through non-bypassable riders (AEP Ohio BTCR), and
+      # PECO bills regional transmission expansion costs to all customers through its non-bypassable transmission charge.
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}
       - {id: edc_sup_tx, from: edc, to: supplier, type: sets_rate, mode: passes_through, rate_component: transmission, label: zonal network transmission rate the supplier pays through PJM, status: needs_verification, source: *oatt}
       - {id: sup_pjm_tx, from: supplier, to: pjm, type: pays, mode: market, rate_component: transmission, label: pays PJM network transmission service for its customers' load at the zonal rate, status: needs_verification, source: *oatt}
@@ -309,19 +319,19 @@ archetypes:
       - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
       - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: verified, source: *pa2809}
       - {id: sup_res_as, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: verified, source: *pa2809}
-      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *oatt}
+      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: "bills network transmission as part of supply (PA, NJ, IL, MD)", status: needs_verification, source: *oatt}
       - {id: sup_sc_gen, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
       - {id: sup_sc_cap, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: verified, source: *pa2809}
       - {id: sup_sc_as, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: verified, source: *pa2809}
-      - {id: sup_sc_tx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *oatt}
+      - {id: sup_sc_tx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, label: "bills network transmission as part of supply (PA, NJ, IL, MD)", status: needs_verification, source: *oatt}
       - {id: sup_lci_gen, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
       - {id: sup_lci_cap, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: verified, source: *pa2809}
       - {id: sup_lci_as, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: verified, source: *pa2809}
-      - {id: sup_lci_tx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *oatt}
+      - {id: sup_lci_tx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, label: "bills network transmission as part of supply (PA, NJ, IL, MD)", status: needs_verification, source: *oatt}
       - {id: sup_ll_gen, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the supply price in its contract, status: verified, source: *pa2809}
       - {id: sup_ll_cap, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: capacity, label: sets capacity cost inside its contract price, status: verified, source: *pa2809}
       - {id: sup_ll_as, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: sets ancillary cost inside its contract price, status: verified, source: *pa2809}
-      - {id: sup_ll_tx, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: bills transmission as part of supply in PA and IL, status: needs_verification, source: *oatt}
+      - {id: sup_ll_tx, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, label: "bills network transmission as part of supply (PA, NJ, IL, MD)", status: needs_verification, source: *oatt}
       - {id: edcs_res_dx, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *pa2807}
       - {id: edcs_res_rider, from: edc, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: verified, source: *pa2807}
       - {id: edcs_sc_dx, from: edc, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, label: bills distribution charges, status: verified, source: *pa2807}
