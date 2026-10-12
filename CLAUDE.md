@@ -93,7 +93,7 @@ CONSUMERS                  residential · small commercial · large C&I · large
 
 Lanes are fixed top-to-bottom. Differences between markets must show up as **missing, extra, or rewired nodes and edges**, never as a different layout. A node whose `kind` exists in only one of the columns on screen gets a visible "unique to this market" marker (match on `kind`, plus `slot`, across countries; on `id` within a country). Same kind, different scope (NESO vs PJM) gets a "≈ differs" marker.
 
-One global **lens** switch: Roles · Bill · Ownership. Only one colour meaning is active at a time, except the Bill lens, which draws the price path (who sets it, accent colour) and the money path (who gets paid, blue) in two colours (Christian, 2026-10-09). Price-setting `mode` is drawn with arrowheads and dash styles, not new colours. The GB price cap is a bracket around the whole bill bar.
+One global **lens** switch: Roles · Bill · Ownership. Only one colour meaning is active at a time, except the Bill lens, which draws the price path (who sets it, accent colour) and the money path (who gets paid, blue) in two colours (Christian, 2026-10-09). Price-setting `mode` is drawn with arrowheads and dash styles, not new colours. The GB price cap is a bracket around the bill rows it covers; VAT sits below it, outside the cap.
 
 ## Data model (schema v2)
 
@@ -136,7 +136,7 @@ Key rule: **the shape depends on the archetype, not the utility.** PECO and PPL 
 | `id`, `from`, `to` | node ids; must resolve |
 | `type` | `regulates` · `pays` · `sets_rate` · `dispatches` · `plans_procures` · `delivers` · `owns` · `operates` · `settles` |
 | `label` | short verb phrase shown on hover |
-| `mode` | `sets_rate`/`pays` only: `sets` (default) · `approves` (revenue/formula, e.g. Ofgem RIIO, FERC) · `caps` (ceiling; may omit component = whole bill) · `levies` (policy levies, taxes) · `passes_through` (supplier, EDC billing someone else's charge) · `market` (price formed by trading) |
+| `mode` | `sets_rate`/`pays` only: `sets` (default) · `approves` (revenue/formula, e.g. Ofgem RIIO, FERC) · `caps` (ceiling; may omit component = whole bill before tax, since a cap limits the seller and tax is charged on top) · `levies` (policy levies, taxes) · `passes_through` (supplier, EDC billing someone else's charge) · `market` (price formed by trading) |
 | `domain` | `regulates` only: rates · market_rules · reliability · licensing · governance · policy_standard |
 | `mechanism` | `dispatches` only: central_sced (US ISOs) · balancing_redispatch · ancillary_contract (GB: generators self-dispatch) |
 | `asset` | `owns` (required) and `operates` (required, except when the target is a `market` node, e.g. PJM → RPM) |

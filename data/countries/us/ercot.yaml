@@ -166,8 +166,8 @@ archetypes:
       - {id: ercot_rep_as, from: ercot, to: rep, type: sets_rate, mode: market, rate_component: ancillary_uplift, label: charges ancillary service costs to the REP's scheduling entity by load ratio share, status: needs_verification, source: *ercotops}
       - {id: rep_res_as, from: rep, to: residential, type: sets_rate, mode: sets, rate_component: ancillary_uplift, label: bundles ancillary costs into its retail price, status: needs_verification, source: *ercotops}
       - {id: puct_ercot_fee, from: puct, to: ercot, type: sets_rate, mode: approves, rate_component: ancillary_uplift, subcomponent: ERCOT administration fee, label: approves the ERCOT system administration fee, status: verified, source: *pura39}
-      - {id: ercot_rep_fee, from: ercot, to: rep, type: sets_rate, mode: sets, rate_component: ancillary_uplift, subcomponent: ERCOT administration fee, label: "charges the administration fee per MWh of load to the REP's scheduling entity ($0.61/MWh from 2026)", status: needs_verification,
-         source: {title: "16 TAC § 25.363 (ERCOT budget and system administration fee)", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-363", accessed: "2026-10-12"}}
+      - {id: ercot_rep_fee, from: ercot, to: rep, type: sets_rate, mode: sets, rate_component: ancillary_uplift, subcomponent: ERCOT administration fee, label: "charges the system administration fee per MWh ($0.61/MWh from 2026)", status: needs_verification,
+         source: {title: "ERCOT market notice M-A111125-01 (2026 system administration fee)", url: "https://www.ercot.com/services/comm/mkt_notices/M-A111125-01", accessed: "2026-10-12"}}
       # bill: riders
       - {id: puct_tdsp_rider, from: puct, to: tdsp, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: sets riders (e.g. energy efficiency cost recovery), status: verified, source: {title: "16 TAC § 25.182 Energy efficiency cost recovery factor", url: "https://www.law.cornell.edu/regulations/texas/16-Tex-Admin-Code-SS-25-182", accessed: "2026-10-08"}}
       - {id: tdsp_rep_rider, from: tdsp, to: rep, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders to the REP, status: verified, source: *delivery}
@@ -359,7 +359,7 @@ archetypes:
       - {id: board_coop_rider, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: riders_public_purpose, label: approves riders and program charges, status: needs_verification, source: *pecrates}
       - {id: coop_res_rider, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: riders_public_purpose, label: bills riders, status: needs_verification, source: *pecrates}
       # bill: the PUCT still sets wholesale transmission rates; ERCOT prices ancillary services
-      - {id: puct_coop_tx, from: puct, to: coop, type: regulates, domain: rates, label: sets the wholesale transmission rate the co-op pays (PURA 41.004), status: needs_verification, source: *pura41}
+      - {id: puct_coop_tx, from: puct, to: coop, type: regulates, domain: rates, label: "regulates the co-op's wholesale transmission rates and access (PURA 41.004)", status: needs_verification, source: *pura41}
       - {id: board_coop_tx, from: coop_board, to: coop, type: sets_rate, mode: sets, rate_component: transmission, label: sets the retail charge that recovers transmission cost, status: needs_verification, source: *pura41}
       - {id: coop_res_tx, from: coop, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, label: recovers transmission cost in retail rates, status: needs_verification, source: *pecrates}
       - {id: coop_ercot_as, from: coop, to: ercot, type: pays, mode: market, rate_component: ancillary_uplift, label: bears ERCOT ancillary service charges at market prices (directly or through its wholesale supplier), status: needs_verification, source: *ercotops}

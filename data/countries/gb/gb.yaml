@@ -136,7 +136,7 @@ archetypes:
       - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the tariff, status: verified, source: *cap}
       - {id: neso_sup_bal, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: balancing, subcomponent: BSUoS, label: sets BSUoS (charged to demand only), status: verified,
          source: &bsuos {title: NESO BSUoS charges, url: "https://neso.energy/charging/balancing-services-use-system-bsuos-charges", accessed: "2026-10-07"}}
-      - {id: ofgem_neso_bal, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: balancing, subcomponent: BSUoS, label: approves the BSUoS charging methodology (CUSC Section 14) and NESO's cost allowances, status: needs_verification,
+      - {id: ofgem_neso_bal, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: balancing, subcomponent: BSUoS, label: approves the BSUoS charging methodology (CUSC Section 14), status: needs_verification,
          source: {title: "Ofgem decision on CUSC modification CMP408 (BSUoS), 30 October 2024", url: "https://www.ofgem.gov.uk/sites/default/files/2024-10/CMP408_Authority_Decision_Letter.pdf", accessed: "2026-10-12"}}
       - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: verified, source: *cap}
       - {id: esc_sup_cap, from: esc, to: supplier, type: sets_rate, mode: levies, rate_component: capacity, label: levies the Capacity Market supplier charge, status: needs_verification,

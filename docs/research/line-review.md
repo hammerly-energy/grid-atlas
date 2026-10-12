@@ -53,3 +53,10 @@ The source changes below would make the most dashed lines eligible for a second 
 ## Money lines (2026-10-09)
 
 18 `pays` lines added so the Bill lens can follow money to the generators (17 reviewed; `ercot/coop/coop_ercot_energy` was dropped because Texas co-ops mostly buy from G&T co-ops under contract, not yet researched, and `caiso/iou_bundled/iou_gen_ppa` was added after review). Two independent reviewers confirmed 8 against ERCOT Nodal Protocols and PJM Manual 28; they are solid. Dashed: `caiso_pays_gen` (landing page; cite CAISO Tariff Section 11), `rpm_pays_gen` (now cites Manual 18, needs a second pass), `def_sup_pjm_gen` and `agg_pjm_gen` (label narrowed after the adversarial review), `ws_pjm_gen` (EDGAR search page; cite ODEC's 10-K), the three CAISO resource adequacy lines (cite Pub. Util. Code 380 or the CPUC RA report), `viu_pjm_gen`, `iou_gen_ppa`.
+
+## Known-error fixes (2026-10-12)
+
+Fixed: ERCOT co-op retail transmission set by the board (`board_coop_tx`, PURA 41.055); `puct_coop_tx` now `regulates` (PURA 41.004); GB default tariff cap no longer covers VAT (SLC 28AD cap levels exclude VAT); ERCOT admin fee its own line item for index-priced classes; PJM default-service ancillary carries the PUC auction approval; PJM hourly default service paid to the RFP or auction winner (`edc_sup_hourly_*`); GB BSUoS carries Ofgem's methodology approval (`ofgem_neso_bal`). All new or changed lines are `needs_verification` until two reviewers confirm them.
+
+Open: NJ BGS-CIEP charges ancillary at a fixed BPU-approved rate (PSE&G Sheet 82), so `pjm_edc_as` fits PECO only; the ERCOT admin fee is not drawn for city utilities and co-ops; Maryland shoppers' and FirstEnergy Pennsylvania transmission billing unconfirmed; GB policy levies are one `desnz_sup_levy` line, though LCCC sets the CfD and nuclear RAB levy rates and DESNZ the RO level (could be split into line items); CAISO city utilities' FERC-reviewed transmission revenue requirement is a `regulates` line, not a limit on the council-set retail charge; PJM consolidated billing (utility bills the supplier's charges) not drawn.
+

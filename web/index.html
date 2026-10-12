@@ -759,7 +759,7 @@ function renderBar() {
   $("#billbar").hidden = S.lens !== "bill";
   if (S.lens !== "bill") return;
   const mids = S.cols.map(c => c.mid).filter(Boolean);
-  let comps = [...new Set(mids.flatMap(componentsFor))];
+  let comps = [...new Set(mids.flatMap(componentsFor))].sort((x, y) => RC_ORDER.indexOf(x) - RC_ORDER.indexOf(y));   // same order as the table
   // only the classes the setups on screen serve: Direct Access, for instance, is closed to households
   const served = new Set(S.cols.filter(c => c.mid && c.arch).flatMap(c => resolve(c.mid, c.arch).nodes.filter(n => n.kind === "consumer").map(n => n.id)));
   const classes = [...new Set(mids.flatMap(mid => country(mid).consumer_classes))].filter(c => served.has(c));
