@@ -304,6 +304,27 @@ def test_large_customers_on_pjm_default_service_pay_hourly_market_prices():
         assert "default_supplier" in res, arch      # households get the procured price, not the hourly one
 
 
+def test_pjm_hourly_default_service_is_served_by_a_supplier_not_bought_from_pjm_by_the_edc():
+    """PECO and NJ BGS-CIEP: an RFP or auction winner serves hourly default load; the EDC pays it, and it settles with PJM."""
+    _, edges = g("pjm", "restructured_choice")
+    for comp in ("generation", "capacity", "ancillary_uplift"):
+        assert any(e["type"] == "pays" and e["from"] == "edc" and e["to"] == "default_supplier" and e["rate_component"] == comp
+                   and set(e["applies_to"]) == {"large_ci", "large_load"} for e in edges), comp
+    assert not [e for e in edges if e["type"] == "pays" and e["from"] == "edc" and e["to"] in ("pjm", "rpm")]
+
+
+def test_pjm_default_service_auction_approval_limits_every_supply_line():
+    """The PUC approves the auction results, and the auction price covers energy, capacity and ancillary services."""
+    _, edges = g("pjm", "restructured_choice")
+    for comp in ("generation", "capacity", "ancillary_uplift"):
+        a = build.who_sets(edges, "residential", comp)
+        assert a["setter"] == "default_supplier" and any(edges_by(edges)[c]["from"] == "state_puc" for c in a["limits"]), comp
+
+
+def edges_by(edges):
+    return {e["id"]: e for e in edges}
+
+
 def test_a_pjm_competitive_supplier_sets_supply_and_the_wires_stay_regulated():
     nodes, edges = g("pjm", "competitive_supplier")
     assert nodes["supplier"]["kind"] == "retail_provider"
