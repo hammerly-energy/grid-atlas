@@ -101,8 +101,8 @@
   .ans caption .billed { display:block; font-weight:400; color:var(--muted); font-size:12px; }
   .cols.stacked .ans tr.gap { display:none; }
   .ans .who + .who { margin-top:3px; }
-  .capped { position:relative; padding:0 8px; border:solid var(--accent); border-width:0 1.6px; margin:4px 0 10px; }
-  .capped::before { content:""; position:absolute; inset:0; border:solid var(--accent); border-width:1.6px 0; pointer-events:none;
+  .capped { position:relative; padding:0 8px; margin:4px 0 10px; }
+  .capped::before { content:""; position:absolute; inset:0 0 auto; height:var(--cap-h, 100%); box-sizing:border-box; border:1.6px solid var(--accent); pointer-events:none;
     -webkit-mask:linear-gradient(90deg, #000 6px, transparent 6px calc(100% - 6px), #000 calc(100% - 6px)); mask:linear-gradient(90deg, #000 6px, transparent 6px calc(100% - 6px), #000 calc(100% - 6px)); }
   .capped .ans { margin:0; }
   .panel .mode { display:inline-block; font-size:11px; padding:0 6px; border-radius:999px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
@@ -583,7 +583,7 @@ function focusEdges(col, edges) {
 }
 // the parts of the bill across every column on screen, in one fixed order, so compare rows line up
 const RC_ORDER = ["generation", "transmission", "distribution", "capacity", "ancillary_uplift", "riders_public_purpose", "exit_fee",
-  "balancing", "policy_levy", "tax", "supplier_margin", "metering"];
+  "balancing", "policy_levy", "supplier_margin", "metering", "tax"];   // tax last: it is charged on the rest, outside any cap
 function billComps() {
   const cols = S.cols.filter(c => c.mid && c.arch), mids = cols.map(c => c.mid), have = new Set(mids.flatMap(componentsFor));
   return { mids, list: RC_ORDER.filter(k => have.has(k)).concat([...have].filter(k => !RC_ORDER.includes(k))) };
@@ -604,12 +604,13 @@ function answers(col, C, nodes, edges, byId) {
     const caps = [...new Set(own.flatMap(c => (ans(c) || {}).whole_bill_caps || []))].map(edge);
     if (caps.length) {   // the GB default tariff cap limits the whole bill, not one part of it
       const tb = document.createElement("tbody"); tb.dataset.k = "whole";
-      tb.innerHTML = `<tr><td>Whole bill</td><td colspan="2">${caps.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td></tr>`;
+      tb.innerHTML = `<tr><td>${own.some(c => ans(c) && !ans(c).whole_bill_caps.length) ? "Bill before tax" : "Whole bill"}</td><td colspan="2">${caps.map(e => `${nm(e.from)} <span class="mode m-caps">caps</span>`).join(" ")}</td></tr>`;
       t.appendChild(tb);
     }
     // a part another column of the same country has gets a row here; parts only another country has get none
     for (const c of billComps().list.filter(c => own.includes(c) || country(col.mid).bill_components.includes(c))) {
       const tb = document.createElement("tbody"); tb.dataset.k = c; t.appendChild(tb);
+      if (caps.length && ans(c) && !ans(c).whole_bill_caps.length) tb.className = "uncapped";   // drawn below the cap bracket
       const cl = term(C, label((own.includes(c) ? C : country(billComps().mids.find(mid => componentsFor(mid).includes(c)))).component_labels, c));
       if (!own.includes(c)) {   // a part of the bill another column on screen has
         tb.innerHTML = `<tr class="gap"><td>${cl}</td><td colspan="2" class="muted">No separate line in ${mname}</td></tr>`;
@@ -805,7 +806,15 @@ function pickUtility(col) {   // default: the first utility offering the current
   col.util = name; if (!u.archetypes.includes(col.arch)) col.arch = u.archetypes[0];
 }
 // columns side by side: give the dropdowns and each part of the bill the same height in every column, so rows line up
-function alignCols() {
+// the cap bracket ends above the first part of the bill it does not cover (tax)
+function fitCaps() {
+  for (const w of document.querySelectorAll(".capped")) {
+    const tb = w.querySelector("tbody.uncapped");
+    w.style.setProperty("--cap-h", tb ? (tb.getBoundingClientRect().top - w.getBoundingClientRect().top) + "px" : "100%");
+  }
+}
+function alignCols() { alignRows(); fitCaps(); }
+function alignRows() {
   const cols = [...document.querySelectorAll(".col")].filter(c => c.querySelector(".ans"));
   const pads = [...document.querySelectorAll(".col > .chain, .ans caption, .ans thead tr, .ans tbody tr")];
   pads.forEach(el => { el.style.height = ""; });

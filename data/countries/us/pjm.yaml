@@ -145,6 +145,7 @@ archetypes:
       - {id: def_sup_pjm_gen, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: generation, label: pays PJM for its share of default load's energy at locational marginal prices, status: needs_verification, source: *m28}
       - {id: def_sup_pjm_as, from: default_supplier, to: pjm, type: pays, mode: market, rate_component: ancillary_uplift, label: pays PJM ancillary charges as the load-serving entity, status: verified, source: *m28}
       - {id: sup_edc_as, from: default_supplier, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: ancillary cost priced into auction bids, status: needs_verification, source: *njbgs}
+      - {id: puc_sup_as, from: state_puc, to: default_supplier, type: sets_rate, mode: approves, rate_component: ancillary_uplift, applies_to: [residential, small_commercial], label: approves the auction results, status: needs_verification, source: *njbgs}
       - {id: pjm_edc_as, from: pjm, to: edc, type: sets_rate, mode: market, rate_component: ancillary_uplift, applies_to: [large_ci, large_load], label: ancillary services at PJM market prices on hourly-priced service, status: needs_verification, source: *pecodsp}
       # bill: wires and riders
       - {id: ferc_edc_tx, from: ferc, to: edc, type: sets_rate, mode: approves, rate_component: transmission, label: approves transmission revenue requirement, status: verified, source: *oatt}

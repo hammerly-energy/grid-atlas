@@ -204,16 +204,31 @@ def test_ercot_noie_retail_rates_set_by_its_governing_body():
     assert MARKETS["ercot"][1]["utilities"]["CPS Energy"]["archetypes"] == ["noie"]
 
 
-def test_ercot_coop_board_sets_retail_rates_puct_sets_transmission():
-    """PURA 41.004: the PUCT's jurisdiction over a co-op is wholesale transmission, certification and a few other items."""
+def test_ercot_coop_board_sets_retail_rates_puct_sets_only_wholesale_transmission():
+    """PURA 41.004: the PUCT's jurisdiction over a co-op is wholesale transmission, certification and a few other items.
+    The board sets every retail rate, the charge that recovers transmission cost included (same as city utilities)."""
     nodes, edges = g("ercot", "coop")
-    for comp in ("generation", "distribution", "riders_public_purpose"):
-        assert build.who_sets(edges, "residential", comp)["setter"] == "coop_board", comp
-    assert build.who_sets(edges, "residential", "transmission")["setter"] == "puct"
+    for comp in ("generation", "transmission", "distribution", "riders_public_purpose"):
+        for cls in ("residential", "small_commercial", "large_ci", "large_load"):
+            assert build.who_sets(edges, cls, comp)["setter"] == "coop_board", (cls, comp)
+    assert any(e["type"] == "regulates" and e["from"] == "puct" and e["to"] == "coop" and e.get("domain") == "rates"
+               for e in edges)
+    assert not [e for e in edges if e["from"] == "puct" and e["type"] == "sets_rate"]
     assert nodes["coop"]["kind"] == "coop"
     for name in ("Pedernales Electric Cooperative", "CoServ"):
         u = MARKETS["ercot"][1]["utilities"][name]
         assert u["archetypes"] == ["coop"] and u["fills"]["coop"]["owner"]["type"] == "cooperative", name
+
+
+def test_ercot_admin_fee_is_its_own_line_item_for_index_priced_classes():
+    """Nodal Protocols 9.16.1: ERCOT charges its PUCT-approved administration fee per MWh of load (PURA 39.151(e))."""
+    _, edges = g("ercot", "competitive_area")
+    for cls in ("large_ci", "large_load"):
+        items = {it["subcomponent"]: it for it in build.answer(edges, cls, "ancillary_uplift")["items"]}
+        fee = items["ERCOT administration fee"]
+        assert fee["setter"] == "ercot" and fee["limits"] == ["puct_ercot_fee"], cls
+        assert items[None]["setter"] == "ercot" and items[None]["mode"] == "market" and not items[None]["limits"], cls
+    assert len(build.answer(edges, "residential", "ancillary_uplift")["items"]) == 1   # bundled in the REP's price
 
 
 # ---- PJM ----
@@ -447,6 +462,15 @@ def test_gb_price_cap_is_a_ceiling_on_default_tariffs_only():
     assert caps and all(e["from"] == "ofgem" for e in caps)
     _, edges = g("gb", "supplier_contract")
     assert not [e for e in edges if e.get("mode") == "caps"]
+
+
+def test_gb_price_cap_excludes_vat():
+    """Ofgem's default tariff cap levels exclude VAT (SLC 28AD): the cap covers every part of the bill except tax."""
+    _, edges = g("gb", "domestic_default_capped")
+    for comp in DATA["GB"]["profile"]["bill_components"]:
+        a = build.answer(edges, "residential", comp)
+        assert a, comp
+        assert bool(a["whole_bill_caps"]) == (comp != "tax"), comp
 
 
 @MGB

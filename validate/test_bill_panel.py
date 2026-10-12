@@ -97,6 +97,20 @@ def test_whole_bill_cap_is_a_bracket(page):
     assert page.locator('#col1 tr.gap').count() == 0, "no rows for parts only Great Britain has"
 
 
+def test_cap_bracket_ends_above_vat(page):
+    """The default tariff cap excludes VAT: the VAT row is the last row and sits below the bracket."""
+    open_view(page, "lens=bill&cls=residential&a=gb/domestic_default_capped")
+    r = page.evaluate("""() => {
+      const w = document.querySelector('#col0 .capped'), tb = w.querySelector('tbody[data-k="tax"]');
+      const h = parseFloat(getComputedStyle(w, '::before').height), top = w.getBoundingClientRect().top;
+      return {uncapped: tb.classList.contains('uncapped'), last: !tb.nextElementSibling,
+              bracket: top + h, vat: tb.getBoundingClientRect().top, whole: w.querySelector('tbody[data-k="whole"] td').textContent};
+    }""")
+    assert r["uncapped"] and r["last"], r
+    assert r["bracket"] <= r["vat"] + 1, r
+    assert r["whole"] == "Bill before tax", r
+
+
 def test_class_is_kept_in_the_link(page):
     open_view(page, "lens=bill&cls=large_ci&comp=distribution&a=pjm/restructured_choice&b=/")
     assert page.locator("#cls").input_value() == "large_ci"
