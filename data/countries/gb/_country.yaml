@@ -56,3 +56,4 @@ glossary:
   NGED: {term: NGED, meaning: "National Grid Electricity Distribution; DNO for the East Midlands, West Midlands, South West England and South Wales areas."}
   SSEN: {term: SSEN, meaning: "Scottish and Southern Electricity Networks (SSE); DNO for Southern England and the North of Scotland."}
   CCL: {term: Climate Change Levy, meaning: "Tax on business energy use, set by HM Treasury; domestic customers do not pay it."}
+  BSC: {term: BSC, meaning: "Balancing and Settlement Code; the rules for GB wholesale settlement, administered by Elexon. Suppliers and generators are BSC parties."}

@@ -49,7 +49,7 @@ base:
       jurisdiction: national
       description: National Energy System Operator. Balances the system in real time and sets TNUoS and BSUoS. Runs no energy market and owns no network assets.
       owner:
-        name: Secretary of State for Energy Security and Net Zero
+        name: UK government (DESNZ)
         type: public
         as_of: "2024-10-01"
         source: &nesodesig {title: Designation of NESO, url: "https://www.gov.uk/government/publications/designation-of-the-national-energy-system-operator-neso", accessed: "2026-10-07"}
@@ -66,7 +66,7 @@ base:
       jurisdiction: national
       description: Administers the Balancing and Settlement Code; settles the difference between what each party contracted and what it metered.
       owner:
-        name: The largest Balancing and Settlement Code parties
+        name: Largest BSC parties
         type: member_owned
         as_of: "2024-10-01"
         source: {title: Elexon ownership change on 1 October 2024, url: "https://www.elexon.co.uk/2024/10/01/elexon-ownership-change-on-1-october-2024/", accessed: "2026-10-13"}
@@ -88,7 +88,7 @@ base:
       jurisdiction: national
       description: Electricity Settlements Company; government-owned. Settles Capacity Market payments and levies the supplier charge that funds them.
       owner: &sosowner
-        name: Secretary of State for Energy Security and Net Zero
+        name: UK government (DESNZ)
         type: public
         as_of: "2026-10-13"
         source: &lccc {title: LCCC and ESC — who we are, url: "https://www.lowcarboncontracts.uk/about-us/who-we-are", accessed: "2026-10-13"}

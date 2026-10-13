@@ -576,7 +576,7 @@ function renderCol(i) {
       el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ");
     }
     const own = ownerOf(col, n);
-    if (S.lens === "owner" && own) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + own.name.replace(/^Secretary of State for /, "SoS ");
+    if (S.lens === "owner" && own) fit(el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g), "owned by " + own.name, NODE_W + 6);
     g.onclick = () => { col.sel = { node: n.id }; render(); };
     g.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); g.onclick(); } };
   }
@@ -681,11 +681,11 @@ function answers(col, C, nodes, edges, byId) {
   for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || ownerOf(col, n))) {
     const own = ownerOf(col, n);
     const tr = document.createElement("tr"); tr.className = "row" + (col.sel && col.sel.node === n.id ? " cur" : "");
-    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${own ? esc(own.name) + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
+    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : ["iso", "system_operator"].includes(n.kind) ? "nothing (operates, does not own)" : "nothing"}</td><td class="lim">${own ? esc(own.name) + (own.parent ? ", part of " + esc(own.parent) : "") + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
     tr.onclick = () => { col.sel = { node: n.id }; render(); };
     t.appendChild(tr);
   }
-  const none = nodes.filter(n => ["iso", "system_operator"].includes(n.kind) && !(n.holds_assets || []).length);
+  const none = nodes.filter(n => ["iso", "system_operator"].includes(n.kind) && !(n.holds_assets || []).length && !ownerOf(col, n));
   if (none.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>${names(none.map(n => n.id))}</td><td>nothing (operates, does not own)</td><td class="lim">—</td>`; t.appendChild(tr); }
   return t;
 }
