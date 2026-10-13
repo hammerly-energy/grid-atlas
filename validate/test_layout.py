@@ -227,3 +227,43 @@ def test_switching_utility_keeps_the_utility_box_selected(page, mid, first, seco
     page.click('#col0 g.node[data-id="ferc"]')
     page.locator("#col0 .chain select").nth(1).select_option(first)
     assert page.locator("#col0 .panel h3").inner_text() == "FERC", "a box that is still drawn stays selected"
+
+
+def test_compare_columns_are_optional(page):
+    """One market by default; "+ Compare" opens up to two more columns, × closes one, and the link keeps what is open."""
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto(f"{PAGE}#lens=roles&a=ercot/competitive_area")
+    page.reload()
+    widths = lambda: page.evaluate("() => [...document.querySelectorAll('.col')].map(c => c.getBoundingClientRect().width)")
+    assert len(widths()) == 1 and widths()[0] <= 1000, f"one column, at most 1000px wide: {widths()}"
+    assert page.locator(".rm").count() == 0, "the first market has no remove button"
+    page.click(".add")
+    assert len(widths()) == 2 and page.locator("#col1 svg").count() == 0, "a new comparison draws nothing until a market is picked"
+    assert page.locator(".add").count() == 0, "no further column until this one has a market"
+    page.locator("#col1 select").first.select_option("pjm")
+    page.click("#col1 .add")
+    page.locator("#col2 select").first.select_option("caiso")
+    assert len(widths()) == 3 and page.locator(".add").count() == 0, "three columns at most"
+    page.click("#col1 .rm")   # PJM goes; CAISO moves left
+    assert page.locator("#col1 select").first.input_value() == "caiso"
+    assert "b=caiso" in page.evaluate("location.hash") and "c=" not in page.evaluate("location.hash")
+    page.reload()
+    assert len(widths()) == 2, "a reload keeps the comparison in the link"
+    page.click("#col1 .rm")
+    assert len(widths()) == 1 and "b=" not in page.evaluate("location.hash")
+
+
+def test_link_with_empty_second_column_keeps_the_third(page):
+    page.goto(f"{PAGE}#a=ercot/competitive_area&b=&c=pjm/restructured_choice")
+    page.reload()
+    assert page.locator("#col1 select").first.input_value() == "pjm", "the third column moves left"
+
+
+def test_phone_add_compare_shows_the_new_column(page):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{PAGE}#lens=roles&a=ercot/competitive_area")
+    page.reload()
+    page.click(".add")
+    top = page.evaluate("() => document.querySelector('#col1').getBoundingClientRect().top")
+    assert 0 <= top < 844, f"new comparison off screen at {top}px"
+    page.set_viewport_size({"width": 1400, "height": 1600})

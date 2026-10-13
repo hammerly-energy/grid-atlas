@@ -36,6 +36,10 @@
   .diagram { overflow-x:auto; }
   .diagram svg { min-width:520px; }
   .cols.n3 .diagram svg { min-width:0; }
+  .cols.n1 { max-width:1000px; }   /* one market: the diagram grows, but boxes and text stay a readable size */
+  .chain .add, .chain .rm { font:inherit; color:var(--fg); background:none; border:1px solid var(--line); border-radius:6px; padding:3px 10px; cursor:pointer; }
+  .chain .rm { padding:3px 8px; color:var(--muted); }
+  .chain .add:hover, .chain .rm:hover { border-color:var(--fg); color:var(--fg); }
   svg { width:100%; height:auto; display:block; }
   .lane-bg { fill:var(--lane); }
   .lane-title { fill:var(--fg); font-size:10.5px; font-weight:600; letter-spacing:.04em; }
@@ -149,8 +153,8 @@ if (!D) {
 
 /* ---------- state (mirrored in the URL hash) ---------- */
 const firstArch = mid => Object.keys(D.markets[mid].archetypes)[0] || "";
-const COLS = ["a", "b", "c"];   // up to three markets side by side; the third opens once the second is picked
-const S = { lens: "roles", cls: "residential", comp: "generation", cols: [
+const COLS = ["a", "b", "c"];   // up to three markets side by side; one until the reader adds a comparison
+const S = { lens: "roles", cls: "residential", comp: "generation", open: 1, cols: [
   { mid: "ercot", arch: "competitive_area", util: "", sel: null },
   { mid: "", arch: "", util: "", sel: null },
   { mid: "", arch: "", util: "", sel: null },
@@ -160,8 +164,13 @@ try {
   if (h.get("lens")) S.lens = h.get("lens");
   if (h.get("comp")) S.comp = h.get("comp");
   if (h.get("cls")) S.cls = h.get("cls");
-  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || firstArch(mid); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
+  COLS.forEach((k, i) => { const v = h.get(k); if (v !== null) { const [mid, arch, ...u] = v.split("/"); S.cols[i].mid = D.markets[mid] ? mid : ""; S.cols[i].arch = arch || (D.markets[mid] ? firstArch(mid) : ""); S.cols[i].util = (D.markets[mid] && D.markets[mid].utilities[u.join("/")]) ? u.join("/") : ""; } });
 } catch (e) {}
+S.cols = [S.cols[0], ...S.cols.slice(1).filter(c => c.mid)];   // a link opens the comparisons it names, without gaps
+S.open = S.cols.length;
+while (S.cols.length < COLS.length) S.cols.push({ mid: "", arch: "", util: "", sel: null });
+function addCol() { S.open++; refocusAdd = S.open - 1; addedCol = true; render(); }
+function removeCol(i) { S.cols.splice(i, 1); S.cols.push({ mid: "", arch: "", util: "", sel: null }); S.open--; refocusAdd = -1; render(); }
 function saveHash() {
   const q = S.lens === "bill" ? { lens: S.lens, cls: S.cls, comp: S.comp } : { lens: S.lens };
   S.cols.forEach((c, i) => { if (i && !c.mid) return; q[COLS[i]] = i === 0 ? [c.mid, c.arch, c.util].filter(Boolean).join("/") : `${c.mid}/${c.arch}${c.util ? "/" + c.util : ""}`; });
@@ -419,6 +428,20 @@ function otherKinds(col) {
   return new Set(others.flatMap(o => resolve(o.mid, o.arch).nodes.map(n => n.kind)));
 }
 
+// after the dropdowns: × closes a comparison (the columns after it move left); "+ Compare" opens the next one
+function chainEnd(i, chain) {
+  if (i > 0) {
+    const rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "×";
+    rm.title = "Remove this comparison"; rm.setAttribute("aria-label", rm.title); rm.onclick = () => removeCol(i);
+    chain.appendChild(rm);
+  }
+  if (i === S.open - 1 && S.open < COLS.length && S.cols[i].mid) {
+    const add = document.createElement("button"); add.className = "add"; add.textContent = "+ Compare";
+    add.title = "Show another market or utility side by side"; add.onclick = addCol;
+    chain.appendChild(add);
+  }
+}
+
 function renderCol(i) {
   const col = S.cols[i], box = $(`#col${i}`);
   if (!box) return;
@@ -428,7 +451,7 @@ function renderCol(i) {
 
   const mSel = document.createElement("select");
   mSel.setAttribute("aria-label", "Market");
-  if (i > 0) mSel.add(new Option("Compare with…", ""));
+  if (i > 0 && !col.mid) mSel.add(new Option("Compare with…", ""));   // not disabled: phone pickers misbehave when the selected option is
   for (const cc of Object.keys(D.countries)) {
     const g = document.createElement("optgroup"); g.label = D.countries[cc].name;
     markets.filter(([, m]) => m.country === cc).forEach(([mid, m]) => g.appendChild(new Option(m.name, mid)));
@@ -437,11 +460,11 @@ function renderCol(i) {
   mSel.value = col.mid;
   mSel.onchange = () => {
     col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col);
-    if (!col.mid) S.cols.slice(i + 1).forEach(c => { c.mid = ""; c.arch = ""; c.util = ""; c.sel = null; });   // no gaps between columns
+    if (!TOUCH) refocusAdd = i;
     render();
   };   // render picks the first utility
   chain.appendChild(mSel);
-  if (!col.mid) return;
+  if (!col.mid) return chainEnd(i, chain);
 
   const m = D.markets[col.mid], C = country(col.mid);
   const utils = Object.entries(m.utilities);
@@ -462,6 +485,7 @@ function renderCol(i) {
     aSel.onchange = () => { col.arch = aSel.value; hold(col); render(); };
     chain.appendChild(aSel);
   }
+  chainEnd(i, chain);
 
   if (!col.arch) return;
 
@@ -821,7 +845,7 @@ function alignRows() {
   const stacked = cols.length > 1 && new Set(cols.map(c => Math.round(c.getBoundingClientRect().top))).size > 1;   // a phone
   $("#cols").classList.toggle("stacked", stacked);
   if (cols.length < 2 || stacked) return;
-  const same = els => { const max = Math.max(...els.map(el => el.getBoundingClientRect().height)); els.forEach(el => { el.style.height = max + "px"; }); };
+  const same = els => { els = els.filter(Boolean); const max = Math.max(...els.map(el => el.getBoundingClientRect().height)); els.forEach(el => { el.style.height = max + "px"; }); };
   same(cols.map(c => c.querySelector(".chain")));
   same(cols.map(c => c.querySelector(".ans thead tr")));
   // walk the parts in order; where a part starts lower in one column, stretch the row above it in the others
@@ -837,7 +861,8 @@ function alignRows() {
   }
 }
 let resizeT; addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(alignCols, 100); });
-let lastView = null, refocus = null;   // [column, row key]: keyboard focus survives the rebuild
+const TOUCH = matchMedia("(pointer: coarse)").matches;
+let lastView = null, refocus = null, refocusAdd = null, addedCol = false;   // refocusAdd: a column whose market list takes focus, or -1 for the add button   // [column, row key]: keyboard focus survives the rebuild
 function render() {
   // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
   const keep = { x: scrollX, y: scrollY, h: Math.ceil($("#cols").getBoundingClientRect().height), side: [...document.querySelectorAll(".diagram")].map(d => d.scrollLeft) };
@@ -850,8 +875,8 @@ function render() {
     if (c.carry) { c.sel = carrySel(c, c.carry); delete c.carry; }
     c.prev = { mid: c.mid, arch: c.arch, util: c.util };
   });
-  const shownCols = S.cols.filter((c, i) => i < 2 || S.cols[i - 1].mid);   // the third column appears once the second is picked
-  $("#cols").className = "cols" + (S.cols.filter(c => c.mid).length === 3 ? " n3" : "");
+  const shownCols = S.cols.slice(0, S.open);   // comparisons appear only when the reader adds them
+  $("#cols").className = "cols" + (S.open === 1 ? " n1" : "") + (S.cols.filter(c => c.mid).length === 3 ? " n3" : "");
   $("#cols").innerHTML = shownCols.map((c, i) => `<div class="col" id="col${i}"></div>`).join("");
   W = Math.max(W_MIN, ...S.cols.filter(c => c.mid && c.arch).map(c => {
     const nodes = resolve(c.mid, c.arch).nodes;
@@ -860,6 +885,14 @@ function render() {
   renderBar(); shownCols.forEach((c, i) => renderCol(i)); renderLegend(); saveHash(); alignCols();
   document.querySelectorAll(".diagram").forEach((d, i) => { d.scrollLeft = keep.side[i] || 0; });
   scrollTo(keep.x, keep.y);
+  if (refocusAdd !== null) {
+    const el = refocusAdd < 0 ? $("#cols .add") || $("#col0 select") : $(`#col${refocusAdd} select`);
+    // on a phone a new comparison opens below the first diagram; show it, since nothing else on screen changes
+    const below = refocusAdd > 0 && addedCol && $(`#col${refocusAdd}`).getBoundingClientRect().top > $("#col0").getBoundingClientRect().top + 1;
+    if (el && !(TOUCH && el.tagName === "SELECT")) el.focus({ preventScroll: true });   // focusing a select on a phone pops its picker open
+    if (below) $(`#col${refocusAdd}`).scrollIntoView({ block: "start" });
+    refocusAdd = null; addedCol = false;
+  }
   if (refocus) { const i = S.cols.indexOf(refocus[0]), tr = $(`#col${i} tr[data-key="${refocus[1]}"]`); if (tr) tr.focus({ preventScroll: true }); refocus = null; }
 }
 document.querySelectorAll("#lens button").forEach(b => b.onclick = () => { S.lens = b.dataset.v; S.cols.forEach(c => c.sel = null); render(); });
