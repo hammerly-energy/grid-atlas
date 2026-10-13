@@ -1669,76 +1669,6 @@
     }
    ]
   },
-  "gb/domestic_default_capped/ofgem_neso": {
-   "status": "needs_verification",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions",
-   "reviews": [
-    {
-     "verdict": "unsure",
-     "reason": "First NESO licences granted by Secretary of State (Energy Act 2023); Ofgem modifies/enforces. Generic page; cite licence."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "Ofgem regulates NESO under its electricity system operator licence (Energy Act 2023); Ofgem licences page lists it."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/ofgem_dno": {
-   "status": "verified",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "Ofgem RIIO-ED2 price control for DNOs; official Ofgem page."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "Ofgem sets DNO price control via RIIO-ED2; Ofgem's own page."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/ofgem_supplier": {
-   "status": "verified",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "Ofgem grants supply licences (Electricity Act 1989 s6); official Ofgem licensing page."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "Ofgem grants and enforces supply licences; Ofgem's own page."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/neso_bm": {
-   "status": "needs_verification",
-   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
-   "reviews": [
-    {
-     "verdict": "reject",
-     "reason": "Fact right, but cited NESO TNUoS page never mentions Balancing Mechanism; cite NESO BM page or Grid Code BC2."
-    },
-    {
-     "verdict": "reject",
-     "reason": "Relationship right, but cited NESO TNUoS page never mentions the Balancing Mechanism. Fix: cite NESO BM page or Grid Code BC."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/elexon_settles": {
-   "status": "verified",
-   "source_url": "https://www.elexon.co.uk/bsc/",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "Elexon as BSCCo settles imbalance under the BSC."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "Elexon administers BSC imbalance settlement for parties including suppliers; Elexon's own page."
-    }
-   ]
-  },
   "gb/domestic_default_capped/ofgem_cap": {
    "status": "verified",
    "source_url": "https://www.ofgem.gov.uk/energy-price-cap",
@@ -1767,34 +1697,6 @@
     }
    ]
   },
-  "gb/domestic_default_capped/ofgem_neso_tx": {
-   "status": "needs_verification",
-   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
-   "reviews": [
-    {
-     "verdict": "unsure",
-     "reason": "NESO TNUoS page (fetched) does not mention RIIO or Ofgem approving TO revenues; cite RIIO-T3 final determinations."
-    },
-    {
-     "verdict": "unsure",
-     "reason": "Fetched NESO TNUoS page does not mention RIIO or Ofgem approving TO revenues. Cite Ofgem RIIO-T3 final determinations."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/neso_sup_tx": {
-   "status": "verified",
-   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "NESO publishes final TNUoS tariffs under CUSC Section 14; page shows 2026/27 tariffs."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "NESO page: NESO recovers TO revenue and publishes final TNUoS tariffs (CUSC 14). Supplier charged for demand."
-    }
-   ]
-  },
   "gb/domestic_default_capped/sup_res_tx": {
    "status": "verified",
    "source_url": "https://www.ofgem.gov.uk/energy-price-cap",
@@ -1806,34 +1708,6 @@
     {
      "verdict": "confirm",
      "reason": "Ofgem cap methodology includes network costs (TNUoS) in tariff; passes_through fits."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/ofgem_dno_dx": {
-   "status": "verified",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "RIIO-ED2 sets DNO allowed revenue; approves fits."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "RIIO-ED2 sets DNO allowed revenue; approves fits."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/dno_sup_dx": {
-   "status": "needs_verification",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
-   "reviews": [
-    {
-     "verdict": "unsure",
-     "reason": "DNOs set DUoS under DCUSA charging methodology; RIIO-ED2 page is not the right document."
-    },
-    {
-     "verdict": "unsure",
-     "reason": "DNOs set DUoS under DCUSA CDCM, but RIIO-ED2 page does not cover tariff setting. Cite DCUSA or DNO charging statement."
     }
    ]
   },
@@ -1851,20 +1725,6 @@
     }
    ]
   },
-  "gb/domestic_default_capped/neso_sup_bal": {
-   "status": "verified",
-   "source_url": "https://neso.energy/charging/balancing-services-use-system-bsuos-charges",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "NESO page: BSUoS recovered solely from final demand (CMP308), fixed tariff (CMP361). Fetched."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "NESO BSUoS page: recovered solely from final demand since CMP308; NESO publishes fixed tariffs."
-    }
-   ]
-  },
   "gb/domestic_default_capped/sup_res_bal": {
    "status": "verified",
    "source_url": "https://www.ofgem.gov.uk/energy-price-cap",
@@ -1876,20 +1736,6 @@
     {
      "verdict": "confirm",
      "reason": "Cap network-cost element includes BSUoS; passes_through fits."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/esc_sup_cap": {
-   "status": "needs_verification",
-   "source_url": "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market",
-   "reviews": [
-    {
-     "verdict": "unsure",
-     "reason": "True, but gov.uk CM collection is generic; cite Electricity Capacity (Supplier Payment etc.) Regulations 2014."
-    },
-    {
-     "verdict": "unsure",
-     "reason": "Fact right (ESC levies CM supplier charge), but gov.uk collection page is generic. Cite Electricity Capacity Regulations 2014 Part 11."
     }
    ]
   },
@@ -1907,20 +1753,6 @@
     }
    ]
   },
-  "gb/domestic_default_capped/desnz_sup_levy": {
-   "status": "needs_verification",
-   "source_url": "https://www.legislation.gov.uk/ukpga/2013/32/contents",
-   "reviews": [
-    {
-     "verdict": "unsure",
-     "reason": "Energy Act 2013 covers CfD only; nuclear RAB (2022 Act), RO, FiT, WHD need their own instruments."
-    },
-    {
-     "verdict": "unsure",
-     "reason": "Energy Act 2013 supports only CfD; RO, FiT, WHD, nuclear RAB need their own instruments cited."
-    }
-   ]
-  },
   "gb/domestic_default_capped/sup_res_levy": {
    "status": "verified",
    "source_url": "https://www.ofgem.gov.uk/energy-price-cap",
@@ -1932,20 +1764,6 @@
     {
      "verdict": "confirm",
      "reason": "Cap includes policy costs element; passes_through fits."
-    }
-   ]
-  },
-  "gb/domestic_default_capped/hmt_sup_vat": {
-   "status": "verified",
-   "source_url": "https://www.gov.uk/government/publications/temporary-zero-rate-of-vat-for-domestic-electricity-in-great-britain/temporary-zero-rate-of-vat-in-great-britain-for-domestic-electricity",
-   "reviews": [
-    {
-     "verdict": "confirm",
-     "reason": "gov.uk/HMRC page (fetched): HMT Order, 0% 1 Oct 2026 to 31 Mar 2027, normally 5%."
-    },
-    {
-     "verdict": "confirm",
-     "reason": "gov.uk/HMRC publication confirms temporary 0% domestic electricity VAT 1 Oct 2026-31 Mar 2027; levies tax correct."
     }
    ]
   },
@@ -7536,6 +7354,174 @@
     {
      "verdict": "confirm",
      "reason": "CPUC RA page names ESPs among LSEs that must procure RA capacity. Bilateral wording not on page but not contradicted."
+    }
+   ]
+  },
+  "gb/base/ofgem_neso": {
+   "status": "needs_verification",
+   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "First NESO licences granted by Secretary of State (Energy Act 2023); Ofgem modifies/enforces. Generic page; cite licence."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem regulates NESO under its electricity system operator licence (Energy Act 2023); Ofgem licences page lists it."
+    }
+   ]
+  },
+  "gb/base/ofgem_supplier": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem grants supply licences (Electricity Act 1989 s6); official Ofgem licensing page."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem grants and enforces supply licences; Ofgem's own page."
+    }
+   ]
+  },
+  "gb/base/ofgem_dno": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem RIIO-ED2 price control for DNOs; official Ofgem page."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem sets DNO price control via RIIO-ED2; Ofgem's own page."
+    }
+   ]
+  },
+  "gb/base/neso_bm": {
+   "status": "needs_verification",
+   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "Fact right, but cited NESO TNUoS page never mentions Balancing Mechanism; cite NESO BM page or Grid Code BC2."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Relationship right, but cited NESO TNUoS page never mentions the Balancing Mechanism. Fix: cite NESO BM page or Grid Code BC."
+    }
+   ]
+  },
+  "gb/base/elexon_settles": {
+   "status": "verified",
+   "source_url": "https://www.elexon.co.uk/bsc/",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Elexon as BSCCo settles imbalance under the BSC."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Elexon administers BSC imbalance settlement for parties including suppliers; Elexon's own page."
+    }
+   ]
+  },
+  "gb/base/ofgem_neso_tx": {
+   "status": "needs_verification",
+   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "NESO TNUoS page (fetched) does not mention RIIO or Ofgem approving TO revenues; cite RIIO-T3 final determinations."
+    },
+    {
+     "verdict": "unsure",
+     "reason": "Fetched NESO TNUoS page does not mention RIIO or Ofgem approving TO revenues. Cite Ofgem RIIO-T3 final determinations."
+    }
+   ]
+  },
+  "gb/base/neso_sup_tx": {
+   "status": "verified",
+   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "NESO publishes final TNUoS tariffs under CUSC Section 14; page shows 2026/27 tariffs."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "NESO page: NESO recovers TO revenue and publishes final TNUoS tariffs (CUSC 14). Supplier charged for demand."
+    }
+   ]
+  },
+  "gb/base/ofgem_dno_dx": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "RIIO-ED2 sets DNO allowed revenue; approves fits."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "RIIO-ED2 sets DNO allowed revenue; approves fits."
+    }
+   ]
+  },
+  "gb/base/dno_sup_dx": {
+   "status": "needs_verification",
+   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "DNOs set DUoS under DCUSA charging methodology; RIIO-ED2 page is not the right document."
+    },
+    {
+     "verdict": "unsure",
+     "reason": "DNOs set DUoS under DCUSA CDCM, but RIIO-ED2 page does not cover tariff setting. Cite DCUSA or DNO charging statement."
+    }
+   ]
+  },
+  "gb/base/neso_sup_bal": {
+   "status": "verified",
+   "source_url": "https://neso.energy/charging/balancing-services-use-system-bsuos-charges",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "NESO page: BSUoS recovered solely from final demand (CMP308), fixed tariff (CMP361). Fetched."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "NESO BSUoS page: recovered solely from final demand since CMP308; NESO publishes fixed tariffs."
+    }
+   ]
+  },
+  "gb/base/esc_sup_cap": {
+   "status": "needs_verification",
+   "source_url": "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "True, but gov.uk CM collection is generic; cite Electricity Capacity (Supplier Payment etc.) Regulations 2014."
+    },
+    {
+     "verdict": "unsure",
+     "reason": "Fact right (ESC levies CM supplier charge), but gov.uk collection page is generic. Cite Electricity Capacity Regulations 2014 Part 11."
+    }
+   ]
+  },
+  "gb/base/hmt_sup_vat": {
+   "status": "verified",
+   "source_url": "https://www.gov.uk/government/publications/temporary-zero-rate-of-vat-for-domestic-electricity-in-great-britain/temporary-zero-rate-of-vat-in-great-britain-for-domestic-electricity",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "gov.uk/HMRC page (fetched): HMT Order, 0% 1 Oct 2026 to 31 Mar 2027, normally 5%."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "gov.uk/HMRC publication confirms temporary 0% domestic electricity VAT 1 Oct 2026-31 Mar 2027; levies tax correct."
     }
    ]
   }

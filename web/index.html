@@ -103,7 +103,7 @@
   .ans tr.gap td { color:var(--muted); }
   .ans .who { display:block; }
   .ans caption .billed { display:block; font-weight:400; color:var(--muted); font-size:12px; }
-  .cols.stacked .ans tr.gap { display:none; }
+  .cols.stacked .ans tr.gap:not(.nb) { display:none; }
   .ans .who + .who { margin-top:3px; }
   .capped { position:relative; padding:0 8px; margin:4px 0 10px; }
   .capped::before { content:""; position:absolute; inset:0 0 auto; height:var(--cap-h, 100%); box-sizing:border-box; border:1.6px solid var(--accent); pointer-events:none;
@@ -638,6 +638,10 @@ function answers(col, C, nodes, edges, byId) {
       const cl = term(C, label((own.includes(c) ? C : country(billComps().mids.find(mid => componentsFor(mid).includes(c)))).component_labels, c));
       if (!own.includes(c)) {   // a part of the bill another column on screen has
         tb.innerHTML = `<tr class="gap"><td>${cl}</td><td colspan="2" class="muted">No separate line in ${mname}</td></tr>`;
+        continue;
+      }
+      if (!edges.some(e => e.type === "sets_rate" && e.rate_component === c)) {   // no line carries it: this setup does not pay it (a transmission-connected site pays no DUoS)
+        tb.innerHTML = `<tr class="gap nb"><td>${cl}</td><td colspan="2" class="muted">Not charged in this setup</td></tr>`;
         continue;
       }
       // one row per line item; a bill line with several setters gets one row per setter
