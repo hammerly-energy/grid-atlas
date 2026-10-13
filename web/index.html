@@ -451,7 +451,7 @@ function renderCol(i) {
 
   const mSel = document.createElement("select");
   mSel.setAttribute("aria-label", "Market");
-  if (i > 0 && !col.mid) { const o = new Option("Compare with…", ""); o.disabled = true; mSel.add(o); }
+  if (i > 0 && !col.mid) mSel.add(new Option("Compare with…", ""));   // not disabled: phone pickers misbehave when the selected option is
   for (const cc of Object.keys(D.countries)) {
     const g = document.createElement("optgroup"); g.label = D.countries[cc].name;
     markets.filter(([, m]) => m.country === cc).forEach(([mid, m]) => g.appendChild(new Option(m.name, mid)));
@@ -459,8 +459,9 @@ function renderCol(i) {
   }
   mSel.value = col.mid;
   mSel.onchange = () => {
-    col.mid = mSel.value; col.arch = firstArch(col.mid); col.util = ""; hold(col);
-    refocusAdd = i; render();
+    col.mid = mSel.value; col.arch = col.mid ? firstArch(col.mid) : ""; col.util = ""; hold(col);
+    if (!TOUCH) refocusAdd = i;
+    render();
   };   // render picks the first utility
   chain.appendChild(mSel);
   if (!col.mid) return chainEnd(i, chain);
@@ -860,6 +861,7 @@ function alignRows() {
   }
 }
 let resizeT; addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(alignCols, 100); });
+const TOUCH = matchMedia("(pointer: coarse)").matches;
 let lastView = null, refocus = null, refocusAdd = null, addedCol = false;   // refocusAdd: a column whose market list takes focus, or -1 for the add button   // [column, row key]: keyboard focus survives the rebuild
 function render() {
   // rebuilding the columns empties the page for a moment; keep the reader's place (page and each diagram's sideways scroll)
@@ -887,7 +889,7 @@ function render() {
     const el = refocusAdd < 0 ? $("#cols .add") || $("#col0 select") : $(`#col${refocusAdd} select`);
     // on a phone a new comparison opens below the first diagram; show it, since nothing else on screen changes
     const below = refocusAdd > 0 && addedCol && $(`#col${refocusAdd}`).getBoundingClientRect().top > $("#col0").getBoundingClientRect().top + 1;
-    if (el) el.focus({ preventScroll: true });
+    if (el && !(TOUCH && el.tagName === "SELECT")) el.focus({ preventScroll: true });   // focusing a select on a phone pops its picker open
     if (below) $(`#col${refocusAdd}`).scrollIntoView({ block: "start" });
     refocusAdd = null; addedCol = false;
   }
