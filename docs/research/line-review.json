@@ -7400,16 +7400,16 @@
    ]
   },
   "gb/base/neso_bm": {
-   "status": "needs_verification",
-   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "status": "verified",
+   "source_url": "https://www.neso.energy/what-we-do/systems-operations/what-balancing-mechanism",
    "reviews": [
     {
-     "verdict": "reject",
-     "reason": "Fact right, but cited NESO TNUoS page never mentions Balancing Mechanism; cite NESO BM page or Grid Code BC2."
+     "verdict": "confirm",
+     "reason": "The NESO page says NESO accepts BM bids and offers by issuing Bid Offer Acceptances, which participants must follow. balancing_redispatch is the right mechanism."
     },
     {
-     "verdict": "reject",
-     "reason": "Relationship right, but cited NESO TNUoS page never mentions the Balancing Mechanism. Fix: cite NESO BM page or Grid Code BC."
+     "verdict": "confirm",
+     "reason": "NESO BM page: NESO accepts bids and offers and issues Bid Offer Acceptances instructing participants to change output. balancing_redispatch fits; generators self-dispatch."
     }
    ]
   },
@@ -7428,16 +7428,16 @@
    ]
   },
   "gb/base/ofgem_neso_tx": {
-   "status": "needs_verification",
-   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2025-12/RIIO-3-Final-Determinations-ET.pdf",
    "reviews": [
     {
-     "verdict": "unsure",
-     "reason": "NESO TNUoS page (fetched) does not mention RIIO or Ofgem approving TO revenues; cite RIIO-T3 final determinations."
+     "verdict": "confirm",
+     "reason": "FD ET: Ofgem sets the TOs' RIIO-T3 allowed revenue (approves). The FD doesn't mention TNUoS; recovery via TNUoS is shown by the NESO 'TNUoS in 10 minutes' page (NESO recovers revenue for TOs)."
     },
     {
-     "verdict": "unsure",
-     "reason": "Fetched NESO TNUoS page does not mention RIIO or Ofgem approving TO revenues. Cite Ofgem RIIO-T3 final determinations."
+     "verdict": "confirm",
+     "reason": "RIIO-3 FD ET (Dec 2025, 2026-31) sets TO allowed revenues and refers to their effect on network charges. NESO recovers them via TNUoS (implicit, not stated in the FD); approves mode fits."
     }
    ]
   },
@@ -7471,15 +7471,15 @@
   },
   "gb/base/dno_sup_dx": {
    "status": "needs_verification",
-   "source_url": "https://www.ofgem.gov.uk/energy-policy-and-regulation/policy-and-regulatory-programmes/network-price-controls-2021-2028-riio-2/riio-ed2-price-control",
+   "source_url": "https://www.dcusa.co.uk/",
    "reviews": [
     {
-     "verdict": "unsure",
-     "reason": "DNOs set DUoS under DCUSA charging methodology; RIIO-ED2 page is not the right document."
+     "verdict": "reject",
+     "reason": "The relationship is right: the DNO sets DUoS under the CDCM/EDCM in DCUSA Sch.16/17 and invoices the supplier. The DCUSA homepage mentions none of this. A DNO LC14 statement does."
     },
     {
-     "verdict": "unsure",
-     "reason": "DNOs set DUoS under DCUSA CDCM, but RIIO-ED2 page does not cover tariff setting. Cite DCUSA or DNO charging statement."
+     "verdict": "reject",
+     "reason": "Relationship and mode are right, but the DCUSA homepage only calls DCUSA a multi-party use-of-system contract. It does not mention DUoS tariffs, CDCM/EDCM or who sets them. Cite a DNO LC14 statement or DCUSA Sch 16."
     }
    ]
   },
@@ -7498,16 +7498,16 @@
    ]
   },
   "gb/base/esc_sup_cap": {
-   "status": "needs_verification",
-   "source_url": "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market",
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/3354/contents",
    "reviews": [
     {
-     "verdict": "unsure",
-     "reason": "True, but gov.uk CM collection is generic; cite Electricity Capacity (Supplier Payment etc.) Regulations 2014."
+     "verdict": "confirm",
+     "reason": "Reg 6 of SI 2014/3354: suppliers pay the supplier charge to the Settlement Body (ESC) to recover capacity payments. levies by a levy counterparty fits."
     },
     {
-     "verdict": "unsure",
-     "reason": "Fact right (ESC levies CM supplier charge), but gov.uk collection page is generic. Cite Electricity Capacity Regulations 2014 Part 11."
+     "verdict": "confirm",
+     "reason": "SI 2014/3354 Part 3 reg 6 'Capacity market supplier charge' (calculated per Sch 1, invoiced by the Settlement Body = ESC). levies/capacity fits."
     }
    ]
   },
@@ -7722,16 +7722,16 @@
    ]
   },
   "gb/supplier_contract/sup_sc_tax": {
-   "status": "needs_verification",
+   "status": "verified",
    "source_url": "https://www.gov.uk/guidance/climate-change-levy-rates",
    "reviews": [
     {
      "verdict": "confirm",
-     "reason": "Fetched CCL rates page: business suppliers must charge CCL; VAT on supply per Notice 701/19. Note de minimis (<=33 kWh/day) supplies are CCL-exempt and now 0% VAT."
+     "reason": "Correct: the supplier charges CCL (the gov.uk page says business suppliers charge the levy and domestic supplies are excluded) and VAT. The page covers only CCL, so consider adding VAT Notice 701/19 for VAT."
     },
     {
-     "verdict": "unsure",
-     "reason": "Supplier does charge VAT and CCL, but the CCL rates page does not cover VAT. Add VAT Notice 701/19. Small sites under de minimis pay 0% VAT (to Mar 2027) and no CCL."
+     "verdict": "confirm",
+     "reason": "CCL rates page: business suppliers charge CCL to customers (0.801p/kWh from 1 Apr 2026). VAT half not on this page; consider adding VAT Notice 701/19. Small sites under de minimis pay no CCL and 5%/0% VAT."
     }
    ]
   },
@@ -7778,16 +7778,16 @@
    ]
   },
   "gb/supplier_contract/sup_lci_tax": {
-   "status": "needs_verification",
+   "status": "verified",
    "source_url": "https://www.gov.uk/guidance/climate-change-levy-rates",
    "reviews": [
     {
      "verdict": "confirm",
-     "reason": "Fetched CCL rates page: business suppliers must charge CCL; VAT on supply per Notice 701/19. Note de minimis (<=33 kWh/day) supplies are CCL-exempt and now 0% VAT."
+     "reason": "Correct: the supplier charges CCL (the gov.uk page says business suppliers charge the levy and domestic supplies are excluded) and VAT. The page covers only CCL, so consider adding VAT Notice 701/19 for VAT."
     },
     {
-     "verdict": "unsure",
-     "reason": "Supplier does charge VAT and CCL, but the CCL rates page does not cover VAT. Add VAT Notice 701/19. Small sites under de minimis pay 0% VAT (to Mar 2027) and no CCL."
+     "verdict": "confirm",
+     "reason": "CCL rates page: suppliers charge CCL to business customers (92% discount with a climate change agreement). VAT half needs Notice 701/19 for full support."
     }
    ]
   },
@@ -7796,12 +7796,12 @@
    "source_url": "https://neso.energy/charging/balancing-services-use-system-bsuos-charges",
    "reviews": [
     {
-     "verdict": "confirm",
-     "reason": "Fetched BSUoS page: final demand pays (suppliers and directly connected demand), generators exempt since CMP308. passes_through/BSUoS right. Note: same page lists directly connected demand as payer, see neso_ll_tx."
+     "verdict": "unsure",
+     "reason": "The NESO BSUoS page lists 'Directly-connected transmission demand' as liable alongside suppliers. Whether the site is billed via its supplier or directly (CUSC 14.31) is unclear. The single pass-through route is unconfirmed."
     },
     {
-     "verdict": "unsure",
-     "reason": "NESO BSUoS page lists directly connected transmission demand as a payer, like TNUoS. If the site is billed TNUoS directly it is likely also liable for BSUoS directly; needs CUSC 14.31 check."
+     "verdict": "confirm",
+     "reason": "NESO BSUoS page: recovered solely from final demand since 1 Apr 2023 (CMP308); suppliers and directly connected demand liable; fixed ex-ante tariff (CMP361)."
     }
    ]
   },
@@ -7820,16 +7820,16 @@
    ]
   },
   "gb/transmission_connected/sup_ll_tax": {
-   "status": "needs_verification",
+   "status": "verified",
    "source_url": "https://www.gov.uk/guidance/climate-change-levy-rates",
    "reviews": [
     {
      "verdict": "confirm",
-     "reason": "Fetched CCL rates page: business suppliers must charge CCL; VAT on supply per Notice 701/19. Note de minimis (<=33 kWh/day) supplies are CCL-exempt and now 0% VAT."
+     "reason": "Correct: the supplier charges CCL (the gov.uk page says business suppliers charge the levy and domestic supplies are excluded) and VAT. The page covers only CCL, so consider adding VAT Notice 701/19 for VAT."
     },
     {
-     "verdict": "unsure",
-     "reason": "VAT (20%) and CCL apply; CCL page does not cover VAT. Add VAT Notice 701/19. Many such sites hold CCAs (reduced CCL)."
+     "verdict": "confirm",
+     "reason": "CCL rates page: suppliers charge CCL to business customers. VAT half not on this page; add Notice 701/19."
     }
    ]
   },
@@ -7956,6 +7956,482 @@
     {
      "verdict": "confirm",
      "reason": "Price cap page lists operating costs inside the cap; supplier sets margin within it."
+    }
+   ]
+  },
+  "gb/base/desnz_cm": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/2043/contents",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The Secretary of State (DESNZ) makes the Capacity Regulations 2014. Reg 12, 'Determination of auction parameters by the Secretary of State', and Part 11 (capacity market rules) support market_rules."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "SI 2014/2043 is the CM Regulations; Part 4 Ch 2 reg 12 has the Secretary of State set auction parameters. Note Ofgem makes the CM Rules (Part 11, reg 77), so DESNZ is not the only rule-maker."
+    }
+   ]
+  },
+  "gb/base/desnz_lccc": {
+   "status": "verified",
+   "source_url": "https://www.lowcarboncontracts.uk/about-us/who-we-are",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The LCCC page says LCCC is 'wholly owned by the Secretary of State for Energy Security and Net Zero', which means sole shareholder. Governance domain fits."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "LCCC page: LCCC is wholly owned by the Secretary of State for Energy Security and Net Zero, under framework documents. Fits regulates/governance."
+    }
+   ]
+  },
+  "gb/base/neso_operates_tx": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2025-12/RIIO-3-Final-Determinations-ET.pdf",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "RIIO-3 ET Final Determinations: para 1.3 says the three TOs own the ET system and para 1.4 says it is operated by NESO. Supports operates/transmission."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "RIIO-3 FD ET s1.3-1.4: three TOs own the ET system; 'GB's ET system is operated by NESO'. operates/transmission is correct."
+    }
+   ]
+  },
+  "gb/base/ofgem_elexon": {
+   "status": "needs_verification",
+   "source_url": "https://www.elexon.co.uk/bsc/",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "Right relationship (the Authority approves non-self-governance BSC modifications), but the elexon.co.uk/bsc page never mentions Ofgem or approval. Cite BSC Section F (8.2-8.3: Authority-directed and approved modifications)."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Relationship holds (Authority approves/rejects BSC Modifications), but the cited Elexon /bsc/ page only says Elexon administers the BSC; it does not mention Ofgem deciding changes."
+    }
+   ]
+  },
+  "gb/base/elexon_settles_gen": {
+   "status": "verified",
+   "source_url": "https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "BSC Section T sets the rules for settlement and Trading Charges, including Period BM Unit Cashflow (3.11) and Energy Imbalance Cashflows (4.7), for BSC Parties, which include generators."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "BSC Section T sets the rules for Settlement and BSC Parties' Trading Charges: BM Unit bid/offer cashflows (3.10-3.12) and energy imbalance cashflows (4.7), run by the SAA that Elexon procures."
+    }
+   ]
+  },
+  "gb/base/desnz_sup_ro": {
+   "status": "verified",
+   "source_url": "https://www.gov.uk/government/publications/energy-bill-reductions-statement-to-energy-suppliers/energy-bill-reductions-statement-to-energy-suppliers",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The gov.uk statement confirms the SoS publishes the RO obligation level each year and the Exchequer meets 75% of domestic RO costs from 1 Apr 2026 to 2028/29. Ofgem's RO administration is well established, though not stated there."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "gov.uk statement: the Secretary of State publishes the RO obligation level each year; Exchequer meets 75% of domestic RO costs 2026/27-2028/29. Ofgem's administration not stated there but is correct."
+    }
+   ]
+  },
+  "gb/base/desnz_sup_whd": {
+   "status": "needs_verification",
+   "source_url": "https://www.legislation.gov.uk/uksi/2022/772/contents",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "Right relationship, stale source: the 2022 Regulations ran to 31 Mar 2026, and the WHD (E&W) Regulations 2026 apply from Apr 2026 (Scotland separate). The Ofgem WHD page confirms £150, the domestic-bill levy and the run to 2031."
+    },
+    {
+     "verdict": "reject",
+     "reason": "SI 2022/772 continues WHD only to 31 Mar 2026 and gives no £150 figure; the 2026/27 scheme runs under the WHD (England and Wales) Regulations 2026 (plus Scotland 2026 regs). Re-cite."
+    }
+   ]
+  },
+  "gb/base/hmt_sup_vat_business": {
+   "status": "needs_verification",
+   "source_url": "https://www.gov.uk/government/publications/temporary-zero-rate-of-vat-for-domestic-electricity-in-great-britain/temporary-zero-rate-of-vat-in-great-britain-for-domestic-electricity",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The page confirms 0% on qualifying use (domestic, including de minimis low use, and charity non-business use) in GB from 1 Oct 2026 to 31 Mar 2027, normally 5%. The 20% standard rate is statutory (VATA s.2) but not stated on the page."
+    },
+    {
+     "verdict": "reject",
+     "reason": "The cited page covers only the domestic/qualifying-use 0%. It does not state 20% for business use or the 33 kWh/day de minimis. VAT Notice 701/19 confirms de minimis, standard rating and the 0% from 1 Oct 2026 to 31 Mar 2027."
+    }
+   ]
+  },
+  "gb/base/sup_pays_gen": {
+   "status": "verified",
+   "source_url": "https://bscdocs.elexon.co.uk/bsc-module/guidance-notes/the-electricity-trading-arrangements-a-beginners-guide",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "I could not fetch this page: bscdocs gave only the table of contents and the proxy blocks curl. Elexon's 'Trading in the electricity market' page confirms bilateral trading, non-physical traders and two power exchanges (EPEX, Nord Pool)."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Elexon guide body would not render (JS); only the TOC fetched. I know its content well: generators and suppliers trade through bilateral contracts and power exchanges ahead of gate closure. pays/market is correct."
+    }
+   ]
+  },
+  "gb/base/neso_pays_to": {
+   "status": "needs_verification",
+   "source_url": "https://www.neso.energy/tnuos-10-minutes-0",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The NESO TNUoS guide says NESO recovers the revenue on behalf of the onshore and offshore TOs. Note: mode 'market' follows the repo's convention for pays lines, but TO revenue is RIIO-approved, not traded."
+    },
+    {
+     "verdict": "reject",
+     "reason": "NESO page confirms NESO recovers TNUoS revenue on behalf of the TOs, but mode 'market' (price formed by trading) is wrong: the amount is Ofgem-approved RIIO-T3 allowed revenue. Use approves (or sets)."
+    }
+   ]
+  },
+  "gb/base/neso_pays_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.neso.energy/what-we-do/systems-operations/what-balancing-mechanism",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The relationship is right: NESO funds BM bid/offer cashflows (settled via BSC Section T) and pays for balancing-service contracts. The cited NESO BM page says nothing about who pays whom."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "NESO BM page: NESO uses the BM to buy and procure energy, picking the most competitive bids and offers; prices are participant-bid, so market fits. Cashflows settle via BSC Section T."
+    }
+   ]
+  },
+  "gb/base/esc_pays_gen": {
+   "status": "verified",
+   "source_url": "https://www.lowcarboncontracts.uk/about-us/who-we-are",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The LCCC/ESC page says ESC manages all Capacity Market financial transactions, including 'payments to Capacity Providers'. Pay-as-clear at the auction clearing price is standard under the CM Rules."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "LCCC/ESC page: ESC manages all CM financial transactions, including payments to Capacity Providers. Clearing price is auction-formed, so market fits."
+    }
+   ]
+  },
+  "gb/base/lccc_pays_gen": {
+   "status": "needs_verification",
+   "source_url": "https://www.legislation.gov.uk/ukpga/2013/32/part/2/chapter/2",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The relationship is right, but Energy Act 2013 Pt 2 Ch 2 only frames supplier-funded CfD payments (ss.6, 9, 17). It does not state the strike/reference difference or the generator payback. The gov.uk EMR CfD collection states both."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Energy Act 2013 Pt2 Ch2 (s6, s8, s9) says CfD payments are supplier-funded but says nothing on strike vs reference price or generator repayments. Cite the CfD Standard Terms or Allocation framework for the two-way flow."
+    }
+   ]
+  },
+  "gb/base/desnz_pays_sup_ro": {
+   "status": "needs_verification",
+   "source_url": "https://www.gov.uk/government/publications/domestic-energy-tariff-reductions-2026-ministerial-direction/ro-and-eco-costs-schemes-direction-2026-html",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "RO and ECO Costs Schemes Direction 2026 (EPA 2022 s.22): the SoS pays each domestic supplier 75% of its assumed RO costs. Scheme period 1 Apr 2026 to 31 Mar 2029."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Direction confirms SoS pays domestic suppliers 75% of assumed RO costs, 1 Apr 2026-31 Mar 2029 (para 10.1). But mode 'market' is wrong: the sum is a formula set by the SoS, not traded. Use sets."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_res_gen": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/ukpga/2018/21/section/1",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "TCA 2018 s.1 caps only standard variable and default rates and defines SVT as a rate not fixed for a period. Fixed tariffs are therefore outside the cap and set by the supplier."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Tariff Cap Act s1(4): cap covers only rates not fixed for a contract period and default rates, so fixed tariffs are uncapped and supplier-set. Supports sets/generation for the fixed-tariff archetype."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_res_dx": {
+   "status": "needs_verification",
+   "source_url": "https://www.dcusa.co.uk/",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The DUoS pass-through is right, but the DCUSA homepage only calls DCUSA a contract between distributors, suppliers and generators, with no word on charges or pass-through. Cite a DNO LC14 statement (charges invoiced to the supplier)."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Pass-through is right, but the DCUSA homepage does not mention DUoS or its inclusion in tariffs. Cite a DNO LC14 statement (charges levied on suppliers) or Ofgem's tariff cap methodology network cost allowance."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_res_cap": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/3354/contents",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Right relationship and fields. Reg 6 makes the supplier liable to the Settlement Body (ESC) for the CM charge, which it recovers in the price. Same bar as the verified *_levy lines citing the CfD supplier-obligation regulations."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "SI 2014/3354 reg 6 places the CM supplier charge on suppliers; they recover it in tariffs. passes_through/capacity fits."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_res_margin": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/ukpga/2018/21/section/1",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "TCA 2018 s.1 confines the cap to SVT and default rates, so cost and margin on a fixed tariff are the supplier's own. Supported by inference only; acceptable."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Same as sup_res_gen: s1 Tariff Cap Act leaves fixed-term rates outside the cap, so the supplier sets the whole fixed price, including costs and margin."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_sc_gen": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: non-domestic contracts are uncapped and supplier-priced. The Ofgem page covers fixed, deemed/out-of-contract and market-linked rates and says offers vary by supplier."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem business contracts page: fixed rate, market-linked rate, deemed and out-of-contract rates, offers vary by supplier; no business price cap."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_sc_dx": {
+   "status": "needs_verification",
+   "source_url": "https://www.dcusa.co.uk/",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The DUoS pass-through is right, but the DCUSA homepage only calls DCUSA a contract between distributors, suppliers and generators, with no word on charges or pass-through. Cite a DNO LC14 statement (charges invoiced to the supplier)."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Same as dno_sup_dx: the DCUSA homepage does not mention DUoS or its inclusion in business contract prices. Re-cite a DNO LC14 charging statement."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_sc_cap": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/3354/contents",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Right relationship and fields. Reg 6 makes the supplier liable to the Settlement Body (ESC) for the CM charge, which it recovers in the price. Same bar as the verified *_levy lines citing the CfD supplier-obligation regulations."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "SI 2014/3354 reg 6: CM supplier charge on suppliers, recovered from customers. passes_through/capacity fits."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_sc_margin": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: the margin sits inside the uncapped, supplier-set contract price. The Ofgem page only implies this (offers vary by supplier, brokers' fees are built into the rate). It never names cost or margin."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem business contracts page: suppliers offer differing contract prices, no cap; operating cost and margin sit in the supplier-set price."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_lci_gen": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: non-domestic contracts are uncapped and supplier-priced. The Ofgem page covers fixed, deemed/out-of-contract and market-linked rates and says offers vary by supplier."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem page describes fixed and market-linked business contracts; same contract forms apply to large non-domestic users."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_lci_dx": {
+   "status": "needs_verification",
+   "source_url": "https://www.dcusa.co.uk/",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The DUoS pass-through is right, but the DCUSA homepage only calls DCUSA a contract between distributors, suppliers and generators, with no word on charges or pass-through. Cite a DNO LC14 statement (charges invoiced to the supplier)."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Same source problem as dno_sup_dx: DCUSA homepage does not support DUoS pass-through. Re-cite a DNO LC14 charging statement."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_lci_cap": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/3354/contents",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Right relationship and fields. Reg 6 makes the supplier liable to the Settlement Body (ESC) for the CM charge, which it recovers in the price. Same bar as the verified *_levy lines citing the CfD supplier-obligation regulations."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "SI 2014/3354 reg 6: CM supplier charge on suppliers, passed through to customers."
+    }
+   ]
+  },
+  "gb/supplier_contract/sup_lci_margin": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: the margin sits inside the uncapped, supplier-set contract price. The Ofgem page only implies this (offers vary by supplier, brokers' fees are built into the rate). It never names cost or margin."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem business contracts page: uncapped, supplier-priced contracts; margin sits in the supplier-set price."
+    }
+   ]
+  },
+  "gb/transmission_connected/sup_ll_tx": {
+   "status": "needs_verification",
+   "source_url": "https://www.neso.energy/industry-information/charging/transmission-network-use-system-tnuos-charges",
+   "reviews": [
+    {
+     "verdict": "unsure",
+     "reason": "The NESO page lists 'Directly connected transmission demand' as charged separately from suppliers, and CLAUDE.md says NESO bills TNUoS directly. Supplier pass-through may not be the route, or only one of two. Check CUSC s.14."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "NESO TNUoS page: suppliers charged on actual demand, directly connected demand also chargeable; publishes Transmission Connected Sites Residual Charging Bands. Pass-through via supplier is one valid route."
+    }
+   ]
+  },
+  "gb/transmission_connected/sup_ll_gen": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: non-domestic contracts are uncapped and supplier-priced. The Ofgem page covers fixed, deemed/out-of-contract and market-linked rates and says offers vary by supplier."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem page: fixed or market-linked business contracts set by the supplier; applies to large transmission-connected sites too."
+    }
+   ]
+  },
+  "gb/transmission_connected/sup_ll_cap": {
+   "status": "verified",
+   "source_url": "https://www.legislation.gov.uk/uksi/2014/3354/contents",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Under reg 6 only suppliers pay the CM supplier charge, so a transmission-connected site bears it through its supplier. Source and fields fit."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "SI 2014/3354 reg 6: CM supplier charge on suppliers, passed through. (Some EII sites get a CM charge exemption; that is a variant.)"
+    }
+   ]
+  },
+  "gb/transmission_connected/sup_ll_margin": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Correct: the margin sits inside the uncapped, supplier-set contract price. The Ofgem page only implies this (offers vary by supplier, brokers' fees are built into the rate). It never names cost or margin."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem business contracts page: uncapped supplier-set prices; margin sits in them."
+    }
+   ]
+  },
+  "gb/idno_network/ofgem_idno": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2023-10/Open%20letter%20on%20IDNOs%20-%20Oct-23-Final.pdf",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem's Oct 2023 IDNO open letter: 'In 2004, we issued the first licences under the IDNO regime.' Ofgem (GEMA) licenses IDNOs. Licensing domain fits."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Ofgem IDNO open letter (Oct 2023): 'In 2004, we issued the first licences under the IDNO regime.' regulates/licensing fits."
+    }
+   ]
+  },
+  "gb/idno_network/ofgem_idno_cap": {
+   "status": "verified",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2023-10/Open%20letter%20on%20IDNOs%20-%20Oct-23-Final.pdf",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The letter says the relative price control means 'LDNOs may charge their domestic customers no more than the equivalent DNO tariff'. caps, DUoS, residential all fit."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Open letter: 'Under their licence, LDNOs may charge their domestic customers no more than the equivalent DNO tariff'; only domestic charges are licence-regulated, so applies_to residential is right."
+    }
+   ]
+  },
+  "gb/idno_network/idno_sup_dx": {
+   "status": "needs_verification",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2023-10/Open%20letter%20on%20IDNOs%20-%20Oct-23-Final.pdf",
+   "reviews": [
+    {
+     "verdict": "reject",
+     "reason": "The relationship is right, but the Ofgem letter doesn't say IDNOs set their own DUoS. ESP Electricity's DUoS methodology statement does: it sets DUoS, publishes an LC14 statement and replicates or caps at host DNO charges."
+    },
+    {
+     "verdict": "confirm",
+     "reason": "Open letter: IDNOs publish their own charges, mirroring the host DNO for LV/HV and using own methodologies for EHV, subject to licence and non-discrimination. sets fits, with Ofgem's cap as the limit."
+    }
+   ]
+  },
+  "gb/idno_network/idno_pays_dno": {
+   "status": "needs_verification",
+   "source_url": "https://www.ofgem.gov.uk/sites/default/files/2023-10/Open%20letter%20on%20IDNOs%20-%20Oct-23-Final.pdf",
+   "reviews": [
+    {
+     "verdict": "confirm",
+     "reason": "The letter says 'The DUoS charges that the LDNOs pay to the respective DNOs to operate within their regions are discounted'. Note: the price is the host DNO's LDNO tariff (CDCM), not traded; mode 'market' is only the repo's convention."
+    },
+    {
+     "verdict": "reject",
+     "reason": "Letter confirms LDNOs pay host DNOs discounted DUoS. But mode 'market' is wrong: the host DNO sets the LDNO discount tariffs under the DCUSA charging methodology; use sets."
     }
    ]
   }

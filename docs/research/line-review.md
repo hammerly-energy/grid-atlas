@@ -60,3 +60,16 @@ Fixed: ERCOT co-op retail transmission set by the board (`board_coop_tx`, PURA 4
 
 Open: NJ BGS-CIEP charges ancillary at a fixed BPU-approved rate (PSE&G Sheet 82), so `pjm_edc_as` fits PECO only; the ERCOT admin fee is not drawn for city utilities and co-ops; Maryland shoppers' and FirstEnergy Pennsylvania transmission billing unconfirmed; GB policy levies are one `desnz_sup_levy` line, though LCCC sets the CfD and nuclear RAB levy rates and DESNZ the RO level (could be split into line items); CAISO city utilities' FERC-reviewed transmission revenue requirement is a `regulates` line, not a limit on the council-set retail charge; PJM consolidated billing (utility bills the supplier's charges) not drawn.
 
+
+## Great Britain, milestone 6 (2026-10-14)
+
+Two independent Claude reviewers checked every new or changed GB line in two rounds (round 1: 68 lines; round 2: 42 lines re-sourced after round 1). Per-reviewer files: `/mnt/project-files/grid-atlas/gb-m6/`.
+
+Result: GB 71 solid / 15 dashed of 86 lines.
+
+Still dashed, and why:
+- `dno_sup_dx` and the DUoS pass-throughs in the contract setup: re-sourced to a DNO charging statement after round 2; not yet re-checked.
+- `ofgem_elexon` (now BSC Section F), `neso_pays_gen` (now BSC Section T), `lccc_pays_gen` (now gov.uk CfD collection), `desnz_sup_whd` (now the 2026/27 WHD eligibility statement), `idno_sup_dx` (now ESP's charging methodology): re-sourced after round 2; not yet re-checked.
+- `neso_pays_to`, `desnz_pays_sup_ro`, `idno_pays_dno`: reviewers say `pays` mode `market` reads as a traded price for amounts a regulator or formula sets. Every `pays` line in the repo uses `market`; changing that is a convention decision.
+- `hmt_sup_vat_business`: the cited page states the 0% window but not the 20% standard rate.
+- `sup_ll_tx`, `sup_ll_bal`: NESO lists directly connected demand as a TNUoS and BSUoS payer, so a site that is itself a CUSC party may be billed directly rather than through its supplier. Needs a CUSC Section 14 check.
