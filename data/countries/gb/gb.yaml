@@ -66,7 +66,7 @@ base:
       jurisdiction: national
       description: Administers the Balancing and Settlement Code; settles the difference between what each party contracted and what it metered.
       owner:
-        name: Largest BSC parties
+        name: 13 largest BSC parties
         type: member_owned
         as_of: "2024-10-01"
         source: {title: Elexon ownership change on 1 October 2024, url: "https://www.elexon.co.uk/2024/10/01/elexon-ownership-change-on-1-october-2024/", accessed: "2026-10-13"}
@@ -138,59 +138,64 @@ base:
       description: Licensed supplier. Buys wholesale energy, pays network charges and levies, bills the customer.
   edges:
     # regulation and oversight
-    - {id: ofgem_neso, from: ofgem, to: neso, type: regulates, domain: licensing, label: licenses NESO, status: needs_verification,
+    - {id: ofgem_neso, from: ofgem, to: neso, type: regulates, domain: licensing, label: licenses NESO, status: verified,
        source: &ofgemlic {title: Ofgem licences and licence conditions, url: "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions", accessed: "2026-10-07"}}
     - {id: ofgem_supplier, from: ofgem, to: supplier, type: regulates, domain: licensing, label: licenses suppliers, status: verified, source: *ofgemlic}
     - {id: ofgem_dno, from: ofgem, to: dno, type: regulates, domain: rates, label: sets the DNO price control, status: verified, source: *ed2}
-    - {id: ofgem_to, from: ofgem, to: transmission_owner, type: regulates, domain: rates, label: sets the transmission owner's allowed revenue (RIIO-T3), status: needs_verification, source: *riio3}
-    - {id: desnz_cm, from: desnz, to: capacity_market, type: regulates, domain: market_rules, label: sets the Capacity Market rules and how much capacity to buy, status: needs_verification,
+    - {id: ofgem_to, from: ofgem, to: transmission_owner, type: regulates, domain: rates, label: sets the transmission owner's allowed revenue (RIIO-T3), status: verified, source: *riio3}
+    - {id: desnz_cm, from: desnz, to: capacity_market, type: regulates, domain: market_rules, label: sets the Capacity Market regulations and auction parameters, status: needs_verification,
        source: &cmregs {title: The Electricity Capacity Regulations 2014, url: "https://www.legislation.gov.uk/uksi/2014/2043/contents", accessed: "2026-10-13"}}
-    - {id: desnz_lccc, from: desnz, to: lccc, type: regulates, domain: governance, label: "sets CfD allocation rounds and budgets; LCCC's sole shareholder", status: needs_verification, source: *lccc}
+    - {id: desnz_lccc, from: desnz, to: lccc, type: regulates, domain: governance, label: "LCCC's sole shareholder", status: needs_verification, source: *lccc}
     # operations
     - {id: neso_bm, from: neso, to: generators, type: dispatches, mechanism: balancing_redispatch, label: accepts bids and offers in the Balancing Mechanism, status: needs_verification,
-       source: &tnuos {title: NESO TNUoS, url: "https://www.neso.energy/tnuos-10-minutes-0", accessed: "2026-10-07"}}
-    - {id: neso_operates_tx, from: neso, to: transmission_owner, type: operates, asset: transmission, label: operates the transmission network the transmission owner owns, status: needs_verification,
-       source: &stc {title: System Operator Transmission Owner Code (STC), url: "https://www.neso.energy/industry-information/codes/system-operator-transmission-owner-code-stc", accessed: "2026-10-13"}}
-    - {id: neso_cm, from: neso, to: capacity_market, type: operates, label: runs the Capacity Market auctions (EMR delivery body), status: needs_verification, source: *cmregs}
+       source: &bm {title: NESO — what is the Balancing Mechanism, url: "https://www.neso.energy/what-we-do/systems-operations/what-balancing-mechanism", accessed: "2026-10-14"}}
+    - {id: neso_operates_tx, from: neso, to: transmission_owner, type: operates, asset: transmission, label: operates the transmission network the transmission owner owns, status: needs_verification, source: *riio3}
+    - {id: neso_cm, from: neso, to: capacity_market, type: operates, label: runs the Capacity Market auctions (EMR delivery body), status: verified, source: *cmregs}
+    - {id: ofgem_elexon, from: ofgem, to: elexon, type: regulates, domain: market_rules, label: decides changes to the Balancing and Settlement Code, status: needs_verification, source: &bsc0 {title: Elexon BSC, url: "https://www.elexon.co.uk/bsc/", accessed: "2026-10-07"}}
     - {id: elexon_settles, from: elexon, to: supplier, type: settles, label: settles imbalances under the BSC, status: verified,
        source: &bsc {title: Elexon BSC, url: "https://www.elexon.co.uk/bsc/", accessed: "2026-10-07"}}
-    - {id: elexon_settles_gen, from: elexon, to: generators, type: settles, label: settles generators' imbalances and Balancing Mechanism actions under the BSC, status: needs_verification, source: *bsc}
+    - {id: elexon_settles_gen, from: elexon, to: generators, type: settles, label: settles generators' imbalances and Balancing Mechanism actions under the BSC, status: needs_verification,
+       source: {title: "BSC Section T: Settlement and Trading Charges", url: "https://bscdocs.elexon.co.uk/bsc/bsc-section-t-settlement-and-trading-charges", accessed: "2026-10-14"}}
     # bill: lines that reach the supplier, the same in every setup
-    - {id: ofgem_neso_tx, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: transmission, subcomponent: TNUoS, label: approves the transmission owners' revenues (RIIO-T3) that NESO recovers through TNUoS, status: needs_verification, source: *tnuos}
-    - {id: neso_sup_tx, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: sets TNUoS tariffs, status: verified, source: *tnuos}
+    - {id: ofgem_neso_tx, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: transmission, subcomponent: TNUoS, label: approves the transmission owners' revenues (RIIO-T3) that NESO recovers through TNUoS, status: needs_verification, source: *riio3}
+    - {id: neso_sup_tx, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: sets TNUoS tariffs, status: verified,
+       source: &tnuos {title: NESO TNUoS, url: "https://www.neso.energy/tnuos-10-minutes-0", accessed: "2026-10-07"}}
     - {id: ofgem_dno_dx, from: ofgem, to: dno, type: sets_rate, mode: approves, rate_component: distribution, subcomponent: DUoS, label: sets DNO allowed revenue (RIIO-ED2), status: verified, source: *ed2}
-    - {id: dno_sup_dx, from: dno, to: supplier, type: sets_rate, mode: sets, rate_component: distribution, subcomponent: DUoS, label: sets DUoS tariffs, status: needs_verification, source: *ed2}
+    - {id: dno_sup_dx, from: dno, to: supplier, type: sets_rate, mode: sets, rate_component: distribution, subcomponent: DUoS, label: sets DUoS tariffs (common charging methodologies in DCUSA), status: needs_verification,
+       source: &dcusa {title: Distribution Connection and Use of System Agreement (DCUSA), url: "https://www.dcusa.co.uk/", accessed: "2026-10-14"}}
     - {id: neso_sup_bal, from: neso, to: supplier, type: sets_rate, mode: sets, rate_component: balancing, subcomponent: BSUoS, label: sets BSUoS (charged to demand only), status: verified,
        source: &bsuos {title: NESO BSUoS charges, url: "https://neso.energy/charging/balancing-services-use-system-bsuos-charges", accessed: "2026-10-07"}}
-    - {id: ofgem_neso_bal, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: balancing, subcomponent: BSUoS, label: approves the BSUoS charging methodology (CUSC Section 14), status: needs_verification,
+    - {id: ofgem_neso_bal, from: ofgem, to: neso, type: sets_rate, mode: approves, rate_component: balancing, subcomponent: BSUoS, label: approves the BSUoS charging methodology (CUSC Section 14), status: verified,
        source: {title: "Ofgem decision on CUSC modification CMP408 (BSUoS), 30 October 2024", url: "https://www.ofgem.gov.uk/sites/default/files/2024-10/CMP408_Authority_Decision_Letter.pdf", accessed: "2026-10-12"}}
     - {id: esc_sup_cap, from: esc, to: supplier, type: sets_rate, mode: levies, rate_component: capacity, label: levies the Capacity Market supplier charge, status: needs_verification,
-       source: &cm {title: Capacity Market collection, url: "https://www.gov.uk/government/collections/electricity-market-reform-capacity-market", accessed: "2026-10-07"}}
+       source: &cm {title: "The Electricity Capacity (Supplier Payment etc.) Regulations 2014, reg. 6", url: "https://www.legislation.gov.uk/uksi/2014/3354/contents", accessed: "2026-10-14"}}
     # policy costs: one line item per scheme, each with its own setter
-    - {id: lccc_sup_cfd, from: lccc, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: CfD, label: sets the CfD interim levy rate and reserve and collects them from suppliers, status: needs_verification,
+    - {id: lccc_sup_cfd, from: lccc, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: CfD, label: sets the CfD interim levy rate and reserve and collects them from suppliers, status: verified,
        source: &cfdso {title: The Contracts for Difference (Electricity Supplier Obligations) Regulations 2014, url: "https://www.legislation.gov.uk/uksi/2014/2014/contents", accessed: "2026-10-13"}}
-    - {id: lccc_sup_rab, from: lccc, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: Nuclear RAB, label: collects the nuclear RAB levy (Sizewell C) from suppliers, status: needs_verification,
+    - {id: lccc_sup_rab, from: lccc, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: Nuclear RAB, label: collects the nuclear RAB levy (Sizewell C) from suppliers, status: verified,
        source: &rab {title: EMR Settlement — Nuclear RAB, url: "https://www.emrsettlement.co.uk/schemes/nuclearrab/", accessed: "2026-10-13"}}
     - {id: desnz_sup_ro, from: desnz, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: RO, label: "sets the Renewables Obligation each year; Ofgem administers it. From Apr 2026 the Exchequer pays 75% of the domestic cost", status: needs_verification,
-       source: &ro {title: Ofgem Renewables Obligation, url: "https://www.ofgem.gov.uk/environmental-and-social-schemes/renewables-obligation-ro", accessed: "2026-10-13"}}
-    - {id: ofgem_sup_fit, from: ofgem, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: FiT, label: shares Feed-in Tariff costs among licensed suppliers (levelisation), status: needs_verification,
+       source: &billred {title: Energy bill reductions — statement to energy suppliers, url: "https://www.gov.uk/government/publications/energy-bill-reductions-statement-to-energy-suppliers/energy-bill-reductions-statement-to-energy-suppliers", accessed: "2026-10-14"}}
+    - {id: ofgem_sup_fit, from: ofgem, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: FiT, label: shares Feed-in Tariff costs among licensed suppliers (levelisation), status: verified,
        source: &fit {title: Ofgem Feed-in Tariffs, url: "https://www.ofgem.gov.uk/environmental-and-social-schemes/feed-tariffs-fit", accessed: "2026-10-13"}}
     - {id: desnz_sup_whd, from: desnz, to: supplier, type: sets_rate, mode: levies, rate_component: policy_levy, subcomponent: WHD, applies_to: [residential], label: "sets the Warm Home Discount (£150 rebate); suppliers spread its cost across domestic bills", status: needs_verification,
-       source: &whd {title: Warm Home Discount Scheme, url: "https://www.gov.uk/the-warm-home-discount-scheme", accessed: "2026-10-13"}}
+       source: &whd {title: The Warm Home Discount (England and Wales) Regulations 2022, url: "https://www.legislation.gov.uk/uksi/2022/772/contents", accessed: "2026-10-14"}}
     # taxes
     - {id: hmt_sup_vat, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, applies_to: [residential], label: "VAT on domestic electricity: 0% from 1 Oct 2026 to 31 Mar 2027, normally 5%", status: verified,
        source: &vat0 {title: Temporary zero rate of VAT for domestic electricity in GB, url: "https://www.gov.uk/government/publications/temporary-zero-rate-of-vat-for-domestic-electricity-in-great-britain/temporary-zero-rate-of-vat-in-great-britain-for-domestic-electricity", accessed: "2026-10-07"}}
-    - {id: hmt_sup_vat_business, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, subcomponent: VAT, applies_to: [small_commercial, large_ci, large_load], label: "VAT on business electricity: 20%, or 5% for low use and qualifying use", status: needs_verification,
-       source: &vatbiz {title: "VAT on fuel and power (VAT Notice 701/19)", url: "https://www.gov.uk/guidance/vat-on-fuel-and-power-notice-70119", accessed: "2026-10-13"}}
-    - {id: hmt_sup_ccl, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, subcomponent: Climate Change Levy, applies_to: [small_commercial, large_ci, large_load], label: sets the Climate Change Levy rate on business electricity, status: needs_verification,
+    - {id: hmt_sup_vat_business, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, subcomponent: VAT, applies_to: [small_commercial, large_ci, large_load], label: "VAT on business electricity: 20%; low use and qualifying use 0% from 1 Oct 2026 to 31 Mar 2027 (normally 5%)", status: needs_verification, source: *vat0}
+    - {id: hmt_sup_ccl, from: hm_treasury, to: supplier, type: sets_rate, mode: levies, rate_component: tax, subcomponent: Climate Change Levy, applies_to: [small_commercial, large_ci, large_load], label: sets the Climate Change Levy rate on business electricity, status: verified,
        source: &ccl {title: Climate Change Levy rates, url: "https://www.gov.uk/guidance/climate-change-levy-rates", accessed: "2026-10-13"}}
     # money: where the supplier's payments go after the setters
-    - {id: sup_pays_gen, from: supplier, to: generators, type: pays, mode: market, rate_component: generation, label: "buys wholesale power from generators, bilaterally and on exchanges (EPEX SPOT, N2EX)", status: needs_verification,
-       source: &rema {title: "Review of electricity market arrangements (REMA): summer update 2025", url: "https://www.gov.uk/government/publications/review-of-electricity-market-arrangements-rema-summer-update-2025/review-of-electricity-market-arrangements-rema-summer-update-2025-accessible-webpage", accessed: "2026-10-13"}}
-    - {id: neso_pays_to, from: neso, to: transmission_owner, type: pays, mode: market, rate_component: transmission, label: passes TNUoS revenue to the transmission owner, status: needs_verification, source: *stc}
-    - {id: neso_pays_gen, from: neso, to: generators, type: pays, mode: market, rate_component: balancing, label: "pays generators for accepted Balancing Mechanism bids and offers and balancing services", status: needs_verification, source: *bsuos}
-    - {id: esc_pays_gen, from: esc, to: generators, type: pays, mode: market, rate_component: capacity, label: pays capacity providers their auction clearing price, status: needs_verification, source: *cm}
-    - {id: lccc_pays_gen, from: lccc, to: generators, type: pays, mode: market, rate_component: policy_levy, subcomponent: CfD, label: pays CfD generators the gap between their strike price and the market price, status: needs_verification, source: *lccc}
+    - {id: sup_pays_gen, from: supplier, to: generators, type: pays, mode: market, rate_component: generation, label: "buys wholesale power from generators, bilaterally, through traders and on exchanges", status: needs_verification,
+       source: {title: "Elexon, The electricity trading arrangements: a beginner's guide", url: "https://bscdocs.elexon.co.uk/bsc-module/guidance-notes/the-electricity-trading-arrangements-a-beginners-guide", accessed: "2026-10-14"}}
+    - {id: neso_pays_to, from: neso, to: transmission_owner, type: pays, mode: market, rate_component: transmission, label: passes TNUoS revenue to the transmission owner, status: needs_verification, source: *tnuos}
+    - {id: neso_pays_gen, from: neso, to: generators, type: pays, mode: market, rate_component: balancing, label: "pays generators for accepted Balancing Mechanism bids and offers and balancing services", status: needs_verification, source: *bm}
+    - {id: esc_pays_gen, from: esc, to: generators, type: pays, mode: market, rate_component: capacity, label: pays capacity providers their auction clearing price, status: needs_verification, source: *lccc}
+    - {id: lccc_pays_gen, from: lccc, to: generators, type: pays, mode: market, rate_component: policy_levy, subcomponent: CfD, label: "pays CfD generators the gap between strike price and market reference price, or receives it when the market price is higher", status: needs_verification,
+       source: {title: "Energy Act 2013, Part 2 Chapter 2 (contracts for difference)", url: "https://www.legislation.gov.uk/ukpga/2013/32/part/2/chapter/2", accessed: "2026-10-14"}}
+    - {id: desnz_pays_sup_ro, from: desnz, to: supplier, type: pays, mode: market, rate_component: policy_levy, subcomponent: RO, applies_to: [residential], label: pays domestic suppliers 75% of their Renewables Obligation cost (Apr 2026 to Mar 2029), status: needs_verification,
+       source: {title: RO and ECO Costs Schemes Direction 2026, url: "https://www.gov.uk/government/publications/domestic-energy-tariff-reductions-2026-ministerial-direction/ro-and-eco-costs-schemes-direction-2026-html", accessed: "2026-10-14"}}
 
 archetypes:
   # Standard variable or deemed tariff under Ofgem's default tariff cap: domestic only.
@@ -224,46 +229,47 @@ archetypes:
       - {id: small_commercial, name: Small business, lane: consumers, kind: consumer, jurisdiction: private, description: "Non-domestic customer on a supplier contract, or on deemed rates without one; no price cap."}
       - {id: large_ci, name: Large industrial & commercial, lane: consumers, kind: consumer, jurisdiction: private, description: "Half-hourly metered site on the distribution network; network charges often passed through at cost under the contract."}
     edges:
-      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the fixed tariff, status: needs_verification, source: &slc {title: Ofgem standard conditions of electricity supply licence, url: "https://www.ofgem.gov.uk/energy-policy-and-regulation/industry-licensing/licences-and-licence-conditions", accessed: "2026-10-13"}}
-      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: needs_verification, source: *tnuos}
-      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the tariff, status: needs_verification, source: *ed2}
-      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: needs_verification, source: *bsuos}
+      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the fixed tariff, status: needs_verification, source: &tca {title: "Domestic Gas and Electricity (Tariff Cap) Act 2018, s. 1", url: "https://www.legislation.gov.uk/ukpga/2018/21/section/1", accessed: "2026-10-14"}}
+      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: verified, source: *tnuos}
+      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the tariff, status: needs_verification, source: *dcusa}
+      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: verified, source: *bsuos}
       - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: needs_verification, source: *cm}
-      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: needs_verification, source: *cfdso}
-      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: needs_verification, source: *vat0}
-      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *slc}
-      - {id: sup_sc_gen, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: sets the contract price, status: needs_verification, source: *slc}
-      - {id: sup_sc_tx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the contract price, status: needs_verification, source: *tnuos}
-      - {id: sup_sc_dx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the contract price, status: needs_verification, source: *ed2}
-      - {id: sup_sc_bal, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the contract price, status: needs_verification, source: *bsuos}
+      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: verified, source: *cfdso}
+      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: verified, source: *vat0}
+      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *tca}
+      - {id: sup_sc_gen, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: generation, label: "sets the contract price, or deemed or out-of-contract rates", status: needs_verification,
+         source: &bizc {title: Ofgem — types of business energy contracts, url: "https://www.ofgem.gov.uk/information-consumers/energy-advice-businesses/types-business-energy-contracts", accessed: "2026-10-14"}}
+      - {id: sup_sc_tx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the contract price, status: verified, source: *tnuos}
+      - {id: sup_sc_dx, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes DUoS in the contract price, status: needs_verification, source: *dcusa}
+      - {id: sup_sc_bal, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the contract price, status: verified, source: *bsuos}
       - {id: sup_sc_cap, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge, status: needs_verification, source: *cm}
-      - {id: sup_sc_levy, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs, status: needs_verification, source: *cfdso}
+      - {id: sup_sc_levy, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs, status: verified, source: *cfdso}
       - {id: sup_sc_tax, from: supplier, to: small_commercial, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT and the Climate Change Levy, status: needs_verification, source: *ccl}
-      - {id: sup_sc_margin, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *slc}
-      - {id: sup_lci_gen, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the contract price (fixed or tracking the wholesale market), status: needs_verification, source: *slc}
-      - {id: sup_lci_tx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: passes TNUoS through, status: needs_verification, source: *tnuos}
-      - {id: sup_lci_dx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: passes DUoS through, status: needs_verification, source: *ed2}
-      - {id: sup_lci_bal, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: passes BSUoS through, status: needs_verification, source: *bsuos}
+      - {id: sup_sc_margin, from: supplier, to: small_commercial, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *bizc}
+      - {id: sup_lci_gen, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: generation, label: sets the contract price (fixed or tracking the wholesale market), status: needs_verification, source: *bizc}
+      - {id: sup_lci_tx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: passes TNUoS through, status: verified, source: *tnuos}
+      - {id: sup_lci_dx, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: passes DUoS through, status: needs_verification, source: *dcusa}
+      - {id: sup_lci_bal, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: passes BSUoS through, status: verified, source: *bsuos}
       - {id: sup_lci_cap, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: capacity, label: passes the Capacity Market charge through, status: needs_verification, source: *cm}
-      - {id: sup_lci_levy, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: passes policy costs through, status: needs_verification, source: *cfdso}
+      - {id: sup_lci_levy, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: passes policy costs through, status: verified, source: *cfdso}
       - {id: sup_lci_tax, from: supplier, to: large_ci, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT and the Climate Change Levy, status: needs_verification, source: *ccl}
-      - {id: sup_lci_margin, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *slc}
+      - {id: sup_lci_margin, from: supplier, to: large_ci, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *bizc}
 
   # A site connected to the transmission network: no DNO, no DUoS; NESO bills TNUoS to the site itself.
   transmission_connected:
     label: Transmission-connected
-    removes: [dno, ofgem_dno, ofgem_dno_dx, dno_sup_dx, neso_sup_tx]
+    removes: [dno, ofgem_dno, ofgem_dno_dx, dno_sup_dx]
     nodes:
-      - {id: large_load, name: Transmission-connected site, lane: consumers, kind: consumer, jurisdiction: private, description: "Large site connected directly to the transmission network (steelworks, data centre); pays no DUoS."}
+      - {id: large_load, name: Transmission-connected site, lane: consumers, kind: consumer, jurisdiction: private, description: "Large site connected directly to the transmission network (steelworks, rail traction); rare, since 132 kV counts as transmission only in Scotland. Pays no DUoS."}
     edges:
-      - {id: neso_ll_tx, from: neso, to: large_load, type: sets_rate, mode: sets, rate_component: transmission, subcomponent: TNUoS, label: bills TNUoS directly to the site, status: needs_verification,
-         source: &tnuospage {title: NESO Transmission Network Use of System (TNUoS) charges, url: "https://www.neso.energy/industry-information/charging/transmission-network-use-system-tnuos-charges", accessed: "2026-10-13"}}
-      - {id: sup_ll_gen, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the contract price (fixed or tracking the wholesale market), status: needs_verification, source: *slc}
+      - {id: sup_ll_tx, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: passes TNUoS (transmission-connected demand band) through, status: needs_verification,
+         source: {title: NESO Transmission Network Use of System (TNUoS) charges, url: "https://www.neso.energy/industry-information/charging/transmission-network-use-system-tnuos-charges", accessed: "2026-10-13"}}
+      - {id: sup_ll_gen, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: generation, label: sets the contract price (fixed or tracking the wholesale market), status: needs_verification, source: *bizc}
       - {id: sup_ll_bal, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: passes BSUoS through, status: needs_verification, source: *bsuos}
       - {id: sup_ll_cap, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: capacity, label: passes the Capacity Market charge through, status: needs_verification, source: *cm}
-      - {id: sup_ll_levy, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: passes policy costs through, status: needs_verification, source: *cfdso}
+      - {id: sup_ll_levy, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: passes policy costs through, status: verified, source: *cfdso}
       - {id: sup_ll_tax, from: supplier, to: large_load, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT and the Climate Change Levy, status: needs_verification, source: *ccl}
-      - {id: sup_ll_margin, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *slc}
+      - {id: sup_ll_margin, from: supplier, to: large_load, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin, status: needs_verification, source: *bizc}
 
   # An independent DNO's embedded network (mostly new-build estates) inside a DNO area; household on a default tariff.
   idno_network:
@@ -272,22 +278,22 @@ archetypes:
     nodes:
       - {id: idno, name: IDNO, lane: retail, kind: wires_utility, jurisdiction: private, holds_assets: [distribution],
          description: "Independent distribution network operator; owns the estate network, connected to the host DNO's network.",
-         source: &idno {title: "Ofgem, Regulation of independent electricity distribution network operators (2005)", url: "https://www.ofgem.gov.uk/sites/default/files/docs/2005/01/9500-1805.pdf", accessed: "2026-10-13"}}
+         source: &idno {title: "Ofgem, Open letter on independent distribution network operators (Oct 2023)", url: "https://www.ofgem.gov.uk/sites/default/files/2023-10/Open%20letter%20on%20IDNOs%20-%20Oct-23-Final.pdf", accessed: "2026-10-14"}}
       - {id: residential, name: Domestic, lane: consumers, kind: consumer, jurisdiction: private, description: Household on an IDNO network on a standard variable (default) tariff.}
     edges:
-      - {id: ofgem_idno, from: ofgem, to: idno, type: regulates, domain: licensing, label: licenses the IDNO, status: needs_verification, source: *ofgemlic}
-      - {id: ofgem_idno_cap, from: ofgem, to: idno, type: sets_rate, mode: caps, rate_component: distribution, subcomponent: DUoS, label: "caps IDNO charges at the host DNO's equivalent charges (relative price control)", status: needs_verification, source: *idno}
+      - {id: ofgem_idno, from: ofgem, to: idno, type: regulates, domain: licensing, label: licenses the IDNO, status: needs_verification, source: *idno}
+      - {id: ofgem_idno_cap, from: ofgem, to: idno, type: sets_rate, mode: caps, rate_component: distribution, subcomponent: DUoS, applies_to: [residential], label: "caps the IDNO's domestic charges at the host DNO's equivalent charges (relative price control)", status: needs_verification, source: *idno}
       - {id: idno_sup_dx, from: idno, to: supplier, type: sets_rate, mode: sets, rate_component: distribution, subcomponent: DUoS, label: sets the IDNO's DUoS tariffs, status: needs_verification, source: *idno}
-      - {id: idno_pays_dno, from: idno, to: dno, type: pays, mode: market, rate_component: distribution, subcomponent: DUoS, label: "pays the host DNO for the upstream network (LDNO boundary tariffs)", status: needs_verification, source: *idno}
-      - {id: ofgem_cap, from: ofgem, to: supplier, type: sets_rate, mode: caps, applies_to: [residential], label: caps default tariffs each quarter, status: needs_verification, source: *cap}
-      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the tariff at or below the cap, status: needs_verification, source: *cap}
-      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: needs_verification, source: *cap}
-      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes the IDNO's DUoS in the tariff, status: needs_verification, source: *cap}
-      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: needs_verification, source: *cap}
-      - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: needs_verification, source: *cap}
-      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: needs_verification, source: *cap}
-      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: needs_verification, source: *vat0}
-      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin within the cap, status: needs_verification, source: *cap}
+      - {id: idno_pays_dno, from: idno, to: dno, type: pays, mode: market, rate_component: distribution, subcomponent: DUoS, label: "pays the host DNO discounted DUoS for the upstream network (relative price control)", status: needs_verification, source: *idno}
+      - {id: ofgem_cap, from: ofgem, to: supplier, type: sets_rate, mode: caps, applies_to: [residential], label: caps default tariffs each quarter, status: verified, source: *cap}
+      - {id: sup_res_gen, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: generation, label: sets the tariff at or below the cap, status: verified, source: *cap}
+      - {id: sup_res_tx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: transmission, subcomponent: TNUoS, label: includes TNUoS in the tariff, status: verified, source: *cap}
+      - {id: sup_res_dx, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: distribution, subcomponent: DUoS, label: includes the IDNO's DUoS in the tariff, status: verified, source: *cap}
+      - {id: sup_res_bal, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: balancing, subcomponent: BSUoS, label: includes BSUoS in the tariff, status: verified, source: *cap}
+      - {id: sup_res_cap, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: capacity, label: includes the Capacity Market charge in the tariff, status: verified, source: *cap}
+      - {id: sup_res_levy, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: policy_levy, label: includes policy costs in the tariff, status: verified, source: *cap}
+      - {id: sup_res_vat, from: supplier, to: residential, type: sets_rate, mode: passes_through, rate_component: tax, label: charges VAT on the bill, status: verified, source: *vat0}
+      - {id: sup_res_margin, from: supplier, to: residential, type: sets_rate, mode: sets, rate_component: supplier_margin, label: sets operating cost and margin within the cap, status: verified, source: *cap}
 
 # One entry per DNO licence area (14). Area = nation. `to` is the onshore transmission owner for that area.
 utilities:
@@ -377,7 +383,7 @@ utilities:
     area: England
     archetypes: *all
     fills:
-      dno: {name: Electricity North West, owner: {name: Iberdrola (ScottishPower), type: investor_owned, as_of: "2025-10-01", source: {title: "SP Energy Networks, Iberdrola completes acquisition of Electricity North West", url: "https://www.spenergynetworks.co.uk/news/pages/iberdrola_electricity_north_west.aspx", accessed: "2026-10-13"}}, domain_area: {full: [dno_g], note: North West England licence area, source: *dnoareas, status: verified}}
+      dno: {name: Electricity North West, owner: {name: Iberdrola (ScottishPower), type: investor_owned, parent: Iberdrola, as_of: "2026-10-13", source: {title: "SP Energy Networks, Iberdrola completes acquisition of Electricity North West", url: "https://www.spenergynetworks.co.uk/news/pages/iberdrola_electricity_north_west.aspx", accessed: "2026-10-13"}}, domain_area: {full: [dno_g], note: North West England licence area, source: *dnoareas, status: verified}}
       to: *nget
   Northern Powergrid Northeast:
     area: England

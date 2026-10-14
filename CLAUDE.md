@@ -203,7 +203,7 @@ Market facts used in the diagram are written as pytest assertions in `validate/t
 - ERCOT has no capacity component or capacity market node; FERC has no `regulates` edge with `domain` rates/market_rules into ERCOT, but the reliability path FERC → NERC → Texas RE → ERCOT exists
 - PJM has an RPM `market` node operated by PJM
 - CAISO has no central capacity auction; CPUC `plans_procures` RA; CAISO `iou_cca` has a CCA setting `generation` for `residential`; SMUD is not a BA
-- GB: no `iso`, no `reliability_body`, no `central_sced`; NESO is publicly owned and owns nothing; only Ofgem `caps`; the whole-bill cap only on domestic default tariffs (`domestic_default_capped`, `idno_network`); Elexon `settles`; no generator pays BSUoS; levies and taxes reach residential; 14 DNO areas owned by 5 groups; a transmission-connected site pays no DUoS and NESO bills it TNUoS directly
+- GB: no `iso`, no `reliability_body`, no `central_sced`; NESO is publicly owned and owns nothing; only Ofgem `caps`; the whole-bill cap only on domestic default tariffs (`domestic_default_capped`, `idno_network`); Elexon `settles`; no generator pays BSUoS; levies and taxes reach residential; 14 DNO areas owned by 5 groups; a transmission-connected site pays no DUoS
 - LG&E/KU and Ameren Illinois never map to PJM; El Paso Electric, SPS and Entergy Texas never map to ERCOT
 - a test lists all `needs_verification` edges and empty markets — allowed to exist, but it reports the count so it trends to zero
 

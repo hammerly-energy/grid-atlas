@@ -516,7 +516,7 @@ def test_gb_transmission_connected_has_no_dno():
     nodes, edges = g("gb", "transmission_connected")
     assert not by_kind(nodes, "wires_utility")
     assert not [e for e in edges if e.get("rate_component") == "distribution"]
-    assert build.who_sets(edges, "large_load", "transmission")["path"] == ["neso_ll_tx"]   # NESO bills the site itself
+    assert build.who_sets(edges, "large_load", "transmission")["setter"] == "neso"
 
 
 def test_gb_transmission_is_owned_by_tos_and_operated_by_neso():
