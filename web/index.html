@@ -131,6 +131,7 @@
 <footer id="foot"></footer>
 
 <script src="data.js"></script>
+<script src="version.js"></script>
 <script>
 const D = window.GRID_ATLAS;
 const $ = (s, el = document) => el.querySelector(s);
@@ -756,7 +757,7 @@ function panel(col, C, byId, edges, ans) {
     if (e) p.innerHTML = `<h3>${nm(e.from)} → ${nm(e.to)}</h3><dl>
       <dt>Relation</dt><dd>${esc(e.label)}</dd>
       <dt>Type</dt><dd>${esc(e.type.replace(/_/g, " "))}${e.domain ? " · " + esc(e.domain.replace(/_/g, " ")) : ""}${e.mechanism ? " · " + esc(e.mechanism.replace(/_/g, " ")) : ""}${e.asset ? " · " + esc(e.asset) : ""}</dd>
-      <dt>Status</dt><dd>${e.status === "verified" ? "verified: two Claude reviewers checked it against a primary source" : "needs verification"}</dd>
+      <dt>Status</dt><dd>${e.status === "verified" ? "checked against a primary source" : "needs verification"}</dd>
       <dt>Source</dt><dd>${srcLink(e.source)}</dd></dl>`;
     return p;
   }
@@ -821,8 +822,11 @@ function renderLegend() {
   items.push([swatch("var(--muted)", "arrow"), "checked against a primary source"], [swatch("var(--muted)", "arrow", true), "needs verification"]);
   if (S.cols.filter(c => c.mid).length > 1) items.push([`<svg viewBox="0 0 40 10" style="width:40px"><text x="0" y="8" font-size="8" fill="var(--accent)">only here</text></svg>`, "unique to this market"]);
   $("#legend").innerHTML = items.map(([s, t]) => `<span>${s}${esc(t)}</span>`).join("");
-  const n = Object.values(D.markets).flatMap(m => [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])]);
-  $("#foot").textContent = `${n.length} relations entered, ${n.filter(e => e.status !== "verified").length} need verification. Schema v${D.schema_version}.`
+  const n = new Map();   // an edge id repeated across setups counts once, and as verified only if every copy is
+  for (const [mid, m] of Object.entries(D.markets)) for (const e of [...(m.base.edges || []), ...Object.values(m.archetypes).flatMap(a => a.edges || [])])
+    n.set(mid + "|" + e.id, (n.get(mid + "|" + e.id) ?? true) && e.status === "verified");
+  const V = window.GRID_ATLAS_VERSION;
+  $("#foot").textContent = (V ? `Version ${V.tag} (${V.date}). ` : "") + `${n.size} relations entered, ${[...n.values()].filter(v => !v).length} need verification. Schema v${D.schema_version}.`
     + (D.maps ? " Map shapes: " + [...new Set(Object.values(D.maps).flatMap(m => m.layers.map(l => `${l.credit} (${l.licence.toLowerCase()})`)))].join(", ") + "." : "");
 }
 
