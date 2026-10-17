@@ -1,7 +1,7 @@
 schema_version: 2
 country: GB
 market: gb
-name: Great Britain (England, Scotland, Wales)
+name: Great Britain (in progress)
 coverage_note: Northern Ireland is in the all-island Single Electricity Market with Ireland, not this market.
 
 # Thin slice: domestic_default_capped, residential only.
