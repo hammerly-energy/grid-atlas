@@ -11,11 +11,11 @@ lanes:
   consumers:       {title: CONSUMERS,                 subtitle: domestic · small business · large industrial & commercial · transmission-connected}
 jurisdiction_labels: {national: UK-wide or GB-wide, subnational: Devolved (Scotland / Wales), local: Local, private: Private}
 kind_labels:
-  system_operator: System operator (NESO)
+  system_operator: System operator
   settlement_body: Settlement body
   scheme_administrator: Levy counterparty
-  wires_utility: DNO / IDNO
-  retail_provider: Supplier
+  wires_utility: Distribution network
+  retail_provider: Licensed supplier
 component_labels:
   generation: Wholesale energy
   transmission: TNUoS
@@ -23,7 +23,7 @@ component_labels:
   balancing: BSUoS
   capacity: Capacity Market
   policy_levy: Policy costs (CfD, RO, FiT, WHD, Nuclear RAB)
-  tax: VAT / Climate Change Levy
+  tax: Tax
   supplier_margin: Supplier operating costs and margin
   metering: Smart metering / industry charges
 bill_components: [generation, transmission, distribution, balancing, capacity, policy_levy, tax, supplier_margin]
@@ -51,5 +51,9 @@ glossary:
   FiT: {term: FiT, meaning: "Feed-in Tariffs; support scheme for small-scale generation, closed to new applicants since Apr 2019. Cost recovered from suppliers."}
   WHD: {term: WHD, meaning: "Warm Home Discount; annual bill rebate for eligible low-income households. Cost spread across supplier bills."}
   RAB: {term: Nuclear RAB, meaning: "Regulated asset base model; funds Sizewell C construction through a levy on suppliers."}
-  VAT: {term: VAT, meaning: "Value added tax; domestic electricity 0% from 1 Oct 2026 to 31 Mar 2027 (normally 5%), business 20%."}
+  VAT: {term: VAT, meaning: "Value added tax; domestic and low-use electricity 0% from 1 Oct 2026 to 31 Mar 2027 (normally 5%), other business use 20%."}
   RIIO: {term: RIIO, meaning: "Ofgem's network price-control framework (Revenue = Incentives + Innovation + Outputs); RIIO-3 for transmission from Apr 2026."}
+  NGED: {term: NGED, meaning: "National Grid Electricity Distribution; DNO for the East Midlands, West Midlands, South West England and South Wales areas."}
+  SSEN: {term: SSEN, meaning: "Scottish and Southern Electricity Networks (SSE); DNO for Southern England and the North of Scotland."}
+  CCL: {term: Climate Change Levy, meaning: "Tax on business energy use, set by HM Treasury; domestic customers do not pay it."}
+  BSC: {term: BSC, meaning: "Balancing and Settlement Code; the rules for GB wholesale settlement, administered by Elexon. Suppliers and generators are BSC parties."}
