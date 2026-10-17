@@ -1,0 +1,73 @@
+# On every push to main: run the tests, tag the next version (v1.0, v1.1, ...), publish a
+# GitHub release with notes from scripts/release_notes.py, and deploy web/ to GitHub Pages
+# with that version shown in the page footer. For a new major version, push a tag such as
+# v2.0 by hand; the next release counts on from it.
+name: release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: tag
+        name: Pick the next tag
+        run: |
+          prev=$(git tag --list 'v[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+          here=$(git tag --points-at HEAD --list 'v[0-9]*.[0-9]*' --sort=-v:refname | head -1)
+          if [ -n "$here" ]; then
+            echo "tag=$here" >> "$GITHUB_OUTPUT"; echo "new=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$prev" ]; then
+            echo "tag=v1.0" >> "$GITHUB_OUTPUT"; echo "new=true" >> "$GITHUB_OUTPUT"
+          else
+            major=${prev#v}; major=${major%%.*}; minor=${prev##*.}
+            echo "tag=v$major.$((minor + 1))" >> "$GITHUB_OUTPUT"; echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+      - name: Tag and publish the release
+        if: steps.tag.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/release_notes.py ${{ steps.tag.outputs.prev }} > notes.md
+          cat notes.md
+          git tag ${{ steps.tag.outputs.tag }}
+          git push origin ${{ steps.tag.outputs.tag }}
+          gh release create ${{ steps.tag.outputs.tag }} --title ${{ steps.tag.outputs.tag }} --notes-file notes.md
+
+  deploy:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write the version into the page
+        run: |
+          echo "window.GRID_ATLAS_VERSION = {tag: \"${{ needs.release.outputs.tag }}\", date: \"$(date -u +%Y-%m-%d)\"};" > web/version.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4
