@@ -20,9 +20,9 @@ For a given market, utility and customer type:
 
 | Market | Customer setups | Utilities | Relationships | Confirmed against a primary source |
 |---|---|---|---|---|
-| ERCOT | 3 | 5 | 125 | 35 |
-| PJM | 7 | 6 | 266 | 176 |
-| CAISO | 5 | 7 | 138 | 44 |
+| ERCOT | 3 | 5 | 109 | 23 |
+| PJM | 7 | 6 | 207 | 130 |
+| CAISO | 5 | 7 | 120 | 31 |
 | Great Britain (in progress) | 1 | 1 | 23 | 16 |
 
 A customer setup is a distinct arrangement within a market, for example a customer of a city-owned utility versus a customer who picks a retail supplier.
@@ -43,6 +43,10 @@ open web/index.html
 ```
 
 Data is in `data/countries/<country>/`, checked against `data/schema.json`. Research and sources are in `docs/research/`.
+
+## Releases
+
+Each merge to main is tagged (v1.0, v1.1, ...) and published as a GitHub release with a list of data and code changes. The live page shows the version in its footer.
 
 ## Next
 
