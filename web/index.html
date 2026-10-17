@@ -753,7 +753,7 @@ function panel(col, C, byId, edges, ans) {
     if (e) p.innerHTML = `<h3>${nm(e.from)} → ${nm(e.to)}</h3><dl>
       <dt>Relation</dt><dd>${esc(e.label)}</dd>
       <dt>Type</dt><dd>${esc(e.type.replace(/_/g, " "))}${e.domain ? " · " + esc(e.domain.replace(/_/g, " ")) : ""}${e.mechanism ? " · " + esc(e.mechanism.replace(/_/g, " ")) : ""}${e.asset ? " · " + esc(e.asset) : ""}</dd>
-      <dt>Status</dt><dd>${e.status === "verified" ? "verified: two Claude reviewers checked it against a primary source" : "needs verification"}</dd>
+      <dt>Status</dt><dd>${e.status === "verified" ? "checked against a primary source" : "needs verification"}</dd>
       <dt>Source</dt><dd>${srcLink(e.source)}</dd></dl>`;
     return p;
   }

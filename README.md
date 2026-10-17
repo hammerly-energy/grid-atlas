@@ -27,7 +27,7 @@ For a given market, utility and customer type:
 
 A customer setup is a distinct arrangement within a market, for example a customer of a city-owned utility versus a customer who picks a retail supplier.
 
-Each relationship cites a source. Solid lines were confirmed against a primary source (statute, regulation, tariff, regulatory order or the body's own publication) by two separate AI reviews. Dashed lines have not been confirmed.
+Each relationship cites a source. Solid lines have been checked against a primary source (statute, regulation, tariff, regulatory order or the body's own publication). Dashed lines have not.
 
 ## Tests
 
