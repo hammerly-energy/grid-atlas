@@ -6,7 +6,7 @@ An interactive diagram of the institutions in an electricity market: regulators,
 
 Markets: ERCOT (most of Texas), PJM (all or part of 13 Mid-Atlantic and Midwest states and Washington, DC) and CAISO (most of California) in the US, and Great Britain (England, Scotland and Wales).
 
-![ERCOT (Oncor, Texas) and PJM (PSE&G, New Jersey) side by side, showing who sets each part of a household bill](docs/img/compare-bill.png)
+![Great Britain (UK Power Networks London) and PJM (PSE&G, New Jersey) side by side, showing who sets each part of a household bill](docs/img/gb-vs-pjm.png)
 
 ## Questions it answers
 
