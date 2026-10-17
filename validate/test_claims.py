@@ -12,7 +12,6 @@ GRAPHS = list(graphs())
 MARKETS = {mid: (cc, m) for cc, c in DATA.items() for mid, m in c["markets"].items()}
 
 M2 = pytest.mark.xfail(reason="milestone 2: ERCOT data not entered", strict=True)
-MGB = pytest.mark.xfail(reason="GB milestone: gb.yaml not entered", strict=True)
 
 
 def g(mid, arch):
@@ -34,10 +33,9 @@ def by_kind(nodes, kind):
 
 # ---- completeness: every class x bill component has at least one line item, each with one path ending at a setter ----
 # (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
-# (market, archetype, class) -> reason. Each entry is a strict xfail; delete it once fixed.
-KNOWN_GAPS = {(mid, arch, cls): "thin slice: only the residential class is wired so far"
-              for mid, arch in [("gb", "domestic_default_capped")]
-              for cls in ("small_commercial", "large_ci", "large_load")}
+KNOWN_GAPS = {}
+# (market, archetype, component) -> why that part of the bill does not exist in this setup (not a gap)
+NOT_BILLED = {("gb", "transmission_connected", "distribution"): "a transmission-connected site uses no distribution network, so pays no DUoS"}
 
 
 def _bill_cases():
@@ -48,9 +46,19 @@ def _bill_cases():
             if cls not in classes:                                                # covered by the test below instead
                 continue
             for comp in build.bill_components(prof, m):
+                if (mid, arch, comp) in NOT_BILLED:
+                    continue
                 reason = KNOWN_GAPS.get((mid, arch, cls))
                 marks = [pytest.mark.xfail(reason=reason, strict=True)] if reason else []
                 yield pytest.param(mid, arch, cls, comp, edges, marks=marks, id=f"{mid}:{arch}:{cls}:{comp}")
+
+
+def test_unbilled_parts_are_exactly_the_listed_ones():
+    """The Bill table writes "Not charged in this setup" for a part of the bill no line carries. Only the parts listed
+    in NOT_BILLED may be missing that way; anything else missing is a gap."""
+    found = {(mid, arch, comp) for cc, mid, arch, _, edges in GRAPHS for comp in build.bill_components(DATA[cc]["profile"], MARKETS[mid][1])
+             if not any(e["type"] == "sets_rate" and e.get("rate_component") == comp for e in edges)}
+    assert found == set(NOT_BILLED)
 
 
 @pytest.mark.parametrize("mid,arch,cls,comp,edges", list(_bill_cases()))
@@ -476,13 +484,23 @@ def test_gb_has_no_iso_and_no_central_dispatch():
                 assert e["from"] == "neso" and e.get("mechanism") in {"balancing_redispatch", "ancillary_contract"}, e["id"]
 
 
-@MGB
-def test_gb_price_cap_is_a_ceiling_on_default_tariffs_only():
-    _, edges = g("gb", "domestic_default_capped")
-    caps = [e for e in edges if e.get("mode") == "caps"]
-    assert caps and all(e["from"] == "ofgem" for e in caps)
-    _, edges = g("gb", "supplier_contract")
-    assert not [e for e in edges if e.get("mode") == "caps"]
+def test_gb_price_cap_is_a_ceiling_on_domestic_default_tariffs_only():
+    """The whole-bill cap (a caps line with no bill component) sits only on domestic default tariffs: the default tariff
+    setup and the IDNO setup (a household on a default tariff). Fixed and business contracts have no cap."""
+    for arch, nodes, edges in all_graphs("gb"):
+        whole = [e for e in edges if e.get("mode") == "caps" and not e.get("rate_component")]
+        assert all(e["from"] == "ofgem" and e.get("applies_to") == ["residential"] for e in whole), arch
+        assert bool(whole) == (arch in {"domestic_default_capped", "idno_network"}), arch
+        assert all(e["from"] == "ofgem" for e in edges if e.get("mode") == "caps"), arch
+
+
+def test_gb_idno_charges_are_capped_against_the_host_dno():
+    nodes, edges = g("gb", "idno_network")
+    a = build.answer(edges, "residential", "distribution")
+    assert [i["setter"] for i in a["items"]] == ["idno"]
+    by_id = {e["id"]: e for e in edges}
+    assert [by_id[c]["from"] for c in a["items"][0]["limits"]] == ["ofgem"]
+    assert "dno" in nodes and nodes["idno"]["kind"] == "wires_utility"
 
 
 def test_gb_price_cap_excludes_vat():
@@ -494,10 +512,19 @@ def test_gb_price_cap_excludes_vat():
         assert bool(a["whole_bill_caps"]) == (comp != "tax"), comp
 
 
-@MGB
 def test_gb_transmission_connected_has_no_dno():
-    nodes, _ = g("gb", "transmission_connected")
+    nodes, edges = g("gb", "transmission_connected")
     assert not by_kind(nodes, "wires_utility")
+    assert not [e for e in edges if e.get("rate_component") == "distribution"]
+    assert build.who_sets(edges, "large_load", "transmission")["setter"] == "neso"
+
+
+def test_gb_transmission_is_owned_by_tos_and_operated_by_neso():
+    for arch, nodes, edges in all_graphs("gb"):
+        assert any(e["type"] == "operates" and e["from"] == "neso" and e["to"] == "transmission_owner" for e in edges), arch
+        assert nodes["transmission_owner"]["holds_assets"] == ["transmission"]
+    tos = {u["fills"]["to"]["name"] for u in MARKETS["gb"][1]["utilities"].values()}
+    assert tos == {"NGET", "SPT", "SHET"}
 
 
 def test_gb_elexon_settles_and_bsuos_is_demand_only():
@@ -510,14 +537,26 @@ def test_gb_elexon_settles_and_bsuos_is_demand_only():
 def test_gb_levies_and_taxes_reach_residential():
     _, edges = g("gb", "domestic_default_capped")
     for comp in ("policy_levy", "tax"):
-        ans = build.who_sets(edges, "residential", comp)
-        assert ans and ans["mode"] == "levies", comp
+        ans = build.answer(edges, "residential", comp)
+        assert ans and all(i["mode"] == "levies" for i in ans["items"]), comp
+    items = {i["subcomponent"]: i["setter"] for i in build.answer(edges, "residential", "policy_levy")["items"]}
+    assert items == {"CfD": "lccc", "Nuclear RAB": "lccc", "RO": "desnz", "FiT": "ofgem", "WHD": "desnz"}
 
 
-@MGB
+def test_gb_business_pays_climate_change_levy_and_households_do_not():
+    _, edges = g("gb", "supplier_contract")
+    subs = lambda cls: {i["subcomponent"] for i in build.answer(edges, cls, "tax")["items"]}
+    assert subs("small_commercial") == subs("large_ci") == {"VAT", "Climate Change Levy"}
+    assert subs("residential") == {None}
+    assert "WHD" not in {i["subcomponent"] for i in build.answer(edges, "large_ci", "policy_levy")["items"]}
+
+
 def test_gb_has_14_dno_areas():
     areas = [u for u in MARKETS["gb"][1]["utilities"].values() if "dno" in u.get("fills", {})]
     assert len(areas) == 14
+    assert len({u["fills"]["dno"]["domain_area"]["full"][0] for u in areas}) == 14
+    owners = {u["fills"]["dno"]["owner"].get("parent") or u["fills"]["dno"]["owner"]["name"] for u in areas}
+    assert len({o.split(" (")[0] for o in owners}) == 5      # ENGIE, National Grid, SSE, Iberdrola, Berkshire Hathaway
 
 
 # ---- domain maps: where each body's authority applies ----

@@ -33,8 +33,8 @@
   .cols { display:flex; flex-wrap:wrap; gap:16px; }
   .col { flex:1 1 360px; min-width:0; }
   .chain { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; align-content:flex-start; align-items:flex-start; }
-  .diagram { overflow-x:auto; }
-  .diagram svg { min-width:520px; }
+  .diagram { overflow-x:auto; background:linear-gradient(to right, var(--bg) 30%, transparent) left / 24px 100% no-repeat local, linear-gradient(to left, var(--bg) 30%, transparent) right / 24px 100% no-repeat local, radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.18), transparent) left / 10px 100% no-repeat scroll, radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.18), transparent) right / 10px 100% no-repeat scroll; }
+  .diagram svg { min-width:var(--minw, 520px); }
   .cols.n3 .diagram svg { min-width:0; }
   .cols.n1 { max-width:1000px; }   /* one market: the diagram grows, but boxes and text stay a readable size */
   .chain .add, .chain .rm { font:inherit; color:var(--fg); background:none; border:1px solid var(--line); border-radius:6px; padding:3px 10px; cursor:pointer; }
@@ -54,7 +54,7 @@
   .node.on.paid rect { stroke:var(--money); }
   .node.off { opacity:var(--dim); }
   .node .asset { fill:none; stroke:var(--t-operates); }
-  .node .asset-t { fill:var(--t-operates); font-size:9.5px; }
+  .node .asset-t { fill:var(--t-operates); font-size:9.5px; paint-order:stroke; stroke:var(--lane); stroke-width:3px; }
   .edge { fill:none; stroke-width:1.4; cursor:pointer; }
   .edge.nv { stroke-dasharray:6 4; }
   .edge.money { stroke:var(--money) !important; stroke-width:1.8; }
@@ -103,7 +103,7 @@
   .ans tr.gap td { color:var(--muted); }
   .ans .who { display:block; }
   .ans caption .billed { display:block; font-weight:400; color:var(--muted); font-size:12px; }
-  .cols.stacked .ans tr.gap { display:none; }
+  .cols.stacked .ans tr.gap:not(.nb) { display:none; }
   .ans .who + .who { margin-top:3px; }
   .capped { position:relative; padding:0 8px; margin:4px 0 10px; }
   .capped::before { content:""; position:absolute; inset:0 0 auto; height:var(--cap-h, 100%); box-sizing:border-box; border:1.6px solid var(--accent); pointer-events:none;
@@ -214,7 +214,7 @@ function utilityType(mid, u) {   // the abbreviation in the kind label of the no
   const nodes = resolve(mid, u.archetypes[0]).nodes.filter(n => n.lane === "retail" && n.slot && u.fills && u.fills[n.slot]);
   const k = nodes.length ? label(country(mid).kind_labels, nodes[0].kind) : "";
   const ab = k.match(/\(([^)]+)\)/);
-  return ab ? ab[1] : k;
+  return ab ? ab[1] : nodes.length && /^[A-Z]{2,}$/.test(nodes[0].name) ? nodes[0].name : k;   // GB: the box it fills is named DNO
 }
 // switching market, utility or setup keeps the selection: the utility's own box stays selected as the new
 // utility's box (Oncor -> CenterPoint, PG&E -> SMUD); any other box or line stays selected if it is still drawn
@@ -495,6 +495,7 @@ function renderCol(i) {
   const focus = focusEdges(col, edges);
   const pos = layout(nodes, edges);
   const svg = el("svg", { viewBox: `0 0 ${W} ${TOP + LANES.length * LANE_H}`, role: "img", "aria-label": `${m.name} ${col.arch.replace(/_/g, " ")}` });
+  svg.style.setProperty("--minw", Math.max(520, Math.round(W * 0.85)) + "px");   // a wide lane (GB: five operators) scrolls rather than shrinking text
   const wrap = document.createElement("div"); wrap.className = "diagram"; wrap.appendChild(svg); box.appendChild(wrap);
   const defs = el("defs", {}, svg);
 
@@ -572,12 +573,10 @@ function renderCol(i) {
       const u = el("text", { x: NODE_W, y: -3, class: "u", "text-anchor": "end" }, g); u.textContent = "only here";
       el("title", {}, u).textContent = "Unique to this market: no other market on screen has a " + label(C.kind_labels, n.kind).toLowerCase();
     }
-    if (S.lens === "owner" && n.holds_assets && n.holds_assets.length) {
-      el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
-      el("text", { class: "asset-t", x: 0, y: NODE_H + 13 }, g).textContent = "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ");
-    }
-    const own = ownerOf(col, n);
-    if (S.lens === "owner" && own) el("text", { class: "asset-t", x: 0, y: NODE_H + (n.holds_assets && n.holds_assets.length ? 25 : 13) }, g).textContent = "owned by " + own.name.replace(/^Secretary of State for /, "SoS ");
+    const own = ownerOf(col, n), holds = n.holds_assets && n.holds_assets.length;
+    if (S.lens === "owner" && holds) el("rect", { class: "asset", x: -3, y: -3, width: NODE_W + 6, height: NODE_H + 6, rx: 7 }, g);
+    if (S.lens === "owner" && (holds || own))   // one line under the box, so it stays inside its lane
+      fit(el("text", { class: "asset-t", x: 0, y: NODE_H + 14 }, g), holds && own ? `${n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")} · owned by ${own.name}` : holds ? "owns " + n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ") : "owned by " + own.name, NODE_W + 6);
     g.onclick = () => { col.sel = { node: n.id }; render(); };
     g.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); g.onclick(); } };
   }
@@ -636,9 +635,13 @@ function answers(col, C, nodes, edges, byId) {
     for (const c of billComps().list.filter(c => own.includes(c) || country(col.mid).bill_components.includes(c))) {
       const tb = document.createElement("tbody"); tb.dataset.k = c; t.appendChild(tb);
       if (caps.length && ans(c) && !ans(c).whole_bill_caps.length) tb.className = "uncapped";   // drawn below the cap bracket
-      const cl = term(C, label((own.includes(c) ? C : country(billComps().mids.find(mid => componentsFor(mid).includes(c)))).component_labels, c));
+      const cl = term(C, label((own.includes(c) || country(col.mid).bill_components.includes(c) ? C : country(billComps().mids.find(mid => componentsFor(mid).includes(c)))).component_labels, c));
       if (!own.includes(c)) {   // a part of the bill another column on screen has
         tb.innerHTML = `<tr class="gap"><td>${cl}</td><td colspan="2" class="muted">No separate line in ${mname}</td></tr>`;
+        continue;
+      }
+      if (!edges.some(e => e.type === "sets_rate" && e.rate_component === c)) {   // no line carries it: this setup does not pay it (a transmission-connected site pays no DUoS)
+        tb.innerHTML = `<tr class="gap nb"><td>${cl}</td><td colspan="2" class="muted">Not charged in this setup</td></tr>`;
         continue;
       }
       // one row per line item; a bill line with several setters gets one row per setter
@@ -678,11 +681,11 @@ function answers(col, C, nodes, edges, byId) {
   for (const n of nodes.filter(n => (n.holds_assets && n.holds_assets.length) || ownerOf(col, n))) {
     const own = ownerOf(col, n);
     const tr = document.createElement("tr"); tr.className = "row" + (col.sel && col.sel.node === n.id ? " cur" : "");
-    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : "nothing"}</td><td class="lim">${own ? esc(own.name) + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
+    tr.innerHTML = `<td>${nm(n.id)}</td><td>${n.holds_assets && n.holds_assets.length ? esc(n.holds_assets.map(a => a.replace(/_/g, " ")).join(", ")) : ["iso", "system_operator"].includes(n.kind) ? "nothing (operates, does not own)" : "nothing"}</td><td class="lim">${own ? esc(own.name) + (own.parent ? ", part of " + esc(own.parent) : "") + " (" + esc(own.type.replace(/_/g, " ")) + ")" : "—"}</td>`;
     tr.onclick = () => { col.sel = { node: n.id }; render(); };
     t.appendChild(tr);
   }
-  const none = nodes.filter(n => ["iso", "system_operator"].includes(n.kind) && !(n.holds_assets || []).length);
+  const none = nodes.filter(n => ["iso", "system_operator"].includes(n.kind) && !(n.holds_assets || []).length && !ownerOf(col, n));
   if (none.length) { const tr = document.createElement("tr"); tr.innerHTML = `<td>${names(none.map(n => n.id))}</td><td>nothing (operates, does not own)</td><td class="lim">—</td>`; t.appendChild(tr); }
   return t;
 }

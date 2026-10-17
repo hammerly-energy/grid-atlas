@@ -2,9 +2,9 @@
 
 Live: https://hammerly-energy.github.io/grid-atlas/
 
-An interactive diagram of the institutions in a US electricity market: regulators, the grid operator, generators, utilities and customers. Two markets can be shown side by side.
+An interactive diagram of the institutions in an electricity market: regulators, the grid operator, generators, utilities and customers. Markets can be shown side by side, including across countries.
 
-Markets: ERCOT (most of Texas), PJM (all or part of 13 Mid-Atlantic and Midwest states and Washington, DC) and CAISO (most of California). Great Britain is in progress.
+Markets: ERCOT (most of Texas), PJM (all or part of 13 Mid-Atlantic and Midwest states and Washington, DC) and CAISO (most of California) in the US, and Great Britain (England, Scotland and Wales).
 
 ![ERCOT (Oncor, Texas) and PJM (PSE&G, New Jersey) side by side, showing who sets each part of a household bill](docs/img/compare-bill.png)
 
@@ -23,15 +23,15 @@ For a given market, utility and customer type:
 | ERCOT | 3 | 5 | 109 | 23 |
 | PJM | 7 | 6 | 207 | 130 |
 | CAISO | 5 | 7 | 120 | 31 |
-| Great Britain (in progress) | 1 | 1 | 23 | 16 |
+| Great Britain | 4 | 14 | 69 | 54 |
 
-A customer setup is a distinct arrangement within a market, for example a customer of a city-owned utility versus a customer who picks a retail supplier.
+A customer setup is a distinct arrangement within a market, for example a customer of a city-owned utility versus a customer who picks a retail supplier. For Great Britain, utilities are the 14 regional distribution network areas.
 
 Each relationship cites a source. Solid lines have been checked against a primary source (statute, regulation, tariff, regulatory order or the body's own publication). Dashed lines have not.
 
 ## Tests
 
-951 automated tests check the data format, references between records, specific market facts (for example, that ERCOT has no capacity market) and the rendered page. Three Great Britain tests are marked as expected failures until that data is entered.
+1,245 automated tests check the data format, references between records, specific market facts (for example, that ERCOT has no capacity market) and the rendered page.
 
 ## Run locally
 
@@ -50,5 +50,4 @@ Each merge to main is tagged (v1.0, v1.1, ...) and published as a GitHub release
 
 ## Next
 
-- Great Britain: remaining customer setups and the 14 regional distribution networks.
 - MISO, SPP, NYISO and ISO-NE.

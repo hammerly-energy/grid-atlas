@@ -184,7 +184,9 @@ PCIA note: the exit fee is entered as a `subcomponent` line item of `riders_publ
 1. `domestic_default_capped` — SVT/deemed tariff under Ofgem's default tariff cap (`caps` edge on the whole bill); supplier sets the actual price
 2. `supplier_contract` — domestic fixed and all non-domestic; no cap; CCL and full RO for non-domestic
 3. `transmission_connected` — no DNO/DUoS; NESO bills TNUoS directly; may be its own BSC party
-4. `idno_network` — extra wires node (IDNO) inside a DNO area; IDNO charges capped relative to the host DNO
+4. `idno_network` — extra wires node (IDNO) inside a DNO area; IDNO charges capped relative to the host DNO; modelled as a household on a default tariff, so the price cap applies (2026-10-13)
+
+Every GB utility is one of the 14 DNO licence areas (area = nation) and offers all 4 setups; it also fills the transmission owner for its area (NGET, SPT, SHET). A part of the bill a setup never pays (DUoS when transmission-connected) is listed in `NOT_BILLED` in `test_claims.py` and shows "Not charged in this setup". Policy costs are line items: CfD, Nuclear RAB (LCCC levies), RO, WHD (DESNZ), FiT (Ofgem levelisation)
 
 Variants, not archetypes: Scotland vs England & Wales (different TO, ROS, AAHEDC), prepayment, Supplier of Last Resort, EII/BICS exemptions. Deferred: private wire / licence-exempt supply.
 
@@ -201,7 +203,7 @@ Market facts used in the diagram are written as pytest assertions in `validate/t
 - ERCOT has no capacity component or capacity market node; FERC has no `regulates` edge with `domain` rates/market_rules into ERCOT, but the reliability path FERC → NERC → Texas RE → ERCOT exists
 - PJM has an RPM `market` node operated by PJM
 - CAISO has no central capacity auction; CPUC `plans_procures` RA; CAISO `iou_cca` has a CCA setting `generation` for `residential`; SMUD is not a BA
-- GB: no `iso`, no `reliability_body`, no `central_sced`; NESO is publicly owned and owns nothing; only Ofgem `caps`, and only in `domestic_default_capped`; Elexon `settles`; no generator pays BSUoS; levies and taxes reach residential; 14 DNO areas
+- GB: no `iso`, no `reliability_body`, no `central_sced`; NESO is publicly owned and owns nothing; only Ofgem `caps`; the whole-bill cap only on domestic default tariffs (`domestic_default_capped`, `idno_network`); Elexon `settles`; no generator pays BSUoS; levies and taxes reach residential; 14 DNO areas owned by 5 groups; a transmission-connected site pays no DUoS
 - LG&E/KU and Ameren Illinois never map to PJM; El Paso Electric, SPS and Entergy Texas never map to ERCOT
 - a test lists all `needs_verification` edges and empty markets — allowed to exist, but it reports the count so it trends to zero
 
